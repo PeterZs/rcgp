@@ -1,6 +1,6 @@
 #pragma once
 
-#include "primitives.hpp"
+#include "../dsl/primitives.hpp"
 
 // Required result of the vertex shader
 struct Position {

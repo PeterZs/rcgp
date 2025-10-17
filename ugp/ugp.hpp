@@ -2,15 +2,20 @@
 
 #include <functional>
 
-#include "ugp/static_string.hpp"
-#include "ugp/stage_intrinsics.hpp"
-#include "ugp/reflection.hpp"
-#include "ugp/type_string_extensions.hpp"
-#include "ugp/this_injection.hpp"
-#include "ugp/type_hash.hpp"
-#include "ugp/function_return_injection.hpp"
-#include "ugp/reference.hpp"
-#include "ugp/stage.hpp"
+#include "msv/static_string.hpp"
+#include "msv/stage_intrinsics.hpp"
+#include "msv/reflection.hpp"
+#include "msv/type_string_extensions.hpp"
+#include "msv/this_injection.hpp"
+#include "msv/type_hash.hpp"
+#include "msv/function_return_injection.hpp"
+#include "msv/reference.hpp"
+#include "msv/stage.hpp"
+
+#include "rhi/session.hpp"
+#include "rhi/device.hpp"
+
+#include "dsl/tracer.hpp"
 
 // TODO: UGP namespace
 
@@ -114,12 +119,3 @@ auto operator<<(_def_operator <S, R>, F ftn)
 
 	return result;
 }
-
-struct Tracer {
-	static thread_local Tracer singleton;
-};
-
-inline thread_local Tracer Tracer::singleton;
-
-#define $jit JIT::singleton
-// now we can do $jit.<whatever>

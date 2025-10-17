@@ -1,6 +1,6 @@
 #include <fmt/printf.h>
 
-#include "ugp.hpp"
+#include "ugp/ugp.hpp"
 
 struct VertexAttributes {
 	Topology::Triangle <vec3> position;
@@ -154,175 +154,27 @@ auto operator>>=(stage <S1, R1, Args1...> a, stage <S2, R2, Args2...> b)
 
 // combinators consists of boundary rules and a (sometimes logical) fusion process
 
-#include <vulkan/vulkan.hpp>
-
-#include <GLFW/glfw3.h>
-
-namespace glfw {
-
-void boot()
-{
-	glfwInit();
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-}
-
-void load_extensions(std::vector <const char *> &list)
-{
-	uint32_t count;
-	const char **extensions = glfwGetRequiredInstanceExtensions(&count);
-	list.insert(list.end(), extensions, extensions + count);
-}
-
-} // namespace glfw
-
-VKAPI_ATTR VKAPI_CALL vk::Bool32 validation_callback
-(
-	vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
-	vk::DebugUtilsMessageTypeFlagsEXT types,
-	const vk::DebugUtilsMessengerCallbackDataEXT *data,
-	void *_
-)
-{
-	fmt::println(stderr, "[vulkan] {}", data->pMessage);
-	return false;
-}
-
-struct Session {
-	vk::Instance handle;
-	vk::DebugUtilsMessengerEXT debugger;
-
-	// Session construction
-	struct Info {
-		bool validation = true;
-		bool validation_bootstrap = true;
-	};
-
-	static auto from(const Info &info) {
-		Session session;
-
-		glfw::boot();
-
-		// Infoure dynamic dispatch loader
-		vk::detail::DynamicLoader dl;
-		auto vkGetInstanceProcAddr = dl.getProcAddress
-			<PFN_vkGetInstanceProcAddr> ("vkGetInstanceProcAddr");
-
-		vk::detail::DispatchLoaderDynamic dld;
-		dld.init(vkGetInstanceProcAddr);
-
-		// Infoure layers
-		auto layers = std::vector <const char *> {};
-		if (info.validation)
-			layers.emplace_back("VK_LAYER_KHRONOS_validation");
-
-		// Infoure extensions
-		auto extensions = std::vector <const char *> {
-			VK_KHR_SURFACE_EXTENSION_NAME,
-		};
-
-		glfw::load_extensions(extensions);
-		if (info.validation) {
-			extensions.emplace_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-			extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-		}
-
-		// Infoure the validation debugger
-		auto debug_severity_flags = // Everything...
-			vk::DebugUtilsMessageSeverityFlagBitsEXT::eError
-			| vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning
-			| vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo;
-
-		auto debug_type_flags = // Everything...
-			vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
-			| vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation
-			| vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
-
-		auto debug_info = vk::DebugUtilsMessengerCreateInfoEXT()
-			.setMessageType(debug_type_flags)
-			.setMessageSeverity(debug_severity_flags)
-			.setPfnUserCallback(validation_callback);
-
-		// Finally, instance creation
-		auto app_info = vk::ApplicationInfo()
-			.setApplicationVersion(VK_MAKE_VERSION(1, 0, 0))
-			.setApiVersion(VK_API_VERSION_1_4)
-			.setEngineVersion(VK_MAKE_VERSION(1, 0, 0))
-			.setPApplicationName("ugp")
-			.setPEngineName("ugp");
-
-		auto instance_info = vk::InstanceCreateInfo()
-			.setPApplicationInfo(&app_info)
-			.setPEnabledLayerNames(layers)
-			.setPEnabledExtensionNames(extensions);
-
-		if (info.validation && info.validation_bootstrap)
-			instance_info.setPNext(&debug_info);
-
-		session.handle = vk::createInstance(instance_info, nullptr, dld);
-
-		dld.init(session.handle, vkGetInstanceProcAddr);
-
-		// If needed infoure the validation layer messenger
-		if (info.validation)
-			session.debugger = session.handle.createDebugUtilsMessengerEXT(debug_info, nullptr, dld);
-
-		// TODO: also return the dynamic loader prepped with the instance...
-		return std::make_tuple(session, dld);
-	}
-};
-
-struct Device {
-	vk::Device logical;
-	vk::PhysicalDevice physical;
-	vk::PhysicalDeviceMemoryProperties properties;
-	vk::detail::DispatchLoaderDynamic loader;
-
-	// Shader stage compilation
-	template <Stage S, typename R, typename ... Args>
-	auto compile(stage <S, R, Args...> shader) {
-		static_assert(is_uncompiled_shader_stage(S), "waah");
-
-		return stage <compiled_shader_stage(S), R, Args...> ();
-	}
-
-	// Device construction
-	struct Info {
-	};
-
-	static auto from(const Session &session, vk::detail::DispatchLoaderDynamic &dld, const Info &info) {
-		Device device;
-
-		// Allocate the physical device
-		device.physical = session.handle.enumeratePhysicalDevices().front();
-		device.properties = device.physical.getMemoryProperties();
-
-		// Allocate the logical device
-		auto priority = 1.0f;
-
-		auto device_queues_info = vk::DeviceQueueCreateInfo()
-			.setQueueFamilyIndex(0)
-			.setQueuePriorities(priority)
-			.setQueueCount(1);
-
-		auto device_info = vk::DeviceCreateInfo()
-			.setQueueCreateInfos(device_queues_info);
-
-		device.logical = device.physical.createDevice(device_info);
-
-		// Attach to dynamic loader
-		dld.init(device.logical);
-
-		return device;
-	}
-};
-
 int main()
 {
-	auto session_info = Session::Info();
+	auto session_info = Session::Info {
+		.validation_bootstrap = false,
+	};
+
 	auto [session, dld] = Session::from(session_info);
 
 	auto device_info = Device::Info();
 	auto device = Device::from(session, dld, device_info);
+
+	Tracer::Record record;
+	if (auto r = $dsl.begin(record)) {
+		auto f = $dsl.constant(1.0f);
+		auto g = $dsl.constant(12);
+		auto h = $dsl.binary_operation(BinaryOperation::eAdd, f, g);
+	}
+
+	fmt::println("# of instructions in record: {}", record.size());
+	for (auto &instr : record)
+		fmt::println("\t{}", instr);
 
 	// TODO: how to transport device?
 	// auto w = f(10);
