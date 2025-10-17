@@ -73,7 +73,7 @@ struct _stage_operator {};
 #define $fragment	$stage(UncompiledFragment)
 #define $compute	$stage(UncompiledCompute)
 
-#define $returns(T) decltype(fn_return_injection::Writer <decltype(_return_proxy), RasterForward> {}, void())
+#define $returns(T) decltype(fn_return_injection::Writer <decltype(_return_proxy), T> {}, void())
 #define $return (_return_operator <fn_return_injection::Read <decltype(_return_proxy)> ::unfoil> ()) << 
 #define $fn (_fn_operator <Stage::Undefined, __COUNTER__ + 1> ()) << [_return_proxy = fn_return_injection::proxy_tag <__COUNTER__> ()]
 #define $cafn(...) (_fn_operator <Stage::Undefined, __COUNTER__ + 1> ()) << [__VA_ARGS__ __VA_OPT__(,) _return_proxy = fn_return_injection::proxy_tag <__COUNTER__> ()]
@@ -91,10 +91,6 @@ auto operator*(_stage_operator <S>, _fn_operator <Stage::Undefined, I>)
 	return _fn_operator <S, I> ();
 }
 
-// TODO: compile to SPIRV or whatever when supplied the right device?
-// pre-stage (vk::Device >>= UncompiledX) -> X?
-// device: ugp::Device
-// device.compile(z) -> compiled z
 auto z = $vertex $fn(i32 x, $use(mvp)) -> $returns(RasterForward)
 {
 	$return RasterForward {
@@ -119,11 +115,6 @@ auto f(int y)
 		};
 	};
 }
-
-// template <typename A>
-// struct ensure_stage {
-// 	static_assert(is_stage <A> ::value, "baah");
-// };
 
 template <Stage S1, Stage S2>
 struct combinator  {
@@ -166,14 +157,25 @@ int main()
 	auto device = Device::from(session, dld, device_info);
 
 	Tracer::Record record;
-	if (auto r = $dsl.begin(record)) {
-		auto f = $dsl.constant(1.0f);
-		auto g = $dsl.constant(12);
-		auto h = $dsl.binary_operation(BinaryOperation::eAdd, f, g);
+	if (auto s = jems::scope(record)) {
+		auto f = jems::constant(1.0f);
+		auto g = jems::constant(12);
+		auto h = jems::operation(Operation::eAdd, f, g);
+		auto j = jems::operation(Operation::eAdd, f, h);
+		auto i = jems::type(VectorType <float, 2> ());
+		auto c = jems::construct(i, h, j);
 	}
 
 	fmt::println("# of instructions in record: {}", record.size());
 	for (auto &instr : record)
+		fmt::println("\t{}", instr);
+
+	auto triangle_vs = $vertex $fn(Topology::Triangle <vec2> pos) -> $returns(Position) {
+		$return Position(vec4(pos, 0, 1));
+	};
+	
+	fmt::println("# of instructions in record: {}", triangle_vs.size());
+	for (auto &instr : triangle_vs)
 		fmt::println("\t{}", instr);
 
 	// TODO: how to transport device?

@@ -3,6 +3,7 @@
 #include <type_traits>
 
 #include "meta.hpp"
+#include "../dsl/tracer.hpp"
 
 enum class Stage {
 	Undefined,
@@ -68,10 +69,14 @@ struct decomposition <Stage::Vertex, R, Args...> {
 // e.g. UncompiledX is a TracerRecord
 // and X contains a Vulkan shader module and Vulkan device
 template <Stage S, typename R, typename ... Args>
-// struct stage : thunder::TrackedBuffer {
 struct stage {
 	// TODO: reflection...
 	// using reflection = decltype(function_reflection_generator <R, Args...> ());
+};
+
+template <Stage S, typename R, typename ... Args>
+requires (is_uncompiled_shader_stage(S))
+struct stage <S, R, Args...> : Tracer::Record {
 };
 
 // template <typename T>

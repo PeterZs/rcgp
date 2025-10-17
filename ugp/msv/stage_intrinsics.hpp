@@ -3,10 +3,13 @@
 #include "../dsl/primitives.hpp"
 
 // Required result of the vertex shader
-struct Position {
-	vec4 value;
-
-	Position(const vec4 &value) : value(value) {}
+struct Position : vec4 {
+	Position(const vec4 &value, $location) : vec4(value) {
+		jems::assign_loc(loc,
+			jems::intrinsic_loc(loc, Intrinsic::eSVPosition),
+			0
+		);
+	}
 };
 
 struct Topology {

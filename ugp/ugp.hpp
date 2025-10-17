@@ -16,6 +16,7 @@
 #include "rhi/device.hpp"
 
 #include "dsl/tracer.hpp"
+#include "dsl/jems.hpp"
 
 // TODO: UGP namespace
 
@@ -99,23 +100,13 @@ auto operator<<(_def_operator <S, R>, F ftn)
 
 	typename signature::type result;
 
-	// auto &em = Emitter::active;
-
-	// em.push(result);
-	{
+	if (auto s = jems::scope(result)) {
 		typename signature::args args;
-
-		// em.display_assembly();
 		
 		// TODO: generate plceholders during injection, after first filtration
-
 		// TODO: injection
 		std::apply(ftn, args);
 	}
-	// em.pop();
-	
-	// if (auto &r = $jit.begin(result)) {
-	// }
 
 	return result;
 }
