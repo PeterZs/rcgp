@@ -54,7 +54,7 @@ consteval auto enumerated_field_strings()
 
 // Overload name generator for reflection types
 template <typename Original, typename ... Args>
-struct type_string <aggregate_reflection_t <Original, Args...>> {
+struct type_string <aggregate_reflection <Original, Args...>> {
 	template <size_t I>
 	static consteval auto eval() {
 		// TODO: reconstruct the type name of this aggregate...
@@ -66,7 +66,7 @@ struct type_string <aggregate_reflection_t <Original, Args...>> {
 };
 
 template <typename T>
-struct type_string <parameter_block_reflection_t <T>> {
+struct type_string <parameter_block_reflection <T>> {
 	template <size_t I>
 	static consteval auto eval() {
 		return $ss("parameter block of ") + $ss_type_indented(T, I);
@@ -74,7 +74,7 @@ struct type_string <parameter_block_reflection_t <T>> {
 };
 
 template <auto &ref, typename T>
-struct type_string <referencing_reflection_t <ref, T>> {
+struct type_string <reference_reflection <ref, T>> {
 	struct inner {};
 
 	template <size_t I>
@@ -88,7 +88,7 @@ struct type_string <referencing_reflection_t <ref, T>> {
 };
 
 template <typename R, typename ... Args>
-struct type_string <function_reflection_t <R, Args...>> {
+struct type_string <function_reflection <R, Args...>> {
 	template <size_t I>
 	static consteval auto eval() {
 		constexpr auto tabs = static_string <I> ('\t');

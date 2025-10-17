@@ -5,38 +5,49 @@
 #include "macro_hell.hpp"
 #include "this_injection.hpp"
 #include "field_name_injection.hpp"
-
-template <typename ... Args>
-struct sequence_t {
-	sequence_t(Args ...) {}
-};
+#include "meta.hpp"
 
 // Reflection types
-struct nil_reflection_t {};
+struct nil_reflection {};
 
 template <typename T, size_t I>
-struct field_reflection_t {};
+struct field_reflection {};
 
 template <typename Original, typename ... Args>
-struct aggregate_reflection_t {};
+struct aggregate_reflection {};
 
 template <typename Original, typename ... Args>
-auto aggregate_reflection_generator(sequence_t <Args...>)
-	-> aggregate_reflection_t <Original, Args...>;
+auto new_aggregate_reflection(sequence <Args...>)
+	-> aggregate_reflection <Original, Args...>;
 
 template <typename T>
-struct parameter_block_reflection_t {};
+struct parameter_block_reflection {};
 
 template <auto &ref, typename T>
-struct referencing_reflection_t {};
+struct reference_reflection {};
 
 template <typename R, typename ... Args>
-struct function_reflection_t {};
+struct function_reflection {};
 
 // TODO: stage specific reflections... just one parameter for classification
 
+// Querying reflection status
 template <typename T>
 concept reflection_holder = requires { typename T::reflection; };
+
+template <typename T>
+struct reflection_expander : std::false_type {
+	// TODO: refactor to expanded
+	using type = T;
+};
+
+template <reflection_holder T>
+struct reflection_expander <T> : std::true_type {
+	using type = typename T::reflection;
+};
+
+template <typename T>
+constexpr bool has_reflection = reflection_expander <T> ::value;
 
 // Type registry for wholistic reflection
 template <typename T, std::size_t Index>
@@ -52,8 +63,8 @@ struct scaffold_field {
 
 #define $reflection(...)							\
 	THIS_INJECTION();							\
-	using reflection = decltype(aggregate_reflection_generator <This> (	\
-		sequence_t {							\
+	using reflection = decltype(new_aggregate_reflection <This> (		\
+		sequence {							\
 			MAP(AGGREGATE_FIELD_GENERATOR, /* NA */ , __VA_ARGS__)	\
 		}								\
 	));									\
