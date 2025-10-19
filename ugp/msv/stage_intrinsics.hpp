@@ -4,10 +4,11 @@
 
 // Required result of the vertex shader
 struct Position : vec4 {
-	Position(const vec4 &value, $location) : vec4(value) {
-		jems::assign_loc(loc,
+	// TODO: only emit when returning...
+	Position(const vec4 &value, $location) {
+		jems::store_loc(loc,
 			jems::intrinsic_loc(loc, Intrinsic::eSVPosition),
-			0
+			value
 		);
 	}
 };

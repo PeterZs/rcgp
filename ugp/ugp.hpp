@@ -11,6 +11,7 @@
 #include "msv/function_return_injection.hpp"
 #include "msv/reference.hpp"
 #include "msv/stage.hpp"
+#include "msv/context.hpp"
 
 #include "rhi/session.hpp"
 #include "rhi/device.hpp"
@@ -73,7 +74,6 @@ template <typename R, typename U>
 void operator<<(_return_operator <R>, const U &value)
 {
 	static_assert(std::is_convertible_v <U, R>);
-	// _return(value);
 }
 
 // TODO: pass name explicitly in the decl case, otherwise generate unique ID

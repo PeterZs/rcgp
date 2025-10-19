@@ -75,8 +75,8 @@ struct _stage_operator {};
 
 #define $returns(T) decltype(fn_return_injection::Writer <decltype(_return_proxy), T> {}, void())
 #define $return (_return_operator <fn_return_injection::Read <decltype(_return_proxy)> ::unfoil> ()) << 
-#define $fn (_fn_operator <Stage::Undefined, __COUNTER__ + 1> ()) << [_return_proxy = fn_return_injection::proxy_tag <__COUNTER__> ()]
-#define $cafn(...) (_fn_operator <Stage::Undefined, __COUNTER__ + 1> ()) << [__VA_ARGS__ __VA_OPT__(,) _return_proxy = fn_return_injection::proxy_tag <__COUNTER__> ()]
+#define $fn (_fn_operator <Stage::Undefined, __COUNTER__ + 1> ()) << [_return_proxy = fn_return_injection::proxy_tag <__COUNTER__> ()] $context_capture
+#define $cafn(...) (_fn_operator <Stage::Undefined, __COUNTER__ + 1> ()) << [__VA_ARGS__ __VA_OPT__(,) _return_proxy = fn_return_injection::proxy_tag <__COUNTER__> ()] $context_capture
 
 template <Stage S, int I>
 auto operator<<(_fn_operator <S, I>, auto lambda)
@@ -89,31 +89,6 @@ template <Stage S, int I>
 auto operator*(_stage_operator <S>, _fn_operator <Stage::Undefined, I>)
 {
 	return _fn_operator <S, I> ();
-}
-
-auto z = $vertex $fn(i32 x, $use(mvp)) -> $returns(RasterForward)
-{
-	$return RasterForward {
-		.svpos = vec4(),
-		.position = vec3(),
-		.normal = vec3(),
-		.uv = vec2(),
-	};
-};
-
-auto f(int y)
-{
-	return $compute $cafn(&)(i32 x) -> $returns(RasterForward)
-	{
-		int ww = y;
-
-		$return RasterForward {
-			.svpos = vec4(),
-			.position = vec3(),
-			.normal = vec3(),
-			.uv = vec2(),
-		};
-	};
 }
 
 template <Stage S1, Stage S2>
@@ -145,6 +120,138 @@ auto operator>>=(stage <S1, R1, Args1...> a, stage <S2, R2, Args2...> b)
 
 // combinators consists of boundary rules and a (sometimes logical) fusion process
 
+// TODO: context creation and invocation: $context(method)(...)
+// the context becomes an operator which removes implicit things (i.e. resource references)
+// from the type signature of the given function
+
+// struct Backend {
+// };
+
+#include <map>
+
+namespace generators {
+
+struct Assembly {
+	const Block &block;
+
+	std::map <std::intptr_t, uint32_t> ids;
+
+	std::string stringify(Reference ref) {
+		auto addr = intptr_t(ref.get());
+
+		auto it = ids.find(addr);
+		if (it != ids.end()) {
+			return fmt::format("${}", it->second);
+		} else {
+			auto id = ids.size();
+			ids[addr] = id;
+			return fmt::format("${}", id);
+		}
+	}
+
+	#define $assign stringify(ref) + " = " +
+
+	std::string stringify(Constant x, Reference ref) {
+		return $assign std::visit([](auto x) {
+			return fmt::format("{}", x);
+		}, x);
+	}
+	
+	std::string stringify_impl(PrimitiveType x, Reference ref) {
+		vswitch(x) {
+		vcase(bool): return "bool";
+		vcase(int32_t): return "i32";
+		vcase(uint32_t): return "u32";
+		vcase(float): return "f32";
+		vcase(VectorType <float, 2>): return "vec2";
+		vcase(VectorType <float, 3>): return "vec3";
+		vcase(VectorType <float, 4>): return "vec4";
+		default:
+			break;
+		}
+
+		return "primitive(?)";
+	}
+	
+	std::string stringify(Type x, Reference ref) {
+		return $assign std::visit([&](auto x) {
+			return stringify_impl(x, ref);
+		}, x);
+	}
+
+	std::string stringify(Operation x, Reference ref) {
+		std::string op = "?";
+		switch (x.code) {
+		case Operation::eAdd: op = "add"; break;
+		default:
+			break;
+		}
+
+		return $assign fmt::format("{}({}, {})",
+			op, stringify(x.a), stringify(x.b));
+	}
+	
+	std::string stringify(Store x, Reference ref) {
+		return fmt::format("store {} {}",
+			stringify(x.destination), stringify(x.source));
+	}
+
+	std::string stringify(Intrinsic x, Reference ref) {
+		switch (x.code) {
+		case Intrinsic::eSVPosition: return $assign "SVPosition";
+		default:
+			break;
+		}
+		
+		return $assign "?";
+	}
+
+	std::string stringify(Construct x, Reference ref) {
+		std::string result = fmt::format("new {}(", stringify(x.type));
+		for (size_t i = 0; i < x.args.size(); i++) {
+			result += stringify(x.args[i]);
+			if (i + 1 < x.args.size())
+				result += ", ";
+		}
+		result += ")";
+
+		return $assign result;
+	}
+
+	#undef $assign
+
+	std::string stringify(auto x, Reference ref) {
+		return "?";
+	}
+
+	void display(FILE *stream = stdout, size_t tabs = 0) {
+		fmt::println("block() {{");
+		for (auto &instr : block) {
+			auto str = std::visit([&](auto x) {
+				return stringify(x, instr);
+			}, *instr);
+			auto loc = instr->debug_info.origin;
+			auto rel = std::filesystem::relative(loc.file_name());
+			fmt::println("\t{:<30} ; from {}:{}", str, rel.string(), loc.line());
+		}
+		fmt::println("}}");
+	}
+};
+
+} // namespace generators
+
+template <int>
+struct A {};
+
+struct X {
+	int32_t value;
+	[[no_unique_address]] A <0> a1;
+	[[no_unique_address]] A <1> a2;
+	[[no_unique_address]] A <2> a3;
+};
+
+static_assert(sizeof(X) == 4);
+
 int main()
 {
 	auto session_info = Session::Info {
@@ -156,27 +263,15 @@ int main()
 	auto device_info = Device::Info();
 	auto device = Device::from(session, dld, device_info);
 
-	Tracer::Record record;
-	if (auto s = jems::scope(record)) {
-		auto f = jems::constant(1.0f);
-		auto g = jems::constant(12);
-		auto h = jems::operation(Operation::eAdd, f, g);
-		auto j = jems::operation(Operation::eAdd, f, h);
-		auto i = jems::type(VectorType <float, 2> ());
-		auto c = jems::construct(i, h, j);
-	}
-
-	fmt::println("# of instructions in record: {}", record.size());
-	for (auto &instr : record)
-		fmt::println("\t{}", instr);
-
-	auto triangle_vs = $vertex $fn(Topology::Triangle <vec2> pos) -> $returns(Position) {
+	// NOTE: we actually cant compile the shaders until the we understand the whole pipeline...
+	// defer device supplication to the pipeline point?
+	auto vs = $vertex $fn(Topology::Triangle <vec2> pos, $use(mvp)) -> $returns(Position) {
 		$return Position(vec4(pos, 0, 1));
 	};
-	
-	fmt::println("# of instructions in record: {}", triangle_vs.size());
-	for (auto &instr : triangle_vs)
-		fmt::println("\t{}", instr);
+
+	generators::Assembly(vs).display();
+
+	// vs.display_assembly();
 
 	// TODO: how to transport device?
 	// auto w = f(10);

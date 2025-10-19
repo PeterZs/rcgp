@@ -9,14 +9,6 @@ struct Device {
 	vk::PhysicalDeviceMemoryProperties properties;
 	vk::detail::DispatchLoaderDynamic loader;
 
-	// Shader stage compilation
-	template <Stage S, typename R, typename ... Args>
-	auto compile(stage <S, R, Args...> shader) {
-		static_assert(is_uncompiled_shader_stage(S), "waah");
-
-		return stage <compiled_shader_stage(S), R, Args...> ();
-	}
-
 	// Device construction
 	struct Info {
 	};
@@ -45,5 +37,24 @@ struct Device {
 		dld.init(device.logical);
 
 		return device;
+	}
+};
+
+// Shader stage compilation
+struct Compiler {
+	vk::Device &reference;
+
+	template <Stage S, typename R, typename ... Args>
+	auto compile(stage <S, R, Args...> shader) {
+		static_assert(is_uncompiled_shader_stage(S), "waah");
+
+		return stage <compiled_shader_stage(S), R, Args...> ();
+	}
+
+	struct Info {
+		// ...
+	};
+
+	static auto from(const Device &device, const Info &info) {
 	}
 };

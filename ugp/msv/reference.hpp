@@ -18,11 +18,19 @@ struct reference : reference_base <resource> {
 	       " has no valid reflection, perhaps you forgot to"
 	       " add it to the registry via $reflection(...)?")).view());
 
+	static constexpr auto &handle = resource;
+
 	using reflection = reference_reflection <
 		resource,
 		typename value_type::reflection
 	>;
 };
+
+template <typename T>
+struct is_reference : std::false_type {};
+
+template <auto &ref>
+struct is_reference <reference <ref>> : std::true_type {};
 
 #define $use(name)	reference <name> name
 

@@ -7,22 +7,19 @@
 namespace jems {
 
 struct handle {
-	// TODO: make this optional...
-	Index index;
+	Reference ref;
 
-	handle(Index index_) : index(index_) {}
+	handle(const Reference &ref_ = nullptr) : ref(ref_) {}
 
 	// TODO: baseline operator=, then other structs use handle::operator=
 
-	// TODO: make Index a struct to avoid implicit casting to int (for other types...)
-	operator Index() {
-		// TODO: err if no value
-		return index;
+	operator Reference() {
+		return ref;
 	}
 };
 
 struct scope {
-	scope(Tracer::Record &record) {
+	scope(Block &record) {
 		Tracer::singleton.records.emplace(std::ref(record));
 	}
 
@@ -49,12 +46,12 @@ struct scope {
 	template <typename ... Args>	\
 	name(Args ...) -> name <Args...>;
 
-JEM(operation,	Operation	);
-JEM(constant,	Constant	);
-JEM(type,	Type		);
-JEM(construct,	Construct	);
-JEM(intrinsic,	Intrinsic	);
-JEM(assign,	Assign		);
+JEM(operation, Operation);
+JEM(constant, Constant);
+JEM(type, Type);
+JEM(construct, Construct);
+JEM(intrinsic, Intrinsic);
+JEM(store, Store);
 
 } // namespace jems
 

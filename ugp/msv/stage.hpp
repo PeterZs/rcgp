@@ -76,7 +76,7 @@ struct stage {
 
 template <Stage S, typename R, typename ... Args>
 requires (is_uncompiled_shader_stage(S))
-struct stage <S, R, Args...> : Tracer::Record {
+struct stage <S, R, Args...> : Block {
 };
 
 // template <typename T>

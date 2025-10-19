@@ -21,7 +21,7 @@ struct variant : std::variant <Args...> {
 	using std::variant <Args...> ::variant;
 
 	template <typename T>
-	bool is() {
+	bool is() const {
 		return std::holds_alternative <T> (*this);
 	}
 	
@@ -51,6 +51,9 @@ struct Instruction;
 
 using Index = uint32_t;
 
+// TODO: need a better (paged arena) allocator which effectively just uint32_t or smth
+using Reference = std::shared_ptr <Instruction>;
+
 // TODO: can either generate instructions 'statically' or 'persistently..'
 // TODO: should we allow cross record instructions? index would then be (record id, local index)
 
@@ -58,34 +61,18 @@ using constant_base = variant <bool, int32_t, uint32_t, float, std::string>;
 
 struct Constant : constant_base {
 	using constant_base::variant;
-
-	std::string str() {
-		auto ftn = [](auto x) { return fmt::format("{}", x); };
-		return std::visit(ftn, *this);
-	}
 };
 
 struct Operation {
-	enum {
+	enum : uint32_t {
 		eAdd,
 		eSubtract,
 		eMultiply,
 		eDivide,
 	} code;
 
-	Index a;
-	Index b;
-
-	std::string str() {
-		std::string op = "?";
-		switch (code) {
-		case eAdd: op = "add"; break;
-		default:
-			break;
-		}
-
-		return fmt::format("{}(${}, ${})", op, a, b);
-	}
+	Reference a;
+	Reference b;
 };
 
 template <typename T, size_t N>
@@ -109,88 +96,54 @@ using primitive_base = variant <
 
 struct PrimitiveType : primitive_base {
 	using primitive_base::variant;
-
-	std::string str() const {
-		auto &value = *this;
-		vswitch(value) {
-		vcase(bool): return "bool";
-		vcase(int32_t): return "i32";
-		vcase(uint32_t): return "u32";
-		vcase(float): return "f32";
-		vcase(VectorType <float, 2>): return "vec2";
-		vcase(VectorType <float, 3>): return "vec3";
-		vcase(VectorType <float, 4>): return "vec4";
-		default:
-			break;
-		}
-
-		return "?";
-	}
 };
 
 using type_base = variant <PrimitiveType>;
 
 struct Type : type_base {
 	using type_base::variant;
-
-	std::string str() {
-		auto ftn = [](auto x) { return x.str(); };
-		return std::visit(ftn, *this);
-	}
 };
 
 struct invocable {
-	Index type;
-	std::vector <Index> args;
+	Reference type;
+	std::vector <Reference> args;
 
 	template <typename ... Args>
-	invocable(Index type_, Args ... args_) : type(type_), args { args_ ... } {}
+	invocable(Reference type_, Args ... args_) : type(type_), args { args_ ... } {}
 };
 
 struct Construct : invocable {
 	using invocable::invocable;
-
-	std::string str() const {
-		std::string result = fmt::format("new(type: ${}, args: ", type);
-		for (size_t i = 0; i < args.size(); i++) {
-			result += fmt::format("${}", args[i]);
-			if (i + 1 < args.size())
-				result += ", ";
-		}
-		return result + ")";
-	}
 };
 
 struct Intrinsic {
-	enum {
+	enum : uint32_t {
 		eSVPosition,
 	} code;
 
 	// TODO: property methods, e.g. is_lvalue...
-
-	std::string str() const {
-		switch (code) {
-		case eSVPosition: return "SVPosition";
-		default:
-			break;
-		}
-		
-		return "?";
-	}
 };
 
-struct Assign {
-	Index dst;
-	Index src;
-
-	std::string str() {
-		return fmt::format("${} = ${}", dst, src);
-	}
+struct Store {
+	Reference destination;
+	Reference source;
 };
 
 // TODO: enable/disable with macros... or templated instructions?
 struct Debug {
 	std::source_location origin;
+};
+
+struct Return {
+	Reference value;
+};
+
+// TODO: this whole infrastructure can be reused for future compiler projects :)
+struct Block : std::vector <Reference> {
+	// TODO: parameters and type information...
+
+	template <typename T>
+	Reference add(const T &sub, Debug aux);
 };
 
 using instruction_base = variant <
@@ -199,7 +152,9 @@ using instruction_base = variant <
 	Type,
 	Construct,
 	Intrinsic,
-	Assign
+	Store,
+	Block,
+	Reference
 >;
 
 struct Instruction : instruction_base {
@@ -207,16 +162,12 @@ struct Instruction : instruction_base {
 
 	Instruction(const instruction_base &base, Debug debug_info_ = {})
 		: instruction_base(base), debug_info(debug_info_) {}
-
-	std::string str() const {
-		auto ftn = [](auto x) { return x.str(); };
-		return std::visit(ftn, *this);
-	}
 };
 
-std::string format_as(const Instruction &instr)
+template <typename T>
+Reference Block::add(const T &sub, const Debug aux)
 {
-	auto &loc = instr.debug_info.origin;
-	auto rel = std::filesystem::relative(loc.file_name());
-	return fmt::format("{}: {}:{}", instr.str(), rel.string(), loc.line());
+	auto result = std::make_shared <Instruction> (sub, aux);
+	emplace_back(result);
+	return result;
 }

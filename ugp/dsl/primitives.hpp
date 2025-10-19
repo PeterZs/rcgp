@@ -18,7 +18,7 @@ struct vector_base {};
 
 template <typename T>
 struct vector_base <T, 4> : jems::handle {
-	vector_base() : handle(-1) {}
+	vector_base() = default;
 
 	vector_base(const vector_base <T, 2> &xy, const T &z, const T &w, $location)
 		: handle(jems::construct_loc(loc,
