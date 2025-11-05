@@ -9,9 +9,9 @@ enum class Stage {
 	Undefined,
 
 	// Standard stages before compilation
-	UncompiledVertex,
-	UncompiledFragment,
-	UncompiledCompute,
+	RepresentationalVertex,
+	RepresentationalFragment,
+	RepresentationalCompute,
 
 	// Standard stages after compilation
 	Vertex,
@@ -19,12 +19,12 @@ enum class Stage {
 	Compute,
 };
 
-constexpr bool is_uncompiled_shader_stage(Stage S)
+constexpr bool is_representational(Stage S)
 {
 	switch (S) {
-	case Stage::UncompiledVertex:
-	case Stage::UncompiledFragment:
-	case Stage::UncompiledCompute:
+	case Stage::RepresentationalVertex:
+	case Stage::RepresentationalFragment:
+	case Stage::RepresentationalCompute:
 		return true;
 	default:
 		break;
@@ -33,21 +33,21 @@ constexpr bool is_uncompiled_shader_stage(Stage S)
 	return false;
 }
 
-constexpr Stage compiled_shader_stage(Stage S)
-{
-	switch (S) {
-	case Stage::UncompiledVertex:
-		return Stage::Vertex;
-	case Stage::UncompiledFragment:
-		return Stage::Fragment;
-	case Stage::UncompiledCompute:
-		return Stage::Compute;
-	default:
-		break;
-	}
-
-	return Stage::Undefined;
-}
+// constexpr Stage compiled_shader_stage(Stage S)
+// {
+// 	switch (S) {
+// 	case Stage::RepresentationalVertex:
+// 		return Stage::Vertex;
+// 	case Stage::RepresentationalFragment:
+// 		return Stage::Fragment;
+// 	case Stage::RepresentationalCompute:
+// 		return Stage::Compute;
+// 	default:
+// 		break;
+// 	}
+//
+// 	return Stage::Undefined;
+// }
 
 // TODO: static string conversion...
 
@@ -66,7 +66,7 @@ struct decomposition <Stage::Vertex, R, Args...> {
 
 // TODO: stage_base for common reflection stuff...
 // then specialize stage implementations to store differently
-// e.g. UncompiledX is a TracerRecord
+// e.g. RepresentationalX is a TracerRecord
 // and X contains a Vulkan shader module and Vulkan device
 template <Stage S, typename R, typename ... Args>
 struct stage {
@@ -75,7 +75,7 @@ struct stage {
 };
 
 template <Stage S, typename R, typename ... Args>
-requires (is_uncompiled_shader_stage(S))
+requires (is_representational(S))
 struct stage <S, R, Args...> : Block {
 };
 

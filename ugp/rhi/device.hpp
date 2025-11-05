@@ -11,6 +11,7 @@ struct Device {
 
 	// Device construction
 	struct Info {
+		std::vector <const char *> extensions;
 	};
 
 	static auto from(const Session &session, vk::detail::DispatchLoaderDynamic &dld, const Info &info) {
@@ -21,6 +22,7 @@ struct Device {
 		device.properties = device.physical.getMemoryProperties();
 
 		// Allocate the logical device
+		// TODO: more complex queue structuring...
 		auto priority = 1.0f;
 
 		auto device_queues_info = vk::DeviceQueueCreateInfo()
@@ -29,7 +31,8 @@ struct Device {
 			.setQueueCount(1);
 
 		auto device_info = vk::DeviceCreateInfo()
-			.setQueueCreateInfos(device_queues_info);
+			.setQueueCreateInfos(device_queues_info)
+			.setPEnabledExtensionNames(info.extensions);
 
 		device.logical = device.physical.createDevice(device_info);
 
@@ -42,19 +45,15 @@ struct Device {
 
 // Shader stage compilation
 struct Compiler {
-	vk::Device &reference;
-
-	template <Stage S, typename R, typename ... Args>
-	auto compile(stage <S, R, Args...> shader) {
-		static_assert(is_uncompiled_shader_stage(S), "waah");
-
-		return stage <compiled_shader_stage(S), R, Args...> ();
-	}
+	const vk::Device &reference;
 
 	struct Info {
 		// ...
 	};
 
-	static auto from(const Device &device, const Info &info) {
+	static Compiler from(const Device &device, const Info &info) {
+		Compiler result(device.logical);
+
+		return result;
 	}
 };

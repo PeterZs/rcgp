@@ -25,3 +25,5 @@ struct Tracer {
 };
 
 inline thread_local Tracer Tracer::singleton;
+
+#define $tsb Tracer::singleton.active()

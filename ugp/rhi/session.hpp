@@ -14,7 +14,8 @@ VKAPI_ATTR VKAPI_CALL vk::Bool32 validation_callback
 	void *_
 )
 {
-	fmt::println(stderr, "[vulkan] {}", data->pMessage);
+	// TODO: logger...
+	fmt::println(stderr, "[vvl] {}", data->pMessage);
 	return false;
 }
 

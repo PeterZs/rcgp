@@ -7,32 +7,51 @@
 #include "jems.hpp"
 
 template <typename T>
-struct scalar {
+struct scalar : jems::handle {
 	static_assert(std::is_arithmetic_v <T>);
+
+	scalar() = default;
+	scalar(const T &value, $location)
+		: handle(jems::constant_loc(loc, value)) {}
 };
 
 using i32 = scalar <int32_t>;
+using f32 = scalar <float>;
 
 template <typename T, size_t N>
-struct vector_base {};
+struct vector_base : jems::handle {};
 
 template <typename T>
 struct vector_base <T, 4> : jems::handle {
 	vector_base() = default;
-
-	vector_base(const vector_base <T, 2> &xy, const T &z, const T &w, $location)
+	
+	vector_base(const vector_base <T, 3> &xyz, const scalar <T> &w, $location)
 		: handle(jems::construct_loc(loc,
 			jems::type_loc(loc, VectorType <T, 4> ()),
-			jems::constant_loc(loc, z),
-			jems::constant_loc(loc, w)
+			xyz, w
+		)) {}
+
+	vector_base(const vector_base <T, 2> &xy, const scalar <T> &z, const scalar <T> &w, $location)
+		: handle(jems::construct_loc(loc,
+			jems::type_loc(loc, VectorType <T, 4> ()),
+			xy, z, w
 		)) {}
 };
 
 template <typename T, size_t N>
 struct vector : vector_base <T, N> {
+	static_assert(std::is_arithmetic_v <T>);
+
 	using vector_base <T, N> ::vector_base;
 
-	static_assert(std::is_arithmetic_v <T>);
+	// Arithmetic operations
+	template <typename U>
+	requires std::is_convertible_v <U, T>
+	friend vector operator*(const U &, const vector &) {}
+	
+	template <typename U>
+	requires std::is_convertible_v <U, T>
+	friend vector operator+(const U &, const vector &) {}
 };
 
 // TODO: float32_t
@@ -48,3 +67,22 @@ struct matrix {
 };
 
 using mat4 = matrix <float, 4, 4>;
+
+template <typename T, size_t N, size_t M>
+vector <T, M> operator*(const matrix <T, N, M> &, const vector <T, N> &)
+{
+}
+
+template <typename T, size_t N, size_t M, size_t K>
+matrix <T, N, M> operator*(const matrix <T, N, K> &, const matrix <T, K, M> &)
+{
+}
+
+vec3 cross(vec3, vec3) {}
+vec3 dFdx(vec3) {}
+vec3 dFdy(vec3) {}
+
+template <typename T, size_t N>
+vector <T, N> normalize(const vector <T, N> &)
+{
+}

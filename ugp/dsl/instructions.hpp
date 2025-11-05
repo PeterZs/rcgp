@@ -116,12 +116,25 @@ struct Construct : invocable {
 	using invocable::invocable;
 };
 
-struct Intrinsic {
-	enum : uint32_t {
-		eSVPosition,
-	} code;
+struct Argument {
+	Reference type;
+	uint32_t argi;
+};
 
-	// TODO: property methods, e.g. is_lvalue...
+enum class StageIntrinsic {
+	eSVPosition,
+};
+
+struct ThreadInput {
+	Reference type;
+	// corresponds to actual order
+        uint32_t argi;
+};
+
+using intrinsic_base = variant <Argument, ThreadInput, StageIntrinsic>;
+
+struct Intrinsic : intrinsic_base {
+	using intrinsic_base::variant;
 };
 
 struct Store {
@@ -138,9 +151,42 @@ struct Return {
 	Reference value;
 };
 
+enum class ExecutionModel {
+	eAgnostic,
+	eVulkanVertex,
+	eVulkanFragment,
+	eVulkanCompute,
+};
+
 // TODO: this whole infrastructure can be reused for future compiler projects :)
 struct Block : std::vector <Reference> {
-	// TODO: parameters and type information...
+	// TODO: parameters, type, and context information
+	struct Context {
+		ExecutionModel model = ExecutionModel::eAgnostic;
+
+		std::vector <Argument> arguments;
+		std::vector <ThreadInput> thread_inputs;
+		
+		void add_argument(Argument arg) {
+			if (arguments.size() > arg.argi) {
+				// already registered
+				__builtin_trap();
+			} else {
+				arguments.resize(arg.argi + 1);
+				arguments[arg.argi] = arg;
+			}
+		}
+
+		void add_thread_input(ThreadInput tin) {
+			if (thread_inputs.size() > tin.argi) {
+				// already registered
+				__builtin_trap();
+			} else {
+				thread_inputs.resize(tin.argi + 1);
+				thread_inputs[tin.argi] = tin;
+			}
+		}
+	} context;
 
 	template <typename T>
 	Reference add(const T &sub, Debug aux);

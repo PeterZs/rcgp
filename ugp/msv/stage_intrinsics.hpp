@@ -7,24 +7,17 @@ struct Position : vec4 {
 	// TODO: only emit when returning...
 	Position(const vec4 &value, $location) {
 		jems::store_loc(loc,
-			jems::intrinsic_loc(loc, Intrinsic::eSVPosition),
+			jems::intrinsic_loc(loc, StageIntrinsic::eSVPosition),
 			value
 		);
 	}
 };
 
-struct Topology {
-	template <typename T>
-	struct Point : public T {};
-
-	template <typename T>
-	struct Line : public T {};
-	
-	template <typename T>
-	struct Triangle : public T {};
-	
-	template <typename T>
-	struct Patch : public T {};
+enum Topology {
+	Point,
+	Line,
+	Triangle,
+	Patch,
 };
 
 // Optional result of the vertex shader
