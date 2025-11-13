@@ -133,9 +133,9 @@ int main()
 	// TODO: technically thread inputs should be in the context... make context in terms of types...
 	
 
-	// TODO: templates?...
-	auto vs = $vertex $fn(vec2 pos) -> $returns(Position) {
-		$return Position(vec4(pos, 0, 1));
+	// NOTE: if a fn isnt vertex dont allow Position returns...
+	auto vs = $vertex $fn(vec2 pos, mat4 mat) -> $returns(Position) {
+		$return Position(mat * vec4(pos, 0, 1));
 	};
 
 	fmt::println("assembly:");

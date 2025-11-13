@@ -24,6 +24,8 @@ struct vector_base : jems::handle {};
 template <typename T>
 struct vector_base <T, 4> : jems::handle {
 	vector_base() = default;
+
+	vector_base(const jems::handle &h) : handle(h) {}
 	
 	vector_base(const vector_base <T, 3> &xyz, const scalar <T> &w, $location)
 		: handle(jems::construct_loc(loc,
@@ -62,15 +64,19 @@ using vec4 = vector <float, 4>;
 using ivec3 = vector <int32_t, 3>;
 
 template <typename T, size_t N, size_t M>
-struct matrix {
+struct matrix : jems::handle {
 	static_assert(std::is_arithmetic_v <T>);
 };
 
 using mat4 = matrix <float, 4, 4>;
 
+template <typename T>
+struct location_proxy {};
+
 template <typename T, size_t N, size_t M>
-vector <T, M> operator*(const matrix <T, N, M> &, const vector <T, N> &)
+vector <T, M> operator*(const matrix <T, N, M> &m, const vector <T, N> &v)
 {
+	return jems::operation(Operation::eMultiply, m, v);
 }
 
 template <typename T, size_t N, size_t M, size_t K>

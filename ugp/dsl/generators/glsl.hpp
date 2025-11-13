@@ -7,6 +7,7 @@
 
 namespace generators {
 
+// TODO: compiler-like logging...
 struct GLSL {
 	const Block &block;
 
@@ -73,6 +74,21 @@ struct GLSL {
 				return "?";
 			}
 		}
+
+		std::string impl(Operation operation) {
+			// TODO: handle unary minus and not
+
+			std::string op = "?";
+			switch (operation.code) {
+			case Operation::eAdd: op = "+"; break;
+			case Operation::eMultiply: op = "*"; break;
+			default:
+				break;
+			}
+
+			return fmt::format("({} {} {})",
+				main(operation.a), op, main(operation.b));
+		}
 		
 		std::string impl(Intrinsic intrinsic) {
 			vswitch (intrinsic) {
@@ -135,11 +151,13 @@ struct GLSL {
 
 		// TODO: options... (e.g. version)
 		std::string impl(PrimitiveType type) {
+			// TODO: use specializations for this...
 			vswitch (type) {
 			vcase(int): return "int";
 			vcase(VectorType <float, 2>): return "vec2";
 			vcase(VectorType <float, 3>): return "vec3";
 			vcase(VectorType <float, 4>): return "vec4";
+			vcase(MatrixType <float, 4, 4>): return "mat4";
 			default:
 				break;
 			}

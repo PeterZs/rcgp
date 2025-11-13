@@ -78,11 +78,15 @@ struct Operation {
 template <typename T, size_t N>
 struct VectorType {};
 
+template <typename T, size_t N, size_t M>
+struct MatrixType {};
+
 using primitive_base = variant <
 	bool,
 	int32_t,
 	uint32_t,
 	float,
+	// Vector types
 	VectorType <uint32_t, 2>,
 	VectorType <uint32_t, 3>,
 	VectorType <uint32_t, 4>,
@@ -91,7 +95,9 @@ using primitive_base = variant <
 	VectorType <int32_t, 4>,
 	VectorType <float, 2>,
 	VectorType <float, 3>,
-	VectorType <float, 4>
+	VectorType <float, 4>,
+	// Matrix types
+	MatrixType <float, 4, 4>
 >;
 
 struct PrimitiveType : primitive_base {

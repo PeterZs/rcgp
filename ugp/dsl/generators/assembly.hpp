@@ -44,6 +44,7 @@ struct Assembly {
 		vcase(VectorType <float, 2>): return "vec2";
 		vcase(VectorType <float, 3>): return "vec3";
 		vcase(VectorType <float, 4>): return "vec4";
+		vcase(MatrixType <float, 4, 4>): return "mat4";
 		default:
 			break;
 		}
@@ -61,6 +62,7 @@ struct Assembly {
 		std::string op = "?";
 		switch (x.code) {
 		case Operation::eAdd: op = "add"; break;
+		case Operation::eMultiply: op = "mul"; break;
 		default:
 			break;
 		}
