@@ -1,6 +1,7 @@
 #pragma once
 
 #include "reflection.hpp"
+#include "reflection_expander.hpp"
 
 // TODO: needs a layout...
 template <typename T>

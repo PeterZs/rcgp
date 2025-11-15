@@ -12,7 +12,7 @@ template <auto &resource>
 struct reference : reference_base <resource> {
 	using value_type = reference_base <resource>;
 
-	static_assert(reflection_expander <value_type> ::value,
+	static_assert(has_reflection <value_type> (),
 	       // TODO: string only format style...
 	       ($ss_type(value_type) + $ss(
 	       " has no valid reflection, perhaps you forgot to"

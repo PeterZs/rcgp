@@ -131,41 +131,40 @@ int main()
 	// then multi-gpu programming is easier
 	//
 	// TODO: technically thread inputs should be in the context... make context in terms of types...
-	
 
 	// static_assert(std::is_convertible_v <int, Interpolant::Smooth <i32>>);
 
-	// NOTE: if a fn isnt vertex dont allow Position returns...
-	auto vs = $vertex $fn(vec2 pos, mat4 mat) -> $returns(
-		Position,
-		Smooth <vec3>,
-		Flat <i32>
-	) {
-		$return std::tuple {
-			Position(mat * vec4(pos, 0, 1)),
-			vec3(pos, 1.4),
-			12,
-		};
-	};
+	// // NOTE: if a fn isnt vertex dont allow Position returns...
+	// auto vs = $vertex $fn(vec2 pos, mat4 mat) -> $returns(
+	// 	Position,
+	// 	Smooth <vec3>,
+	// 	Flat <i32>
+	// ) {
+	// 	$return std::tuple {
+	// 		Position(mat * vec4(pos, 0, 1)),
+	// 		vec3(pos, 1.4),
+	// 		12,
+	// 	};
+	// };
+	//
+	// fmt::println("assembly:");
+	// fmt::println("{}", generators::Assembly(vs).generate());
+	// 
+	// fmt::println("glsl:");
+	// fmt::println("{}", generators::GLSL(vs).generate());
+	
+	// static_assert(requires { MVP::_ugp_has_reflectin; } || MVP::_ugp_has_reflectin);
+	
+	static_assert(!has_reflection <int> ());
+
+	using x = reflection_expander <i32> ::type;
+	using y = reflection_expander <MVP> ::type;
+
+	Block block;
+	if (auto s = jems::scope(block)) {
+		reconstruct_type <MVP> ();
+	}
 
 	fmt::println("assembly:");
-	fmt::println("{}", generators::Assembly(vs).generate());
-	
-	fmt::println("glsl:");
-	fmt::println("{}", generators::GLSL(vs).generate());
-
-	// TODO: how to transport device?
-	// auto w = f(10);
-	// fuse(12, 14);
-	// auto x = z >>= z >>= z >>= w;
-	
-	// TODO: static_reference as a basic unit for testing reference identity
-	// static_assert(std::is_same_v <R1, R2>);
-	// static_assert(std::is_same_v <R1, R3>,
-	//        $ss_format(
-	// 		$ss("see the following diagnostic from Javelin:\n\n"
-	//        			"\tJavelin: blah blah blah: {}\n"),
-	//        		$ss_type_indented(VertexAttributes::reflection, 1)
-	//    	).view()
-	// );
+	fmt::println("{}", generators::Assembly(block).generate());
 }

@@ -17,6 +17,11 @@ enum class Stage {
 	Vertex,
 	Fragment,
 	Compute,
+
+	// TODO: game script stage; same principe as previous $cmd
+	// stage with a slightly different JIT route (and resource
+	// handles to interface with the engine...; where do game
+	// scripts sit in the hierarchy of graphics programming?)
 };
 
 constexpr bool is_representational(Stage S)

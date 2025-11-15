@@ -28,6 +28,12 @@ struct Assembly {
 	}
 
 	#define $assign stringify(ref) + " = " +
+	
+	std::string stringify_impl(auto x, Reference ref) {
+		// Implementation fallback
+		// TODO: message...
+		__builtin_trap();
+	}
 
 	std::string stringify(Constant x, Reference ref) {
 		return $assign std::visit([](auto x) {
@@ -50,6 +56,17 @@ struct Assembly {
 		}
 
 		return "primitive(?)";
+	}
+
+	std::string stringify_impl(AggregateType x, Reference ref) {
+		std::string result;
+		for (size_t i = 0; i < x.size(); i++) {
+			result += stringify(x[i]);
+			if (i + 1 < x.size())
+				result += ", ";
+		}
+
+		return "aggregate(" + result + ")";
 	}
 	
 	std::string stringify(Type x, Reference ref) {

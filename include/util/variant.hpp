@@ -16,6 +16,8 @@ template <typename ... Args>
 struct variant : std::variant <Args...> {
 	using std::variant <Args...> ::variant;
 
+	using variant_self = variant <Args...>;
+
 	template <typename T>
 	bool is() const {
 		return std::holds_alternative <T> (*this);

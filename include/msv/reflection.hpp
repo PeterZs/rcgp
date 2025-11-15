@@ -8,11 +8,6 @@
 #include "meta.hpp"
 
 // Reflection types
-struct nil_reflection {};
-
-template <typename T, size_t I>
-struct field_reflection {};
-
 template <typename Original, typename ... Args>
 struct aggregate_reflection {};
 
@@ -33,21 +28,13 @@ struct function_reflection {};
 
 // Querying reflection status
 template <typename T>
-concept reflection_holder = requires { typename T::reflection; };
-
-template <typename T>
-struct reflection_expander : std::false_type {
-	// TODO: refactor to expanded
-	using type = T;
-};
-
-template <reflection_holder T>
-struct reflection_expander <T> : std::true_type {
-	using type = typename T::reflection;
-};
-
-template <typename T>
-constexpr bool has_reflection = reflection_expander <T> ::value;
+constexpr bool has_reflection()
+{
+	if constexpr (requires { T::_ugp_has_reflection; })
+		return T::_ugp_has_reflection;
+	else
+		return false;
+}
 
 // Type registry for wholistic reflection
 template <typename T, std::size_t Index>
@@ -72,4 +59,5 @@ struct scaffold_field {
 		static constexpr size_t counter_base = __COUNTER__;		\
 		MAP(AGGREGATE_SCAFFOLD_GENERATOR, This, __VA_ARGS__)		\
 	};									\
-	MAP(FIELD_NAME_INJECTION, This, __VA_ARGS__)
+	MAP(FIELD_NAME_INJECTION, This, __VA_ARGS__)				\
+	static constexpr bool _ugp_has_reflection = true;			\

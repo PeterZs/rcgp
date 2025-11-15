@@ -17,10 +17,13 @@ using Reference = std::shared_ptr <Instruction>;
 // TODO: can either generate instructions 'statically' or 'persistently..'
 // TODO: should we allow cross record instructions? index would then be (record id, local index)
 
-using constant_base = variant <bool, int32_t, uint32_t, float, std::string>;
-
-struct Constant : constant_base {
-	using constant_base::variant;
+struct Constant : variant <
+	bool,
+	int32_t,
+	uint32_t,
+	float, std::string
+> {
+	using variant_self::variant;
 };
 
 struct Operation {
@@ -41,7 +44,7 @@ struct VectorType {};
 template <typename T, size_t N, size_t M>
 struct MatrixType {};
 
-using primitive_base = variant <
+struct PrimitiveType : variant <
 	bool,
 	int32_t,
 	uint32_t,
@@ -58,16 +61,23 @@ using primitive_base = variant <
 	VectorType <float, 4>,
 	// Matrix types
 	MatrixType <float, 4, 4>
->;
-
-struct PrimitiveType : primitive_base {
-	using primitive_base::variant;
+> {
+	using variant_self::variant;
 };
 
-using type_base = variant <PrimitiveType>;
+struct AggregateType : std::vector <Reference> {};
 
-struct Type : type_base {
-	using type_base::variant;
+struct ArrayType {
+	Reference base;
+	Reference size;
+};
+
+struct Type : variant <
+	PrimitiveType,
+	AggregateType,
+	ArrayType
+> {
+	using variant_self::variant;
 };
 
 struct invocable {
@@ -111,15 +121,13 @@ struct ThreadOutput {
 	} properties;
 };
 
-using intrinsic_base = variant <
+struct Intrinsic : variant <
 	Argument,
 	ThreadInput,
 	ThreadOutput,
 	GlobalIntrinsic
->;
-
-struct Intrinsic : intrinsic_base {
-	using intrinsic_base::variant;
+> {
+	using variant_self::variant;
 };
 
 struct Store {
@@ -190,7 +198,7 @@ struct Block : std::vector <Reference> {
 	Reference add(const T &sub, Debug aux);
 };
 
-using instruction_base = variant <
+struct Instruction : variant <
 	Constant,
 	Operation,
 	Type,
@@ -199,13 +207,11 @@ using instruction_base = variant <
 	Store,
 	Block,
 	Reference
->;
-
-struct Instruction : instruction_base {
+> {
 	Debug debug_info;
 
-	Instruction(const instruction_base &base, Debug debug_info_ = {})
-		: instruction_base(base), debug_info(debug_info_) {}
+	Instruction(const variant_self &base, Debug debug_info_ = {})
+		: variant_self(base), debug_info(debug_info_) {}
 };
 
 template <typename T>
