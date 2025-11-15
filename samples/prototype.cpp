@@ -41,6 +41,16 @@ struct MVP {
 	$reflection(model, view, proj);
 };
 
+struct VertexGroup {
+	MVP mvp;
+	vec3 another;
+
+	$reflection(mvp, another);
+};
+
+using VVR = VertexGroup::reflection;
+using VVRex = expand_reflection <VertexGroup> ::type;
+
 ParameterBlock <MVP> mvp;
 
 struct Sampler2D {
@@ -132,39 +142,36 @@ int main()
 	//
 	// TODO: technically thread inputs should be in the context... make context in terms of types...
 
-	// static_assert(std::is_convertible_v <int, Interpolant::Smooth <i32>>);
+	auto vs = $vertex $fn(vec2 pos, mat4 mat, $use(mvp)) -> $returns(
+		Position,
+		Smooth <vec3>,
+		Flat <i32>
+	) {
+		$return std::tuple {
+			Position(mat * vec4(pos, 0, 1)),
+			vec3(pos, 1.4),
+			12,
+		};
+	};
 
-	// // NOTE: if a fn isnt vertex dont allow Position returns...
-	// auto vs = $vertex $fn(vec2 pos, mat4 mat) -> $returns(
-	// 	Position,
-	// 	Smooth <vec3>,
-	// 	Flat <i32>
-	// ) {
-	// 	$return std::tuple {
-	// 		Position(mat * vec4(pos, 0, 1)),
-	// 		vec3(pos, 1.4),
-	// 		12,
-	// 	};
-	// };
-	//
-	// fmt::println("assembly:");
-	// fmt::println("{}", generators::Assembly(vs).generate());
-	// 
+	fmt::println("assembly:");
+	fmt::println("{}", generators::Assembly(vs).generate());
+
 	// fmt::println("glsl:");
 	// fmt::println("{}", generators::GLSL(vs).generate());
 	
-	// static_assert(requires { MVP::_ugp_has_reflectin; } || MVP::_ugp_has_reflectin);
-	
-	static_assert(!has_reflection <int> ());
-
-	using x = reflection_expander <i32> ::type;
-	using y = reflection_expander <MVP> ::type;
-
-	Block block;
-	if (auto s = jems::scope(block)) {
-		reconstruct_type <MVP> ();
-	}
-
-	fmt::println("assembly:");
-	fmt::println("{}", generators::Assembly(block).generate());
+	// static_assert(!has_reflection <int> ());
+	//
+	// using x = reflection_expander <i32> ::type;
+	// using y = reflection_expander <MVP> ::type;
+	//
+	// Block block;
+	// if (auto s = jems::scope(block)) {
+	// 	auto type = reconstruct_type <MVP> ();
+	// 	auto rsrc = jems::intrinsic(GlobalResource(type, GlobalResource::ePushConstant));
+	// 	auto field = jems::field_access(rsrc, 1);
+	// }
+	//
+	// fmt::println("assembly:");
+	// fmt::println("{}", generators::Assembly(block).generate());
 }

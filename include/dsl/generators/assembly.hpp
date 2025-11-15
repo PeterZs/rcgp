@@ -3,6 +3,8 @@
 #include <map>
 
 #include "../instructions.hpp"
+#include "../../msv/static_string.hpp"
+#include "../../util/logging.hpp"
 
 namespace generators {
 
@@ -31,8 +33,7 @@ struct Assembly {
 	
 	std::string stringify_impl(auto x, Reference ref) {
 		// Implementation fallback
-		// TODO: message...
-		__builtin_trap();
+		fatal("stringify_impl not implemented for {}", $ss_type(decltype(x)).view());
 	}
 
 	std::string stringify(Constant x, Reference ref) {
@@ -93,9 +94,34 @@ struct Assembly {
 			stringify(x.destination), stringify(x.source));
 	}
 
+	std::string stringify(FieldAccess x, Reference ref) {
+		// TODO: use hints for more info
+		return $assign fmt::format("field {}:{}",
+			stringify(x.value), x.fidx);
+	}
+
 	std::string stringify_impl(Argument x, Reference ref) {
-		return fmt::format("argument({}, {})",
+		return fmt::format("argument {}:{}",
 			stringify(x.type), x.argi);
+	}
+
+	std::string stringify_impl(GlobalResource x, Reference ref) {
+		std::string kind = "?";
+		switch (x.kind) {
+		case GlobalResource::eUnallocated: kind = "unallocated"; break;
+		case GlobalResource::ePushConstant: kind = "push_constant"; break;
+		case GlobalResource::eUniformBuffer: kind = "uniform_buffer"; break;
+		case GlobalResource::eStorageBuffer: kind = "storage_buffer"; break;
+		default:
+			break;
+		}
+
+		auto opint = [](const std::optional <uint32_t> &val) {
+			return val ? fmt::format("{}", val.value()) : "nil";
+		};
+
+		return fmt::format("{}({}, {}:{})", kind,
+			stringify(x.type), opint(x.group), opint(x.index));
 	}
 	
 	std::string stringify_impl(ThreadInput x, Reference ref) {

@@ -3,13 +3,20 @@
 #include "../dsl/jems.hpp"
 #include "../dsl/primitives.hpp"
 #include "reflection.hpp"
-#include "reflection_expander.hpp"
+#include "expand_reflection.hpp"
 #include "static_string.hpp"
 
 template <typename T>
 struct reconstructor_t {
 	static jems::handle main() {
 		static_assert(false, ($ss("type reconstructor for ") + $ss_type(T) + $ss(" has not been implemented yet")).view());
+	}
+};
+
+template <typename T>
+struct reconstructor_t <scalar <T>> {
+	static jems::handle main() {
+		return jems::type(T());
 	}
 };
 
@@ -52,6 +59,6 @@ struct reconstructor_t <aggregate_reflection <Original, Args...>> {
 template <typename T>
 jems::handle reconstruct_type()
 {
-	using R = reflection_expander <T> ::type;
+	using R = expand_reflection <T> ::type;
 	return reconstructor_t <R> ::main();
 }

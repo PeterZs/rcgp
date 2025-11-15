@@ -24,14 +24,14 @@ VKAPI_ATTR VKAPI_CALL vk::Bool32 validation_callback
 		fg = fmt::fg(fmt::color::yellow);
 		break;
 	case vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo:
-		fg = fmt::fg(fmt::color::blue);
+		fg = fmt::fg(fmt::color::light_blue);
 		break;
 	default:
 		break;
 	}
 
 	auto header = fmt::format(fmt::emphasis::bold | fg, "[vvl]");
-	auto message = fmt::format(fmt::emphasis::conceal, "{}", data->pMessage);
+	auto message = fmt::format(fmt::emphasis::faint, "{}", data->pMessage);
 
 	fmt::println(stderr, "{} {}", header, message);
 	return false;

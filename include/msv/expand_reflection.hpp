@@ -1,0 +1,30 @@
+#pragma once
+
+#include "reflection.hpp"
+
+template <typename T>
+struct expand_reflection {
+	using type = T;
+};
+
+template <typename T>
+using expand_reflection_t = typename expand_reflection <T> ::type;
+
+template <typename T>
+requires (has_reflection <T> ())
+struct expand_reflection <T> {
+	using type = expand_reflection_t <typename T::reflection>;
+};
+
+template <typename T>
+struct expand_reflection <parameter_block_reflection <T>> {
+	using type = parameter_block_reflection <expand_reflection_t <T>>;
+};
+
+template <typename Original, typename ... Ts>
+struct expand_reflection <aggregate_reflection <Original, Ts...>> {
+	using type = aggregate_reflection <
+		Original,
+		expand_reflection_t <Ts>...
+	>;
+};

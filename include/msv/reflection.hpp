@@ -5,15 +5,17 @@
 #include "macro_hell.hpp"
 #include "this_injection.hpp"
 #include "field_name_injection.hpp"
+
+// TODO: move this to util...
 #include "meta.hpp"
 
 // Reflection types
-template <typename Original, typename ... Args>
+template <typename Original, typename ... Ts>
 struct aggregate_reflection {};
 
-template <typename Original, typename ... Args>
-auto new_aggregate_reflection(sequence <Args...>)
-	-> aggregate_reflection <Original, Args...>;
+template <typename Original, typename ... Ts>
+auto new_aggregate_reflection(sequence <Ts...>)
+	-> aggregate_reflection <Original, Ts...>;
 
 template <typename T>
 struct parameter_block_reflection {};

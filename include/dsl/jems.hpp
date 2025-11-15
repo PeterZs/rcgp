@@ -51,6 +51,7 @@ JEM(constant, Constant);
 JEM(type, Type);
 JEM(construct, Construct);
 JEM(intrinsic, Intrinsic);
+JEM(field_access, FieldAccess);
 JEM(store, Store);
 
 } // namespace jems

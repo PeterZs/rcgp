@@ -1,15 +1,14 @@
 #pragma once
 
 #include "reflection.hpp"
-#include "reflection_expander.hpp"
+#include "expand_reflection.hpp"
 
 // TODO: needs a layout...
 template <typename T>
-struct ParameterBlock : public T {
-	// TODO: lock the members until its $use-ed
-	using reflection = parameter_block_reflection <
-		typename reflection_expander <T> ::type
-	>;
+struct ParameterBlock {
+	using reflection = parameter_block_reflection <T>;
+
+	static constexpr bool _ugp_has_reflection = true;
 };
 
 template <typename T>

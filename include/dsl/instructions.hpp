@@ -14,9 +14,6 @@ using Index = uint32_t;
 // TODO: need a better (paged arena) allocator which effectively just uint32_t or smth
 using Reference = std::shared_ptr <Instruction>;
 
-// TODO: can either generate instructions 'statically' or 'persistently..'
-// TODO: should we allow cross record instructions? index would then be (record id, local index)
-
 struct Constant : variant <
 	bool,
 	int32_t,
@@ -97,6 +94,22 @@ struct Argument {
 	uint32_t argi;
 };
 
+struct GlobalResource {
+	Reference type;
+
+	enum Kind {
+		eUnallocated,
+		ePushConstant,
+		eUniformBuffer,
+		eStorageBuffer,
+	} kind;
+
+	// group := descriptor set index
+	std::optional <uint32_t> group;
+	// index := descriptor binding
+	std::optional <uint32_t> index;
+};
+
 enum class GlobalIntrinsic {
 	eSVPosition,
 };
@@ -112,7 +125,7 @@ struct ThreadOutput {
 	uint32_t argi;
 
 	// TODO: fragment shader inputs also need this
-	// (although they will be inferred by the ordered);
+	// (although they will be inferred by the order);
 	// we should move this to RateProperties in the global scope
 	enum Properties {
 		eSmooth,
@@ -125,9 +138,15 @@ struct Intrinsic : variant <
 	Argument,
 	ThreadInput,
 	ThreadOutput,
+	GlobalResource,
 	GlobalIntrinsic
 > {
 	using variant_self::variant;
+};
+
+struct FieldAccess {
+	Reference value;
+	uint32_t fidx;
 };
 
 struct Store {
@@ -204,9 +223,9 @@ struct Instruction : variant <
 	Type,
 	Construct,
 	Intrinsic,
+	FieldAccess,
 	Store,
-	Block,
-	Reference
+	Block
 > {
 	Debug debug_info;
 
