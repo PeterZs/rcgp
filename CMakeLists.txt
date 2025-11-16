@@ -15,7 +15,7 @@ add_executable(prototype samples/prototype.cpp)
 add_executable(traditional samples/traditional.cpp)
 
 target_precompile_headers(prototype PRIVATE <vulkan/vulkan.hpp>)
-target_precompile_headers(traditional PRIVATE <vulkan/vulkan.hpp>)
+target_precompile_headers(traditional REUSE_FROM prototype)
 
 target_link_libraries(prototype fmt glfw Vulkan::Vulkan)
 target_link_libraries(traditional fmt glfw Vulkan::Vulkan)

@@ -3,6 +3,7 @@
 #include "../dsl/jems.hpp"
 #include "expand_reflection.hpp"
 #include "reflection.hpp"
+#include "reference.hpp"
 
 // TODO: needs a layout...
 template <typename T>
@@ -44,3 +45,9 @@ struct is_resource_reflection <sampler_reflection <T, D>> : std::true_type {};
 
 template <typename T>
 constexpr bool is_resource_reflection_v = is_resource_reflection <T> ::value;
+
+// Overriding reference behavior
+template <typename T, ParameterBlock <T> &rsrc>
+struct reference_base <rsrc> {
+	using type = T;
+};

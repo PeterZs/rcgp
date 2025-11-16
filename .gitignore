@@ -1,3 +1,5 @@
 .cache/
 build/
 trace.txt
+headers.txt
+analysis.txt
