@@ -158,7 +158,7 @@ struct Assembly {
 	
 	std::string stringify(GlobalIntrinsic x, Reference ref) {
 		switch (x) {
-		case GlobalIntrinsic::eSVPosition:
+		case GlobalIntrinsic::eScreenPosition:
 			return $assign "SVPosition";
 		default:
 			break;
@@ -238,6 +238,7 @@ struct Assembly {
 
 		result += "  context {\n";
 		result += "    model: " + stringify(block.context.model) + ",\n";
+
 		for (auto tin : block.context.thread_inputs) {
 			result += fmt::format("    thread in {}: {},\n",
 				tin.argi, stringify(tin.type));
@@ -247,6 +248,19 @@ struct Assembly {
 			result += fmt::format("    thread out {}: {} ({}),\n",
 				tout.argi, stringify(tout.type),
 				stringify_rate_properties(tout.properties));
+		}
+
+		for (auto [k, v] : block.context.global_resources) {
+			std::string set;
+
+			size_t count = 0;
+			for (auto &vv : v) {
+				set += stringify(vv);
+				if (++count < v.size())
+					set += ", ";
+			}
+
+			result += fmt::format("    resource {}: {{{}}},\n", k, set);
 		}
 
 		result += "  }\n";

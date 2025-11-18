@@ -1,5 +1,7 @@
 #pragma once
 
+#include <map>
+#include <set>
 #include <memory>
 #include <source_location>
 
@@ -114,7 +116,7 @@ struct GlobalResource {
 };
 
 enum class GlobalIntrinsic {
-	eSVPosition,
+	eScreenPosition,
 	eInstanceIndex,
 };
 
@@ -229,17 +231,16 @@ enum class ExecutionModel {
 	eVulkanCompute,
 };
 
-// TODO: this whole infrastructure can be reused for future compiler projects :)
+using group_allocation_map = std::map <void *, size_t>;
+
 struct Block : std::vector <Reference> {
-	// TODO: parameters, type, and context information
 	struct Context {
 		ExecutionModel model = ExecutionModel::eAgnostic;
 
 		std::vector <Argument> arguments;
 		std::vector <ThreadInput> thread_inputs;
 		std::vector <ThreadOutput> thread_outputs;
-		// TODO: mark global resources here..
-		// need to map to argi of the signature...
+		std::map <void *, std::set <Reference>> global_resources;
 		
 		void add_argument(Argument arg) {
 			if (arguments.size() > arg.argi) {
@@ -272,7 +273,18 @@ struct Block : std::vector <Reference> {
 				thread_outputs[tout.argi] = tout;
 			}
 		}
+
+		template <auto &rsrc>
+		void add_global_resource(Reference resource) {
+			auto addr = (void *) &rsrc;
+			if (not global_resources.contains(addr))
+				global_resources.emplace(addr, std::set <Reference> ());
+
+			global_resources[addr].insert(resource);
+		}
 	} context;
+	
+	void apply_group_allocation_map(const group_allocation_map &map);
 
 	template <typename T>
 	Reference add(const T &sub, Debug aux);
@@ -300,6 +312,15 @@ struct Instruction : variant <
 	Instruction(const variant_self &base, Debug debug_info_ = {})
 		: variant_self(base), debug_info(debug_info_) {}
 };
+
+void Block::apply_group_allocation_map(const group_allocation_map &map)
+{
+	for (auto &[addr, group] : map) {
+		auto &refs = context.global_resources[addr];
+		for (auto &ref : refs)
+			ref->as <GlobalResource> ().group = group;
+	}
+}
 
 template <typename T>
 Reference Block::add(const T &sub, const Debug aux)

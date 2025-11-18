@@ -3,12 +3,18 @@
 #include "../dsl/primitives.hpp"
 #include "../msv/reconstruct_type.hpp"
 
+// TODO: also the associated stage...
 template <GlobalIntrinsic G, reflected T>
 struct read_only_intrinsic {
 	// NOTE: for aggregates, we may need to inject...
 	operator T() const {
 		return T(jems::global_intrinsic(G));
 	}
+};
+
+template <GlobalIntrinsic G, reflected T>
+struct projection <read_only_intrinsic <G, T>> {
+	using type = T;
 };
 
 using InstanceIndex = read_only_intrinsic <GlobalIntrinsic::eInstanceIndex, i32>;
@@ -19,7 +25,7 @@ struct Position {
 
 	Position(const vec4 &value, $location) {
 		jems::store_loc(loc,
-			jems::global_intrinsic_loc(loc, GlobalIntrinsic::eSVPosition),
+			jems::global_intrinsic_loc(loc, GlobalIntrinsic::eScreenPosition),
 			value
 		);
 	}

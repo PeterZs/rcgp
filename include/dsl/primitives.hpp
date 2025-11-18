@@ -33,6 +33,8 @@ struct scalar : jems::handle {
 	using reflection = primitive_reflection <scalar <T>>;
 	UGP_REFLECTION_STAMP;
 
+	using native_scalar_type = T;
+
 	scalar() = default;
 
 	explicit scalar(const jems::handle &h) : handle(h) {}
@@ -169,40 +171,16 @@ struct matrix : jems::handle {
 
 using mat4 = matrix <float, 4, 4>;
 
-template <reflected T, int64_t N = -1>
-struct array : jems::handle {
-	using reflection = array_reflection <T, N>;
-	UGP_REFLECTION_STAMP;
-
-	template <native_int_scalar U>
-	T operator[](const scalar <U> &idx) const {
-		return T(jems::array_access(ref, idx.ref));
-	}
-
-	template <native_int_scalar U>
-	T operator[](U idx) const {
-		return (*this)[scalar <U> (idx)];
-	}
-};
-
-// TODO: capture source location here...
+// concepts to go with the stuff...
 template <typename T>
-struct location_proxy {};
+struct is_scalar : std::false_type {};
 
-// TODO: move to arithmetic
-template <native_scalar T, size_t N, size_t M>
-vector <T, M> operator*(const matrix <T, N, M> &m, const vector <T, N> &v)
-{
-	return vector <T, M> (jems::operation(Operation::eMultiply, m, v));
-}
+template <native_scalar T>
+struct is_scalar <scalar <T>> : std::true_type {};
 
-template <native_scalar T, size_t N, size_t M, size_t K>
-matrix <T, N, M> operator*(const matrix <T, N, K> &a, const matrix <T, K, M> &b)
-{
-	return matrix <T, N, M> (jems::operation(Operation::eMultiply, a, b));
-}
+template <typename T>
+constexpr bool is_scalar_v = is_scalar <T> ::value;
 
-// TODO: move to builtin
 template <typename T>
 struct projection {
 	using type = T;
@@ -224,9 +202,48 @@ auto project(const T &value)
 
 template <typename T, typename U>
 concept projectively_equivalent = std::same_as <
-	typename projection <T> ::type,
-	typename projection <U> ::type
+	projection_t <T>,
+	projection_t <U>
 >;
+
+template <typename T>
+concept projectively_scalar = is_scalar_v <projection_t <T>>;
+
+template <typename T>
+concept projectively_int_scalar = projectively_scalar <T>
+	&& native_int_scalar <
+		typename projection_t <T> ::native_scalar_type
+	>;
+
+template <reflected T, int64_t N = -1>
+struct array : jems::handle {
+	using reflection = array_reflection <T, N>;
+	UGP_REFLECTION_STAMP;
+
+	template <projectively_int_scalar U>
+	T operator[](const U &idx) const {
+		return T(jems::array_access(ref, project(idx)));
+	}
+};
+
+// TODO: capture source location here...
+template <typename T>
+struct location_proxy {};
+
+// TODO: move to arithmetic
+template <native_scalar T, size_t N, size_t M>
+vector <T, M> operator*(const matrix <T, N, M> &m, const vector <T, N> &v)
+{
+	return vector <T, M> (jems::operation(Operation::eMultiply, m, v));
+}
+
+template <native_scalar T, size_t N, size_t M, size_t K>
+matrix <T, N, M> operator*(const matrix <T, N, K> &a, const matrix <T, K, M> &b)
+{
+	return matrix <T, N, M> (jems::operation(Operation::eMultiply, a, b));
+}
+
+// TODO: move to builtin
 
 template <typename T, typename U>
 requires projectively_equivalent <T, U>

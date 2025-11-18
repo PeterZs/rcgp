@@ -17,15 +17,6 @@ enum class Stage {
 	Vertex,
 	Fragment,
 	Compute,
-
-	// TODO: game script stage; same principe as previous $cmd
-	// stage with a slightly different JIT route (and resource
-	// handles to interface with the engine...; where do game
-	// scripts sit in the hierarchy of graphics programming?)
-	//
-	// TODO: alternatively we can use structs/types to indicate
-	// distinct stage in an extendable manner... its just a template
-	// parameter anyways...
 };
 
 constexpr bool is_representational(Stage S)
@@ -58,38 +49,9 @@ constexpr bool is_representational(Stage S)
 // 	return Stage::Undefined;
 // }
 
-// TODO: static string conversion...
-
 template <Stage S, typename R, typename ... Args>
-struct decomposition {
-	using args = sequence <Args...>;
-};
-
-template <typename R, typename ... Args>
-struct decomposition <Stage::Vertex, R, Args...> {
-	// using 
-	
-	static constexpr bool is_svpos_defined = false;
-	static constexpr bool is_topology_consistent = false;
-};
-
-// TODO: stage_base for common reflection stuff...
-// then specialize stage implementations to store differently
-// e.g. RepresentationalX is a TracerRecord
-// and X contains a Vulkan shader module and Vulkan device
-template <Stage S, typename R, typename ... Args>
-struct stage {
-	// TODO: reflection...
-	// using reflection = decltype(function_reflection_generator <R, Args...> ());
-};
+struct stage {};
 
 template <Stage S, typename R, typename ... Args>
 requires (is_representational(S))
-struct stage <S, R, Args...> : Block {
-};
-
-// template <typename T>
-// struct is_stage : std::false_type {};
-//
-// template <Stage S, typename R, typename ... Args>
-// struct is_stage <stage <S, R, Args...>> : std::true_type {};
+struct stage <S, R, Args...> : Block {};

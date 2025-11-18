@@ -27,6 +27,7 @@ template <typename T, StructuredBuffer <T> &rsrc>
 struct resource_injector <StructuredBuffer <T>, rsrc> {
 	static auto main(reference <rsrc> &value, const InjectionState &state) {
 		auto grsrc = resource_intrinsic <structured_buffer_reflection <T>> ::intrinsic(0);
+		$tsb.context.add_global_resource <rsrc> (grsrc);
 		injector <T> ::main(value, grsrc);
 		return state.next(false, false);
 	}
@@ -35,7 +36,9 @@ struct resource_injector <StructuredBuffer <T>, rsrc> {
 template <typename T, size_t D, Sampler <T, D> &rsrc>
 struct resource_injector <Sampler <T, D>, rsrc> {
 	static auto main(reference <rsrc> &value, const InjectionState &state) {
-		value.ref = resource_intrinsic <sampler_reflection <T, D>> ::intrinsic(0);
+		auto grsrc =  resource_intrinsic <sampler_reflection <T, D>> ::intrinsic(0);
+		$tsb.context.add_global_resource <rsrc> (grsrc);
+		value.ref = grsrc;
 		return state.next(false, false);
 	}
 };
@@ -59,6 +62,7 @@ struct resource_injector <ParameterBlock <T>, rsrc> {
 		if constexpr (!std::same_as <Uniform, void>) {
 			auto type = reconstruct_type <Uniform> ();
 			auto grsrc = jems::global_resource(type, GlobalResource::eXConstant, std::nullopt, counter++);
+			$tsb.context.add_global_resource <rsrc> (grsrc);
 			injector <Uniform> ::main(value, grsrc);
 		}
 
@@ -67,6 +71,7 @@ struct resource_injector <ParameterBlock <T>, rsrc> {
 			using trace = std::decay_t <decltype(x)>;
 			using resource = typename trace::value_type;
 			auto grsrc = resource_intrinsic <resource> ::intrinsic(counter++);
+			$tsb.context.add_global_resource <rsrc> (grsrc);
 			injector <trace> ::main(value, grsrc);
 			return true;
 		};

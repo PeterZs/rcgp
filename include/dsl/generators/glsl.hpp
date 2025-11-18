@@ -1,7 +1,8 @@
 #pragma once
 
+#include "../../msv/static_string.hpp"
+#include "../../util/logging.hpp"
 #include "../instructions.hpp"
-
 
 #define DEFINE_CALL_OPERATOR() auto operator()(Reference r) { return main(r); }
 
@@ -12,6 +13,9 @@ struct GLSL {
 	const Block &block;
 
 	std::vector <std::string> thread_inputs;
+
+	// TODO: use cref?
+	std::map <const AggregateType *, std::string> aggregate_names;
 
 	// TODO: prelude section for types, etc.
 	std::string result; // TODO: refactor to 'code'
@@ -33,17 +37,24 @@ struct GLSL {
 		GLSL &parent;
 
 		std::string impl(auto x) {
-			// TODO: these should be exceptions...
-			return "?";
+			fatal("generate_reference::impl not implemented for {}",
+	 			$ss_type(decltype(x)).view());
 		}
 
 		std::string impl(GlobalIntrinsic gi) {
 			switch (gi) {
-			case GlobalIntrinsic::eSVPosition:
-				return "gl_Position";
+			case GlobalIntrinsic::eScreenPosition: return "gl_Position";
+			case GlobalIntrinsic::eInstanceIndex: return "gl_InstanceIndex";
 			default:
 				return "?";
 			}
+		}
+
+		std::string impl(GlobalResource grsrc) {
+			// TODO: different if its a push constant
+			return fmt::format("r{}_i{}",
+		      		grsrc.group.value_or(-1),
+		      		grsrc.index.value_or(-1));
 		}
 
 		std::string impl(ThreadOutput tout) {
@@ -62,7 +73,8 @@ struct GLSL {
 		GLSL &parent;
 
 		std::string impl(auto x) {
-			return "?";
+			fatal("generate_expression::impl not implemented for {}",
+	 			$ss_type(decltype(x)).view());
 		}
 		
 		std::string impl(Constant value) {
@@ -106,6 +118,22 @@ struct GLSL {
 			return out + ")";
 		}
 
+		std::string impl(FieldAccess access) {
+			return fmt::format("{}.f{}", main(access.value), access.fidx);
+		}
+
+		std::string impl(ArrayAccess access) {
+			return fmt::format("{}[{}]", main(access.value), main(access.index));
+		}
+
+		std::string impl(GlobalResource grsrc) {
+			return parent.reference.impl(grsrc);
+		}
+		
+		std::string impl(GlobalIntrinsic intrinsic) {
+			return parent.reference.impl(intrinsic);
+		}
+
 		std::string main(Reference expression) {
 			auto ftn = [&](auto x) { return impl(x); };
 			return std::visit(ftn, *expression);
@@ -119,13 +147,13 @@ struct GLSL {
 
 		void impl(Store store) {
 			// TODO: assign() method
-			parent.result += fmt::format("\t{} = {};\n",
+			parent.result += fmt::format("    {} = {};\n",
 				parent.reference(store.destination),
 				parent.expression(store.source));
 		}
 
 		void impl(auto x) {
-			parent.result += "\t?\n";
+			parent.result += "    ?\n";
 		}
 
 		void main(Reference instruction) {
@@ -140,9 +168,9 @@ struct GLSL {
 		GLSL &parent;
 
 		// TODO: options... (e.g. version)
-		std::string impl(PrimitiveType type) {
+		std::string impl(const PrimitiveType &primitive) {
 			// TODO: use specializations for this...
-			vswitch (type) {
+			vswitch (primitive) {
 			vcase(int): return "int";
 			vcase(VectorType <float, 2>): return "vec2";
 			vcase(VectorType <float, 3>): return "vec3";
@@ -155,18 +183,34 @@ struct GLSL {
 			return "?";
 		}
 
-		std::string impl(Type type) {
-			auto ftn = [&](auto x) { return impl(x); };
-			return std::visit(ftn, type);
+		std::string impl(const Type &type) {
+			return std::visit([&](const auto &x) { return impl(x); }, type);
+		}
+
+		// TODO: post and pre?
+		std::string impl(const ArrayType &array) {
+			auto size = (array.size > 0)
+				? fmt::format("[{}]", array.size)
+				: "[]";
+
+			return main(array.base) + size;
+		}
+
+		std::string impl(const AggregateType &aggregate) {
+			auto addr = &aggregate;
+			// TODO: assert
+			if (parent.aggregate_names.contains(addr))
+				return parent.aggregate_names[addr];
+			return "?";
 		}
 		
 		std::string impl(auto type) {
-			__builtin_trap();
+			fatal("generate_type::impl not implemented for {}",
+	 			$ss_type(decltype(type)).view());
 		}
 		
 		std::string main(Reference type) {
-			auto ftn = [&](auto x) { return impl(x); };
-			return std::visit(ftn, *type);
+			return std::visit([&](const auto &x) { return impl(x); }, *type);
 		}
 		
 		DEFINE_CALL_OPERATOR();
@@ -176,12 +220,41 @@ struct GLSL {
 		if (block.context.model != ExecutionModel::eAgnostic) {
 			result = "#version 460\n";
 
+			result += "\n";
+
 			// TODO: generate type definitions
+			// TODO: avoid duplicate definitions by
+			// associating aggregates to a type index if possible
+			// OR in reconstruct_type search the buffer for any existing
+			// generations and return that instead... aggregate_cache <T>
+			// needs a type_index <T> mechanism
+
+			size_t aggregate_counter = 0;
+			for (auto &instr : block) {
+				if (not instr->is <Type> ())
+					continue;
+
+				auto &type = instr->as <Type> ();
+				if (not type.is <AggregateType> ())
+					continue;
+
+				auto &agg = type.as <AggregateType> ();
+
+				result += fmt::format("struct AGG{} {{\n", aggregate_counter++);
+
+				size_t field_counter = 0;
+				for (auto &field : agg) {
+					result += fmt::format("    {} f{};\n",
+			   			this->type.main(field), field_counter++);
+				}
+
+				result += "};\n\n";
+
+				// TODO: name hints and all...
+				aggregate_names.emplace(&agg, fmt::format("AGG{}", aggregate_counter - 1));
+			}
 
 			// TODO: generate globals
-
-			// TODO: model specific thread inputs...
-			result += "\n";
 
 			thread_inputs.reserve(block.context.thread_inputs.size());
 			for (auto &tin : block.context.thread_inputs) {
@@ -206,14 +279,40 @@ struct GLSL {
 			  		tout.argi, qualifier, type.main(tout.type), tout.argi);
 			}
 
-			// TODO: generate functions
 			result += "\n";
+
+			for (auto &[_, refs] : block.context.global_resources) {
+				for (auto &ref : refs) {
+					auto &grsrc = ref->as <GlobalResource> ();
+					if (grsrc.kind == GlobalResource::eSampler) {
+						fatal("not implemented");
+					} else {
+						std::string modifier;
+						// TODO: xconstant must be resolved
+						if (grsrc.kind == GlobalResource::eXConstant)
+							modifier = "uniform";
+						else if (grsrc.kind == GlobalResource::eConstantBuffer)
+							modifier = "uniform";
+						else if (grsrc.kind == GlobalResource::eStorageBuffer)
+							modifier = "buffer";
+
+						auto group = grsrc.group.value_or(-1);
+						auto index = grsrc.index.value_or(-1);
+						result += fmt::format("layout (set = {}, binding = {}) {} {{\n",
+			    				group, index, modifier);
+						result += fmt::format("    {} r{}_i{};\n", type.main(grsrc.type), group, index);
+						result += "};\n\n";
+					}
+				}
+			}
+
+			// TODO: generate functions
 
 			result += "void main()\n";
 			result += "{\n";
 
 			// gather instructions to manifest
-			// TODO: split policy...
+			// TODO: splitting policy...
 			std::vector <Reference> manifest;
 
 			for (auto &instr : block) {
@@ -226,7 +325,6 @@ struct GLSL {
 				}
 			}
 
-			fmt::println("instructions to manifest: {}", manifest.size());
 			for (auto &instr : manifest)
 				statement(instr);
 
@@ -234,7 +332,7 @@ struct GLSL {
 
 			return result;
 		} else {
-			__builtin_trap();
+			fatal("per-function generation is not supported");
 		}
 	}
 };

@@ -46,11 +46,34 @@ using Transforms = array <mat4>;
 
 StructuredBuffer <Transforms> transforms;
 
+// Descriptor group allocation
+template <auto &rsrc, size_t I>
+struct group_allocation_record {};
+
+template <auto &rsrc, size_t I>
+bool fill_allocation(group_allocation_map &map, group_allocation_record <rsrc, I>)
+{
+	map.emplace((void *) &rsrc, I);
+	return true;
+}
+
+template <typename ... Records>
+auto new_allocation(std::tuple <Records...> records)
+{
+	group_allocation_map map;
+	std::apply([&](auto ... xs) {
+		std::make_tuple(fill_allocation(map, xs)...);
+	}, records);
+	return map;
+}
+
 int main()
 {
+	// TODO: ensure in compile that ALL resources are bound by reference
 	auto vs = $vertex $fn($use(camera), $use(transforms), Vertex vertex) -> $returns(RasterForward)
 	{
-		mat4 xform = transforms[1];
+		// mat4 xform = transforms[1];
+		mat4 xform = transforms[vertex.instance];
 		vec4 ppos = xform * vec4(vertex.position, 1);
 		vec4 pnorm = xform * vec4(vertex.normal, 0);
 		$return RasterForward {
@@ -68,8 +91,17 @@ int main()
 		$return vec4(vec3(ndotl), 1.0);
 	};
 
-	fmt::println("{}", generators::Assembly(fs).generate());
+	// TODO: should lift to push constant if possible...
+	// everything else is degenerated to constant/uniform buffer
+	using allocation = std::tuple <
+		group_allocation_record <camera, 0>,
+		group_allocation_record <transforms, 1>
+	>;
 
-	// fmt::println("glsl:");
-	// fmt::println("{}", generators::GLSL(vs).generate());
+	auto map = new_allocation(allocation());
+	vs.apply_group_allocation_map(map);
+
+	// fmt::println("{}", generators::Assembly(vs).generate());
+
+	fmt::println("{}", generators::GLSL(vs).generate());
 }
