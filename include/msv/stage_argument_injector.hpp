@@ -18,6 +18,8 @@ void inject_execution_model()
 {
 	if constexpr (S == Stage::RepresentationalVertex)
 		$tsb.context.model = ExecutionModel::eVulkanVertex;
+	else if constexpr (S == Stage::RepresentationalFragment)
+		$tsb.context.model = ExecutionModel::eVulkanFragment;
 	else
 		static_assert(false, "no execution model for stage");
 }

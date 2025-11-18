@@ -1,7 +1,7 @@
 #pragma once
 
+#include <memory>
 #include <source_location>
-#include <filesystem>
 
 #include <fmt/format.h>
 
@@ -118,6 +118,12 @@ enum class GlobalIntrinsic {
 	eInstanceIndex,
 };
 
+enum class RateProperties {
+	eSmooth,
+	eFlat,
+	eNoPerspective,
+};
+
 struct ThreadInput {
 	Reference type;
 	// corresponds to actual order
@@ -128,20 +134,15 @@ struct ThreadOutput {
 	Reference type;
 	uint32_t argi;
 
-	// TODO: fragment shader inputs also need this
-	// (although they will be inferred by the order);
-	// we should move this to RateProperties in the global scope
-	enum Properties {
-		eSmooth,
-		eFlat,
-		eNoPerspective,
-	} properties;
+	RateProperties properties;
 };
 
 struct BuiltinIntrinsic {
 	enum Code {
 		eSample,
 		eNormalize,
+		eMax,
+		eMin,
 		eDot,
 		eSin,
 		eCos,

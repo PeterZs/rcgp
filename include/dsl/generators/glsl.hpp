@@ -195,9 +195,9 @@ struct GLSL {
 			for (auto &tout : block.context.thread_outputs) {
 				std::string qualifier = "?";
 				switch (tout.properties) {
-				case ThreadOutput::eSmooth: qualifier = "smooth"; break;
-				case ThreadOutput::eFlat: qualifier = "flat"; break;
-				case ThreadOutput::eNoPerspective: qualifier = "noperspective"; break;
+				case RateProperties::eSmooth: qualifier = "smooth"; break;
+				case RateProperties::eFlat: qualifier = "flat"; break;
+				case RateProperties::eNoPerspective: qualifier = "noperspective"; break;
 				default:
 					break;
 				}

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <map>
 
 #include "../instructions.hpp"
@@ -137,11 +138,11 @@ struct Assembly {
 			stringify(x.type), x.argi);
 	}
 
-	std::string stringify_thread_io_properties(ThreadOutput::Properties properties) {
+	std::string stringify_rate_properties(RateProperties properties) {
 		switch (properties) {
-		case ThreadOutput::eSmooth: return "smooth";
-		case ThreadOutput::eFlat: return "flat";
-		case ThreadOutput::eNoPerspective: return "noperspective";
+		case RateProperties::eSmooth: return "smooth";
+		case RateProperties::eFlat: return "flat";
+		case RateProperties::eNoPerspective: return "noperspective";
 		default:
 			break;
 		}
@@ -152,7 +153,7 @@ struct Assembly {
 	std::string stringify(ThreadOutput x, Reference ref) {
 		return $assign fmt::format("thread out({}, {}, {})",
 			stringify(x.type), x.argi,
-			stringify_thread_io_properties(x.properties));
+			stringify_rate_properties(x.properties));
 	}
 	
 	std::string stringify(GlobalIntrinsic x, Reference ref) {
@@ -183,6 +184,8 @@ struct Assembly {
 		switch (x.code) {
 		case BuiltinIntrinsic::eSample: ftn = "sample"; break;
 		case BuiltinIntrinsic::eDot: ftn = "dot"; break;
+		case BuiltinIntrinsic::eNormalize: ftn = "normalize"; break;
+		case BuiltinIntrinsic::eMax: ftn = "max"; break;
 		default:
 			break;
 		}
@@ -243,7 +246,7 @@ struct Assembly {
 		for (auto tout : block.context.thread_outputs) {
 			result += fmt::format("    thread out {}: {} ({}),\n",
 				tout.argi, stringify(tout.type),
-				stringify_thread_io_properties(tout.properties));
+				stringify_rate_properties(tout.properties));
 		}
 
 		result += "  }\n";

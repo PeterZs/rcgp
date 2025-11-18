@@ -39,6 +39,8 @@ constexpr auto new_signature(std::function <R (Args...)>) -> signature <S, Rt, A
 template <Stage S, typename R, typename F>
 auto compile(F ftn)
 {
+	// TODO: require that all arguments are reflected?
+
 	// TODO: custom vertex assembler stage; experiments section showing an alternative pipeline...
 	// TODO: ss of enums via wrapper type wrap <Enum> and then extract substring?
 	using function = decltype(std::function(ftn));

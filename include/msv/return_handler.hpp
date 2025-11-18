@@ -4,20 +4,16 @@
 
 #include "../dsl/instructions.hpp"
 #include "stage_intrinsics.hpp"
-#include "static_string.hpp"
 
 template <typename R>
 struct _return_operator {};
 
 template <typename T>
 struct return_handler_t {
-	static void main(const T &, size_t &argi) {
-		fmt::println("generic return handler for {}, argi={}", 
-	       		$ss_type(T).view(), argi);
-	}
+	static void main(const T &, size_t &argi) {}
 };
 
-template <typename T, ThreadOutput::Properties P>
+template <typename T, RateProperties P>
 struct return_handler_t <Interpolant <T, P>> {
 	static void main(const Interpolant <T, P> &interpolant, size_t &argi) {
 		auto type = reconstruct_type <T> ();
@@ -45,8 +41,6 @@ struct return_handler_t <std::tuple <Args...>> {
 template <aggregate T>
 struct return_handler_t <T> {
 	static void main(const T &value, size_t &argi) {
-		fmt::println("aggregate return handler: {}", $ss_type(T).view());
-
 		constexpr auto field_count = T::reflection::field_count;
 
 		auto proc = [&](auto el) {
@@ -66,7 +60,6 @@ struct return_handler_t <T> {
 template <typename T>
 bool return_handler(const T &v, size_t &argi)
 {
-	fmt::println("ftn for {}", $ss_type(T).view());
 	return_handler_t <T> ::main(v, argi);
 	return true;
 }

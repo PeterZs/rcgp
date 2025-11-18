@@ -35,7 +35,7 @@ struct scalar : jems::handle {
 
 	scalar() = default;
 
-	scalar(const jems::handle &h) : handle(h) {}
+	explicit scalar(const jems::handle &h) : handle(h) {}
 	
 	scalar(const T &value, $location)
 		: handle(jems::constant_loc(loc, value)) {}
@@ -70,7 +70,7 @@ struct vector_base <T, 2> : jems::handle {
 
 	vector_base() = default;
 
-	vector_base(const jems::handle &h) : handle(h) {}
+	explicit vector_base(const jems::handle &h) : handle(h) {}
 	
 	vector_base(const scalar <T> &x, const scalar <T> &y, $location)
 		: handle(jems::construct_loc(loc,
@@ -85,12 +85,18 @@ struct vector_base <T, 3> : jems::handle {
 
 	vector_base() = default;
 
-	vector_base(const jems::handle &h) : handle(h) {}
+	explicit vector_base(const jems::handle &h) : handle(h) {}
 	
 	vector_base(const vector_base <T, 2> &xy, const scalar <T> &z, $location)
 		: handle(jems::construct_loc(loc,
 			jems::type_loc(loc, VectorType <T, 3> ()),
 			xy, z
+		)) {}
+	
+	vector_base(const scalar <T> &x, const scalar <T> &y, const scalar <T> &z, $location)
+		: handle(jems::construct_loc(loc,
+			jems::type_loc(loc, VectorType <T, 3> ()),
+			x, y, z
 		)) {}
 };
 
@@ -100,7 +106,7 @@ struct vector_base <T, 4> : jems::handle {
 
 	vector_base() = default;
 
-	vector_base(const jems::handle &h) : handle(h) {}
+	explicit vector_base(const jems::handle &h) : handle(h) {}
 	
 	vector_base(const vector_base <T, 3> &xyz, const scalar <T> &w, $location)
 		: handle(jems::construct_loc(loc,
@@ -158,7 +164,7 @@ struct matrix : jems::handle {
 
 	matrix() = default;
 
-	matrix(const jems::handle &h) : handle(h) {}
+	explicit matrix(const jems::handle &h) : handle(h) {}
 };
 
 using mat4 = matrix <float, 4, 4>;
@@ -183,25 +189,66 @@ struct array : jems::handle {
 template <typename T>
 struct location_proxy {};
 
-template <typename T, size_t N, size_t M>
+// TODO: move to arithmetic
+template <native_scalar T, size_t N, size_t M>
 vector <T, M> operator*(const matrix <T, N, M> &m, const vector <T, N> &v)
 {
-	return jems::operation(Operation::eMultiply, m, v);
+	return vector <T, M> (jems::operation(Operation::eMultiply, m, v));
 }
 
-template <typename T, size_t N, size_t M, size_t K>
+template <native_scalar T, size_t N, size_t M, size_t K>
 matrix <T, N, M> operator*(const matrix <T, N, K> &a, const matrix <T, K, M> &b)
 {
-	return jems::operation(Operation::eMultiply, a, b);
+	return matrix <T, N, M> (jems::operation(Operation::eMultiply, a, b));
 }
 
-template <typename T, size_t D>
+// TODO: move to builtin
+template <typename T>
+struct projection {
+	using type = T;
+};
+
+template <native_scalar T>
+struct projection <T> {
+	using type = scalar <T>;
+};
+
+template <typename T>
+using projection_t = projection <T> ::type;
+
+template <typename T>
+auto project(const T &value)
+{
+	return projection_t <T> (value);
+}
+
+template <typename T, typename U>
+concept projectively_equivalent = std::same_as <
+	typename projection <T> ::type,
+	typename projection <U> ::type
+>;
+
+template <typename T, typename U>
+requires projectively_equivalent <T, U>
+// TODO: needs to be a scalar? (or vector/matrix)
+// projectively_scalar..., projectively_vector <T, D>, ... projectively_vector_dim <D>, _type <T>
+auto max(const T &a, const U &b)
+{
+	using result = projection_t <T>;
+	return result(jems::builtin_intrinsic(
+		BuiltinIntrinsic::eMax,
+		project(a), project(b))
+	);
+}
+
+template <native_scalar T, size_t D>
 scalar <T> dot(const vector <T, D> &a, const vector <T, D> &b)
 {
-	return jems::builtin_intrinsic(BuiltinIntrinsic::eDot, a, b);
+	return scalar <T> (jems::builtin_intrinsic(BuiltinIntrinsic::eDot, a, b));
 }
 
-template <typename T, size_t N>
-vector <T, N> normalize(const vector <T, N> &)
+template <native_float_scalar T, size_t N>
+vector <T, N> normalize(const vector <T, N> &v)
 {
+	return vector <T, N> (jems::builtin_intrinsic(BuiltinIntrinsic::eNormalize, v));
 }

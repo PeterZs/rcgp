@@ -11,7 +11,7 @@ struct read_only_intrinsic {
 	}
 };
 
-using instance_index_t = read_only_intrinsic <GlobalIntrinsic::eInstanceIndex, i32>;
+using InstanceIndex = read_only_intrinsic <GlobalIntrinsic::eInstanceIndex, i32>;
 
 // Required result of the vertex shader
 struct Position {
@@ -33,7 +33,7 @@ enum Topology {
 };
 
 // Optional result of the vertex shader
-template <typename T, ThreadOutput::Properties P>
+template <primitive T, RateProperties P>
 struct Interpolant : jems::handle {
 	Interpolant() = default;
 
@@ -48,14 +48,14 @@ struct Interpolant : jems::handle {
 	}
 };
 
-template <typename T>
-using Smooth = Interpolant <T, ThreadOutput::eSmooth>;
+template <primitive T>
+using Smooth = Interpolant <T, RateProperties::eSmooth>;
 
-template <typename T>
-using Flat = Interpolant <T, ThreadOutput::eFlat>;
+template <primitive T>
+using Flat = Interpolant <T, RateProperties::eFlat>;
 
-template <typename T>
-using NoPerspective = Interpolant <T, ThreadOutput::eNoPerspective>;
+template <primitive T>
+using NoPerspective = Interpolant <T, RateProperties::eNoPerspective>;
 
 // Explicit wrapper to indicate that fragment shaders
 // inputs are from the previous subpass

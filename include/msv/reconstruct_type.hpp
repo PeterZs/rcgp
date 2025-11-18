@@ -51,8 +51,6 @@ struct reconstructor_t <aggregate_reflection <Original, Args...>> {
 	}
 
 	static jems::handle main($location) {
-		fmt::println("reconstructor for {}", $ss_type(Original).view());
-
 		AggregateType aggregate;
 		std::apply([&](auto ... xs) {
 			std::make_tuple(collect(

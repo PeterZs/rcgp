@@ -7,7 +7,7 @@ struct Vertex {
 	vec3 normal;
 	vec2 uv;
 
-	instance_index_t instance;
+	InstanceIndex instance;
 
 	$reflection(position, normal, uv, instance);
 };
@@ -19,6 +19,14 @@ struct RasterForward {
 	Smooth <vec2> uv;
 
 	$reflection(svpos, position, normal, uv);
+};
+
+struct FragmentInput {
+	vec3 position;
+	vec3 normal;
+	vec2 uv;
+
+	$reflection(position, normal, uv);
 };
 
 struct Camera {
@@ -42,9 +50,9 @@ int main()
 {
 	auto vs = $vertex $fn($use(camera), $use(transforms), Vertex vertex) -> $returns(RasterForward)
 	{
-		auto xform = transforms[1];
-		auto ppos = xform * vec4(vertex.position, 1);
-		auto pnorm = xform * vec4(vertex.normal, 0);
+		mat4 xform = transforms[1];
+		vec4 ppos = xform * vec4(vertex.position, 1);
+		vec4 pnorm = xform * vec4(vertex.normal, 0);
 		$return RasterForward {
 			.svpos = camera.project(ppos),
 			.position = vec3(ppos),
@@ -53,8 +61,14 @@ int main()
 		};
 	};
 
-	fmt::println("assembly:");
-	fmt::println("{}", generators::Assembly(vs).generate());
+	auto fs = $fragment $fn(FragmentInput fin) -> $returns(vec4)
+	{
+		vec3 light = normalize(vec3(1, 1, 1));
+		f32 ndotl = max(dot(fin.normal, light), 0.0f);
+		$return vec4(vec3(ndotl), 1.0);
+	};
+
+	fmt::println("{}", generators::Assembly(fs).generate());
 
 	// fmt::println("glsl:");
 	// fmt::println("{}", generators::GLSL(vs).generate());
