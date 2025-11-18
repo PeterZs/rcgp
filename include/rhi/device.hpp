@@ -42,18 +42,3 @@ struct Device {
 		return device;
 	}
 };
-
-// Shader stage compilation
-struct Compiler {
-	const vk::Device &reference;
-
-	struct Info {
-		// ...
-	};
-
-	static Compiler from(const Device &device, const Info &info) {
-		Compiler result(device.logical);
-
-		return result;
-	}
-};

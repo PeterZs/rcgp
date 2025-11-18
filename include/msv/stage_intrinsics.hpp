@@ -8,7 +8,7 @@ template <GlobalIntrinsic G, reflected T>
 struct read_only_intrinsic {
 	// NOTE: for aggregates, we may need to inject...
 	operator T() const {
-		return T(jems::global_intrinsic(G));
+		return T::reinterpret(jems::global_intrinsic(G));
 	}
 };
 
@@ -18,6 +18,7 @@ struct projection <read_only_intrinsic <G, T>> {
 };
 
 using InstanceIndex = read_only_intrinsic <GlobalIntrinsic::eInstanceIndex, i32>;
+using VertexIndex = read_only_intrinsic <GlobalIntrinsic::eVertexIndex, i32>;
 
 // Required result of the vertex shader
 struct Position {

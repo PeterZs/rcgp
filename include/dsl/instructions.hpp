@@ -11,8 +11,6 @@
 
 struct Instruction;
 
-using Index = uint32_t;
-
 // TODO: need a better (paged arena) allocator which effectively just uint32_t or smth
 using Reference = std::shared_ptr <Instruction>;
 
@@ -118,6 +116,7 @@ struct GlobalResource {
 enum class GlobalIntrinsic {
 	eScreenPosition,
 	eInstanceIndex,
+	eVertexIndex,
 };
 
 enum class RateProperties {

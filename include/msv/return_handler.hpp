@@ -21,7 +21,7 @@ struct return_handler_t <Interpolant <T, P>> {
 		$tsb.context.add_thread_output(tout);
 
 		// Fix the argument index of the original value
-		auto &instr = *interpolant.ref;
+		auto &instr = *Reference(interpolant);
 		instr.template as <ThreadOutput> ()
 			.argi = argi;
 

@@ -67,12 +67,76 @@ auto new_allocation(std::tuple <Records...> records)
 	return map;
 }
 
+#include <glslang/Public/ResourceLimits.h>
+#include <glslang/Public/ShaderLang.h>
+#include <glslang/SPIRV/GlslangToSpv.h>
+
+std::vector <uint32_t> glsl_to_spirv(const std::string &glsl, const EShLanguage &stage)
+{
+	const char *cstr[] = { glsl.c_str() };
+
+	glslang::SpvOptions options;
+	options.generateDebugInfo = true;
+
+	glslang::TShader shader(stage);
+
+	shader.setStrings(cstr, 1);
+	shader.setEnvTarget(
+		glslang::EShTargetLanguage::EShTargetSpv,
+		glslang::EShTargetLanguageVersion::EShTargetSpv_1_6
+	);
+
+	// Enable SPIR-V and Vulkan rules when parsing GLSL
+	EShMessages messages = EShMessages {
+		EShMsgDefault
+		| EShMsgSpvRules
+		| EShMsgVulkanRules
+		| EShMsgDebugInfo
+	};
+
+	if (!shader.parse(GetDefaultResources(), 460, false, messages)) {
+		std::string log = shader.getInfoLog();
+		fmt::println("failed to compile to SPIRV:\n{}", log);
+		// io::display_lines("SOURCE", glsl);
+		return {};
+	}
+
+	// Link the program
+	glslang::TProgram program;
+
+	program.addShader(&shader);
+
+	if (!program.link(messages)) {
+		std::string log = program.getInfoLog();
+		fmt::println("failed to link SPIRV code:\n{}", log);
+		// io::display_lines("SOURCE", glsl);
+		return {};
+	}
+
+	std::vector <uint32_t> spirv;
+	glslang::GlslangToSpv(*program.getIntermediate(stage), spirv, &options);
+	return spirv;
+}
+
+struct Compiler {
+	const vk::Device &reference;
+
+	struct Info {
+		// ...
+	};
+
+	static Compiler from(const Device &device, const Info &info) {
+		Compiler result(device.logical);
+
+		return result;
+	}
+};
+
 int main()
 {
 	// TODO: ensure in compile that ALL resources are bound by reference
 	auto vs = $vertex $fn($use(camera), $use(transforms), Vertex vertex) -> $returns(RasterForward)
 	{
-		// mat4 xform = transforms[1];
 		mat4 xform = transforms[vertex.instance];
 		vec4 ppos = xform * vec4(vertex.position, 1);
 		vec4 pnorm = xform * vec4(vertex.normal, 0);
@@ -101,7 +165,13 @@ int main()
 	auto map = new_allocation(allocation());
 	vs.apply_group_allocation_map(map);
 
-	// fmt::println("{}", generators::Assembly(vs).generate());
+	auto glsl = generators::GLSL(vs).generate();
+	fmt::println("vertex:\n{}", glsl);
+	auto spirv = glsl_to_spirv(glsl, EShLangVertex);
+	fmt::println("spirv words: {}", spirv.size());
 
-	fmt::println("{}", generators::GLSL(vs).generate());
+	glsl = generators::GLSL(fs).generate();
+	fmt::println("fragment:\n{}", glsl);
+	spirv = glsl_to_spirv(glsl, EShLangFragment);
+	fmt::println("spirv words: {}", spirv.size());
 }

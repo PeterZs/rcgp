@@ -29,18 +29,22 @@ concept native_float_scalar = bool(false
 
 // Scalars in GPU code
 template <native_scalar T>
-struct scalar : jems::handle {
+class scalar : public jems::handle {
+	explicit scalar(const jems::handle &h) : handle(h) {}
+public:
 	using reflection = primitive_reflection <scalar <T>>;
 	UGP_REFLECTION_STAMP;
 
 	using native_scalar_type = T;
 
 	scalar() = default;
-
-	explicit scalar(const jems::handle &h) : handle(h) {}
 	
 	scalar(const T &value, $location)
 		: handle(jems::constant_loc(loc, value)) {}
+
+	static auto reinterpret(const jems::handle &h) {
+		return scalar(h);
+	}
 };
 
 using i32 = scalar <int32_t>;
@@ -67,12 +71,13 @@ template <native_scalar T, size_t D>
 struct vector_base : jems::handle {};
 
 template <native_scalar T>
-struct vector_base <T, 2> : jems::handle {
+class vector_base <T, 2> : public jems::handle {
+protected:
+	explicit vector_base(const jems::handle &h) : handle(h) {}
+public:
 	SWIZZLE_D2;
 
 	vector_base() = default;
-
-	explicit vector_base(const jems::handle &h) : handle(h) {}
 	
 	vector_base(const scalar <T> &x, const scalar <T> &y, $location)
 		: handle(jems::construct_loc(loc,
@@ -82,12 +87,25 @@ struct vector_base <T, 2> : jems::handle {
 };
 
 template <native_scalar T>
-struct vector_base <T, 3> : jems::handle {
+class vector_base <T, 3> : public jems::handle {
+protected:
+	explicit vector_base(const jems::handle &h) : handle(h) {}
+public:
 	SWIZZLE_D3;
 
 	vector_base() = default;
 
-	explicit vector_base(const jems::handle &h) : handle(h) {}
+	vector_base(const scalar <T> x, $location)
+		: handle(jems::construct_loc(loc,
+			jems::type_loc(loc, VectorType <T, 3> ()),
+			x, x, x
+		)) {}
+
+	vector_base(const vector_base <T, 4> v, $location)
+		: handle(jems::construct_loc(loc,
+			jems::type_loc(loc, VectorType <T, 3> ()),
+			v
+		)) {}
 	
 	vector_base(const vector_base <T, 2> &xy, const scalar <T> &z, $location)
 		: handle(jems::construct_loc(loc,
@@ -103,12 +121,13 @@ struct vector_base <T, 3> : jems::handle {
 };
 
 template <native_scalar T>
-struct vector_base <T, 4> : jems::handle {
+class vector_base <T, 4> : public jems::handle {
+protected:
+	explicit vector_base(const jems::handle &h) : handle(h) {}
+public:
 	SWIZZLE_D4;
 
 	vector_base() = default;
-
-	explicit vector_base(const jems::handle &h) : handle(h) {}
 	
 	vector_base(const vector_base <T, 3> &xyz, const scalar <T> &w, $location)
 		: handle(jems::construct_loc(loc,
@@ -124,11 +143,15 @@ struct vector_base <T, 4> : jems::handle {
 };
 
 template <native_scalar T, size_t N>
-struct vector : vector_base <T, N> {
+struct vector : public vector_base <T, N> {
 	using vector_base <T, N> ::vector_base;
 	
 	using reflection = primitive_reflection <vector <T, N>>;
 	UGP_REFLECTION_STAMP;
+	
+	static auto reinterpret(const jems::handle &h) {
+		return vector(h);
+	}
 
 	// Arithmetic operations
 	template <typename U>
@@ -160,13 +183,17 @@ using int3 = vector <int32_t, 3>;
 using int4 = vector <int32_t, 4>;
 
 template <native_scalar T, size_t N, size_t M>
-struct matrix : jems::handle {
+class matrix : public jems::handle {
+	explicit matrix(const jems::handle &h) : handle(h) {}
+public:
 	using reflection = primitive_reflection <matrix <T, N, M>>;
 	UGP_REFLECTION_STAMP;
 
 	matrix() = default;
 
-	explicit matrix(const jems::handle &h) : handle(h) {}
+	static auto reinterpret(const jems::handle &h) {
+		return matrix(h);
+	}
 };
 
 using mat4 = matrix <float, 4, 4>;
@@ -216,13 +243,14 @@ concept projectively_int_scalar = projectively_scalar <T>
 	>;
 
 template <reflected T, int64_t N = -1>
-struct array : jems::handle {
+struct array : public jems::handle {
 	using reflection = array_reflection <T, N>;
 	UGP_REFLECTION_STAMP;
 
 	template <projectively_int_scalar U>
 	T operator[](const U &idx) const {
-		return T(jems::array_access(ref, project(idx)));
+		// TODO: different for primitives and aggregates...
+		return T::reinterpret(jems::array_access(ref, project(idx)));
 	}
 };
 
@@ -234,13 +262,13 @@ struct location_proxy {};
 template <native_scalar T, size_t N, size_t M>
 vector <T, M> operator*(const matrix <T, N, M> &m, const vector <T, N> &v)
 {
-	return vector <T, M> (jems::operation(Operation::eMultiply, m, v));
+	return vector <T, M> ::reinterpret(jems::operation(Operation::eMultiply, m, v));
 }
 
 template <native_scalar T, size_t N, size_t M, size_t K>
 matrix <T, N, M> operator*(const matrix <T, N, K> &a, const matrix <T, K, M> &b)
 {
-	return matrix <T, N, M> (jems::operation(Operation::eMultiply, a, b));
+	return matrix <T, N, M> ::reinterpret(jems::operation(Operation::eMultiply, a, b));
 }
 
 // TODO: move to builtin
@@ -252,20 +280,22 @@ requires projectively_equivalent <T, U>
 auto max(const T &a, const U &b)
 {
 	using result = projection_t <T>;
-	return result(jems::builtin_intrinsic(
-		BuiltinIntrinsic::eMax,
-		project(a), project(b))
+	return result::reinterpret(
+		jems::builtin_intrinsic(
+			BuiltinIntrinsic::eMax,
+			project(a), project(b)
+		)
 	);
 }
 
 template <native_scalar T, size_t D>
 scalar <T> dot(const vector <T, D> &a, const vector <T, D> &b)
 {
-	return scalar <T> (jems::builtin_intrinsic(BuiltinIntrinsic::eDot, a, b));
+	return scalar <T> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsic::eDot, a, b));
 }
 
 template <native_float_scalar T, size_t N>
 vector <T, N> normalize(const vector <T, N> &v)
 {
-	return vector <T, N> (jems::builtin_intrinsic(BuiltinIntrinsic::eNormalize, v));
+	return vector <T, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsic::eNormalize, v));
 }

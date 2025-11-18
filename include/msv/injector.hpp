@@ -26,7 +26,7 @@ template <typename T>
 requires std::is_base_of_v <jems::handle, T>
 struct injector <T> {
 	static void main(T &item, Reference ref) {
-		item.ref = ref;
+		item.override_reference(ref);
 	}
 };
 
@@ -35,7 +35,7 @@ template <typename T, size_t ... Is>
 struct injector <field_trace <T, Is...>> {
 	template <auto &rsrc>
 	static void main(reference <rsrc> &value, Reference ref) {
-		static_access_chain <Is...> (value).ref = ref;
+		static_access_chain <Is...> (value).override_reference(ref);
 	}
 };
 

@@ -263,7 +263,8 @@ struct GLSL {
 			  		tin.argi, type.main(tin.type), tin.argi);
 			}
 
-			result += "\n";
+			if (block.context.thread_inputs.size())
+				result += "\n";
 			
 			for (auto &tout : block.context.thread_outputs) {
 				std::string qualifier = "?";
@@ -279,7 +280,8 @@ struct GLSL {
 			  		tout.argi, qualifier, type.main(tout.type), tout.argi);
 			}
 
-			result += "\n";
+			if (block.context.thread_outputs.size())
+				result += "\n";
 
 			for (auto &[_, refs] : block.context.global_resources) {
 				for (auto &ref : refs) {
@@ -298,8 +300,8 @@ struct GLSL {
 
 						auto group = grsrc.group.value_or(-1);
 						auto index = grsrc.index.value_or(-1);
-						result += fmt::format("layout (set = {}, binding = {}) {} {{\n",
-			    				group, index, modifier);
+						result += fmt::format("layout (set = {}, binding = {}) {} R{}{} {{\n",
+			    				group, index, modifier, group, index);
 						result += fmt::format("    {} r{}_i{};\n", type.main(grsrc.type), group, index);
 						result += "};\n\n";
 					}
