@@ -134,6 +134,29 @@ struct GLSL {
 			return parent.reference.impl(intrinsic);
 		}
 
+		std::string impl(const BuiltinIntrinsic &builtin) {
+			std::string out = "?";
+
+			switch (builtin.code) {
+			case BuiltinIntrinsic::eDot: out = "dot"; break;
+			case BuiltinIntrinsic::eMax: out = "max"; break;
+			case BuiltinIntrinsic::eNormalize: out = "normalize"; break;
+			default:
+				break;
+			}
+
+			out += "(";
+
+			auto nargs = builtin.args.size();
+			for (size_t i = 0; i < nargs; i++) {
+				out += main(builtin.args[i]);
+				if (i + 1 < nargs)
+					out += ", ";
+			}
+
+			return out + ")";
+		}
+
 		std::string main(Reference expression) {
 			auto ftn = [&](auto x) { return impl(x); };
 			return std::visit(ftn, *expression);
@@ -267,16 +290,17 @@ struct GLSL {
 				result += "\n";
 			
 			for (auto &tout : block.context.thread_outputs) {
-				std::string qualifier = "?";
+				std::string qualifier = "? ";
 				switch (tout.properties) {
-				case RateProperties::eSmooth: qualifier = "smooth"; break;
-				case RateProperties::eFlat: qualifier = "flat"; break;
-				case RateProperties::eNoPerspective: qualifier = "noperspective"; break;
+				case RateProperties::eFlat: qualifier = "flat "; break;
+				case RateProperties::eNone: qualifier = ""; break;
+				case RateProperties::eNoPerspective: qualifier = "noperspective "; break;
+				case RateProperties::eSmooth: qualifier = "smooth "; break;
 				default:
 					break;
 				}
 
-				result += fmt::format("layout (location = {}) {} out {} lout{};\n",
+				result += fmt::format("layout (location = {}) {}out {} lout{};\n",
 			  		tout.argi, qualifier, type.main(tout.type), tout.argi);
 			}
 

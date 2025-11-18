@@ -157,6 +157,7 @@ int main()
 
 	// TODO: should lift to push constant if possible...
 	// everything else is degenerated to constant/uniform buffer
+	// NOTE: the allocation is kept in the pipeline metadata...
 	using allocation = std::tuple <
 		group_allocation_record <camera, 0>,
 		group_allocation_record <transforms, 1>

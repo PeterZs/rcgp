@@ -120,6 +120,7 @@ enum class GlobalIntrinsic {
 };
 
 enum class RateProperties {
+	eNone,
 	eSmooth,
 	eFlat,
 	eNoPerspective,
@@ -140,13 +141,13 @@ struct ThreadOutput {
 
 struct BuiltinIntrinsic {
 	enum Code {
-		eSample,
-		eNormalize,
+		eCos,
+		eDot,
 		eMax,
 		eMin,
-		eDot,
+		eNormalize,
+		eSample,
 		eSin,
-		eCos,
 		eTan,
 	} code;
 

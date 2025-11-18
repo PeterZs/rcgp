@@ -5,6 +5,7 @@
 #include "../dsl/instructions.hpp"
 #include "stage_intrinsics.hpp"
 
+// TODO: probably needs the stage...
 template <typename R>
 struct _return_operator {};
 
@@ -13,7 +14,7 @@ struct return_handler_t {
 	static void main(const T &, size_t &argi) {}
 };
 
-template <typename T, RateProperties P>
+template <primitive T, RateProperties P>
 struct return_handler_t <Interpolant <T, P>> {
 	static void main(const Interpolant <T, P> &interpolant, size_t &argi) {
 		auto type = reconstruct_type <T> ();
@@ -24,6 +25,19 @@ struct return_handler_t <Interpolant <T, P>> {
 		auto &instr = *Reference(interpolant);
 		instr.template as <ThreadOutput> ()
 			.argi = argi;
+
+		argi++;
+	}
+};
+
+template <primitive T>
+struct return_handler_t <T> {
+	static void main(const T &value, size_t &argi) {
+		auto type = reconstruct_type <T> ();
+		auto tout = ThreadOutput(type, argi, RateProperties::eNone);
+		$tsb.context.add_thread_output(tout);
+
+		jems::store(jems::thread_output(tout), value);
 
 		argi++;
 	}
