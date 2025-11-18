@@ -69,7 +69,7 @@ struct Assembly {
 
 	std::string stringify_type(ArrayType x, Reference ref) {
 		return fmt::format("array({}, {})",
-			stringify(x.base), stringify(x.size));
+			stringify(x.base), x.size);
 	}
 	
 	std::string stringify(Type x, Reference ref) {
@@ -94,6 +94,11 @@ struct Assembly {
 	std::string stringify(Store x, Reference ref) {
 		return fmt::format("store {} {}",
 			stringify(x.destination), stringify(x.source));
+	}
+
+	std::string stringify(ArrayAccess x, Reference ref) {
+		return $assign fmt::format("index({}, {})",
+			stringify(x.value), stringify(x.index));
 	}
 
 	std::string stringify(FieldAccess x, Reference ref) {

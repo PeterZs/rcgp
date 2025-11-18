@@ -71,7 +71,7 @@ struct AggregateType : std::vector <Reference> {};
 
 struct ArrayType {
 	Reference base;
-	Reference size;
+	int64_t size;
 };
 
 struct Type : variant <
@@ -115,6 +115,7 @@ struct GlobalResource {
 
 enum class GlobalIntrinsic {
 	eSVPosition,
+	eInstanceIndex,
 };
 
 struct ThreadInput {
@@ -201,6 +202,11 @@ struct FieldAccess {
 	uint32_t fidx;
 };
 
+struct ArrayAccess {
+	Reference value;
+	Reference index;
+};
+
 struct Store {
 	Reference destination;
 	Reference source;
@@ -231,6 +237,8 @@ struct Block : std::vector <Reference> {
 		std::vector <Argument> arguments;
 		std::vector <ThreadInput> thread_inputs;
 		std::vector <ThreadOutput> thread_outputs;
+		// TODO: mark global resources here..
+		// need to map to argi of the signature...
 		
 		void add_argument(Argument arg) {
 			if (arguments.size() > arg.argi) {
@@ -275,6 +283,7 @@ struct Instruction : variant <
 	BuiltinIntrinsic,
 	Constant,
 	Construct,
+	ArrayAccess,
 	FieldAccess,
 	GlobalIntrinsic,
 	GlobalResource,

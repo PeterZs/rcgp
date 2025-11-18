@@ -6,25 +6,26 @@
 #include "reflection.hpp"
 
 // TODO: needs a layout...
-template <typename T>
+template <reflected T>
 struct ParameterBlock {
 	using reflection = parameter_block_reflection <T>;
 	UGP_REFLECTION_STAMP;
 };
 
-template <typename T>
+template <reflected T>
 struct StructuredBuffer : T {
 	using reflection = structured_buffer_reflection <T>;
 	UGP_REFLECTION_STAMP;
 };
 
-template <typename T, size_t D>
+template <native_scalar T, size_t D>
 struct Sampler : jems::handle {
 	using reflection = sampler_reflection <T, D>;
 	UGP_REFLECTION_STAMP;
 
-	// TODO: requires floating stuff
-	vector <T, D> sample(vector <float, D> x, $location) {
+	vector <T, D> sample(vector <T, D> x, $location) const
+		requires native_float_scalar <T>
+	{
 		return  jems::builtin_intrinsic_loc(loc, BuiltinIntrinsic::eSample, ref, x);
 	}
 };

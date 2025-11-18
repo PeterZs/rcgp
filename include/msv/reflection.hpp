@@ -9,8 +9,16 @@
 #include "this_injection.hpp"
 
 // Reflection types
+template <typename T>
+struct primitive_reflection {};
+
 template <typename Original, typename ... Ts>
-struct aggregate_reflection {};
+struct aggregate_reflection {
+	static constexpr size_t field_count = sizeof...(Ts);
+};
+
+template <typename T, int64_t N>
+struct array_reflection {};
 
 template <typename T>
 struct parameter_block_reflection {};
@@ -28,6 +36,15 @@ template <typename R, typename ... Args>
 struct function_reflection {};
 
 // Specific kinds of reflection
+template <typename T>
+struct is_primitive_reflection : std::false_type {};
+
+template <typename U>
+struct is_primitive_reflection <primitive_reflection <U>> : std::true_type {};
+
+template <typename T>
+constexpr bool is_primitive_reflection_v = is_primitive_reflection <T> ::value;
+
 template <typename T>
 struct is_aggregate_reflection : std::false_type {};
 
@@ -56,6 +73,24 @@ constexpr bool has_aggregate_reflection()
 		return false;
 }
 
+template <typename T>
+constexpr bool has_primitive_reflection()
+{
+	if constexpr (has_reflection <T> ())
+		return is_primitive_reflection_v <typename T::reflection>;
+	else
+		return false;
+}
+
+template <typename T>
+concept reflected = has_reflection <T> ();
+
+template <typename T>
+concept aggregate = has_aggregate_reflection <T> ();
+
+template <typename T>
+concept primitive = has_primitive_reflection <T> ();
+
 // Type registry for wholistic reflection
 template <typename T, std::size_t Index>
 struct scaffold_field {
@@ -64,6 +99,7 @@ struct scaffold_field {
 };
 
 #define AGGREGATE_FIELD_GENERATOR(T, field) std::declval <decltype(field)> (),
+// TODO: some way to skip?
 #define AGGREGATE_SCAFFOLD_GENERATOR(T, field)	\
 	scaffold_field <decltype(T::field), (__COUNTER__ - counter_base - 1)> field;
 #define AGGREGATE_FIELD_REFERENCE_GENERATOR(T, field)	\

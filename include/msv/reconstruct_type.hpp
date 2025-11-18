@@ -15,23 +15,31 @@ struct reconstructor_t {
 };
 
 template <typename T>
-struct reconstructor_t <scalar <T>> {
+struct reconstructor_t <primitive_reflection <scalar <T>>> {
 	static jems::handle main($location) {
 		return jems::type_loc(loc, T());
 	}
 };
 
 template <typename T, size_t N>
-struct reconstructor_t <vector <T, N>> {
+struct reconstructor_t <primitive_reflection <vector <T, N>>> {
 	static jems::handle main($location) {
 		return jems::type_loc(loc, VectorType <T, N> ());
 	}
 };
 
 template <typename T, size_t N, size_t M>
-struct reconstructor_t <matrix <T, N, M>> {
+struct reconstructor_t <primitive_reflection <matrix <T, N, M>>> {
 	static jems::handle main($location) {
 		return jems::type_loc(loc, MatrixType <T, N, M> ());
+	}
+};
+
+template <typename T, int64_t N>
+struct reconstructor_t <array_reflection <T, N>> {
+	static jems::handle main($location) {
+		auto base = reconstructor_t <T> ::main();
+		return jems::type_loc(loc, ArrayType(base, N));
 	}
 };
 

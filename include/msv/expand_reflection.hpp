@@ -10,10 +10,14 @@ struct expand_reflection {
 template <typename T>
 using expand_reflection_t = typename expand_reflection <T> ::type;
 
-template <typename T>
-requires (has_reflection <T> ())
+template <reflected T>
 struct expand_reflection <T> {
 	using type = expand_reflection_t <typename T::reflection>;
+};
+
+template <typename T, int64_t N>
+struct expand_reflection <array_reflection <T, N>> {
+	using type = array_reflection <expand_reflection_t <T>, N>;
 };
 
 template <typename T>

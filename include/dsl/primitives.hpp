@@ -6,10 +6,32 @@
 
 #include "jems.hpp"
 #include "macro_swizzle.hpp"
+#include "../util/logging.hpp"
+#include "../msv/reflection.hpp"
+
+// Classifying host primitive types
+template <typename T>
+concept native_scalar = bool(false
+	| std::same_as <T, bool>
+	| std::same_as <T, uint32_t>
+	| std::same_as <T, int32_t>
+	| std::same_as <T, float>
+	| std::same_as <T, uint64_t>);
 
 template <typename T>
+concept native_int_scalar = bool(false
+	| std::same_as <T, uint32_t>
+	| std::same_as <T, int32_t>);
+
+template <typename T>
+concept native_float_scalar = bool(false
+	| std::same_as <T, float>);
+
+// Scalars in GPU code
+template <native_scalar T>
 struct scalar : jems::handle {
-	static_assert(std::is_arithmetic_v <T>);
+	using reflection = primitive_reflection <scalar <T>>;
+	UGP_REFLECTION_STAMP;
 
 	scalar() = default;
 
@@ -20,8 +42,10 @@ struct scalar : jems::handle {
 };
 
 using i32 = scalar <int32_t>;
+using u32 = scalar <uint32_t>;
 using f32 = scalar <float>;
 
+// Vectors in GPU code
 template <Swizzle::Code S, typename T, typename R>
 struct swizzle_component {
 	operator R() const {
@@ -34,13 +58,13 @@ struct swizzle_component {
 	// TODO: assign operator, ect...
 };
 
-template <typename T, size_t D>
+template <native_scalar T, size_t D>
 struct vector;
 
-template <typename T, size_t D>
+template <native_scalar T, size_t D>
 struct vector_base : jems::handle {};
 
-template <typename T>
+template <native_scalar T>
 struct vector_base <T, 2> : jems::handle {
 	SWIZZLE_D2;
 
@@ -55,7 +79,7 @@ struct vector_base <T, 2> : jems::handle {
 		)) {}
 };
 
-template <typename T>
+template <native_scalar T>
 struct vector_base <T, 3> : jems::handle {
 	SWIZZLE_D3;
 
@@ -70,7 +94,7 @@ struct vector_base <T, 3> : jems::handle {
 		)) {}
 };
 
-template <typename T>
+template <native_scalar T>
 struct vector_base <T, 4> : jems::handle {
 	SWIZZLE_D4;
 
@@ -89,11 +113,12 @@ struct vector_base <T, 4> : jems::handle {
 		)) {}
 };
 
-template <typename T, size_t N>
+template <native_scalar T, size_t N>
 struct vector : vector_base <T, N> {
-	static_assert(std::is_arithmetic_v <T>);
-
 	using vector_base <T, N> ::vector_base;
+	
+	using reflection = primitive_reflection <vector <T, N>>;
+	UGP_REFLECTION_STAMP;
 
 	// Arithmetic operations
 	template <typename U>
@@ -116,12 +141,32 @@ using vec4 = vector <float, 4>;
 
 using ivec3 = vector <int32_t, 3>;
 
-template <typename T, size_t N, size_t M>
+// TODO: also support <type><X> flavor like CUDA/HLSL
+// e.g. float4, int4, uint4...
+
+template <native_scalar T, size_t N, size_t M>
 struct matrix : jems::handle {
-	static_assert(std::is_arithmetic_v <T>);
+	using reflection = primitive_reflection <matrix <T, N, M>>;
+	UGP_REFLECTION_STAMP;
 };
 
 using mat4 = matrix <float, 4, 4>;
+
+template <reflected T, int64_t N = -1>
+struct array : jems::handle {
+	using reflection = array_reflection <T, N>;
+	UGP_REFLECTION_STAMP;
+
+	template <native_int_scalar U>
+	T operator[](const scalar <U> &idx) const {
+		return T(jems::array_access(ref, idx.ref));
+	}
+
+	template <native_int_scalar U>
+	T operator[](U idx) const {
+		return (*this)[scalar <U> (idx)];
+	}
+};
 
 // TODO: capture source location here...
 template <typename T>

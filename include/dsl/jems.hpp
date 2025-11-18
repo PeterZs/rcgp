@@ -57,6 +57,7 @@ JEM(global_resource, GlobalResource);
 JEM(global_intrinsic, GlobalIntrinsic);
 JEM(builtin_intrinsic, BuiltinIntrinsic);
 JEM(swizzle, Swizzle);
+JEM(array_access, ArrayAccess);
 JEM(field_access, FieldAccess);
 JEM(store, Store);
 

@@ -2,7 +2,7 @@
 
 #include <functional>
 
-#include "msv/inject_arguments.hpp"
+#include "msv/stage_argument_injector.hpp"
 #include "msv/context.hpp"
 #include "msv/function_return_injection.hpp"
 #include "msv/reconstruct_type.hpp"

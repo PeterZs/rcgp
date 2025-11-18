@@ -69,7 +69,7 @@ struct type_string <std::tuple <Ts...>> {
 	template <size_t I>
 	static consteval auto eval() {
 		constexpr auto tabs = static_string <I> ('\t');
-		return $ss("sequence {\n")
+		return $ss("std::tuple {\n")
 			+ enumerated_type_strings <I + 1, true, 0, Ts...> ()
 			+ tabs + $ss("}");
 	}
