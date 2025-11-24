@@ -15,7 +15,9 @@ struct Window {
 
 	vk::Format format;
 	vk::SwapchainKHR swapchain;
+	std::vector <vk::Image> images;
 	std::vector <vk::ImageView> views;
+	std::vector <vk::ImageLayout> image_layouts;
 
 	struct Frame {
 		vk::Fence fence;

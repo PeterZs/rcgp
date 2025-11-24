@@ -59,10 +59,11 @@ Window Window::from(const Session &session, const Device &device)
 
 	result.swapchain = ldev.createSwapchainKHR(swapchain_info);
 
-	auto images = ldev.getSwapchainImagesKHR(result.swapchain);
+	result.images = ldev.getSwapchainImagesKHR(result.swapchain);
+	result.image_layouts.assign(result.images.size(), vk::ImageLayout::eUndefined);
 
-	result.views.reserve(images.size());
-	for (auto &image : images) {
+	result.views.reserve(result.images.size());
+	for (auto &image : result.images) {
 		auto range = vk::ImageSubresourceRange()
 			.setAspectMask(vk::ImageAspectFlagBits::eColor)
 			.setBaseArrayLayer(0)
@@ -80,7 +81,7 @@ Window Window::from(const Session &session, const Device &device)
 	}
 
 	result.frame_index = 0;
-	result.frames_in_flight = images.size();
+	result.frames_in_flight = result.images.size();
 
 	auto fence_info = vk::FenceCreateInfo()
 		.setFlags(vk::FenceCreateFlagBits::eSignaled);

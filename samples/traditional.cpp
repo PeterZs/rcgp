@@ -1,9 +1,12 @@
+#include "dsl/primitives.hpp"
+#include "msv/alignment.hpp"
+#include "util/meta.hpp"
+#include <glm/glm.hpp>
+
 #include <ugp.hpp>
+#include <utility>
 
-#include "util/transform.hpp"
-
-// TODO: mesh/model stuff goes into ext/
-struct Mesh {};
+// NOTE: nested aggregates will at use the above...
 
 // TODO: first parameter should be alignment rules...
 // TODO: for now we are assuming GLSL alignment rules...
@@ -19,22 +22,142 @@ struct Mesh {};
 // 	offset_by <uint32_t, 0>,
 // 	offset_by <glm::vec3[], 16>
 // >
+// padded_t = ...
+
+template <typename T, size_t N>
+struct padded_t {
+	T value;
+	[[no_unique_address]] char _pad[N];
+};
+
+template <typename T, size_t N>
+struct alignment <padded_t <T, N>> {
+	static constexpr size_t value = alignment <T> ::value;
+};
+
+// TODO: trivial and dynamic _tuples...
+
+template <auto &A, std::size_t ... Is>
+constexpr auto array_to_index_sequence_impl(std::index_sequence <Is...>)
+{
+	return std::index_sequence <A[Is]...> {};
+}
+
+template <auto &A>
+using array_to_index_sequence = decltype(array_to_index_sequence_impl <A> (std::make_index_sequence <A.size()> {}));
 
 // TODO: no more fields after dynamic part
-template <typename T, size_t Offset>
-struct offset_by {};
+template <typename ... Ts>
+consteval auto std430_layout_engine_impl()
+{
+	constexpr size_t N = sizeof...(Ts);
+
+	// TODO: need to deal with dynamic parts...
+	// constexpr bool dynamic = dynamic_v <Ts> || ...;
+	constexpr auto sizes = std::array <size_t, N> { sizeof(Ts)... };
+	constexpr auto aligns = std::array <size_t, N> { alignment_v <Ts> ... };
+
+	// At most one section of padding after each field
+	std::array <size_t, N> padding;
+
+	size_t offset = 0;
+	size_t malign = 0; // max align recorded
+
+	for (size_t i = 0; i < N; i++) {
+		auto corrected = align_up(offset, aligns[i]);
+
+		if (i > 0)
+			padding[i - 1] = corrected - offset;
+
+		offset = corrected + sizes[i];
+		malign = std::max(malign, aligns[i]);
+	}
+
+	// TODO: unless its dynamically sized...
+	padding[N - 1] = align_up(offset, malign) - offset;
+
+	return padding;
+}
+
+template <typename Fields, typename Padding>
+struct layout_stitcher {
+	using type = sequence <>;
+};
+
+template <typename T, typename ... Ts, size_t I, size_t ... Is>
+struct layout_stitcher <sequence <T, Ts...>, std::index_sequence <I, Is...>> {
+	using next = layout_stitcher <sequence <Ts...>, std::index_sequence <Is...>>;
+	using type = next::type::template push_front_t <padded_t <T, I>>;
+};
 
 template <typename ... Ts>
-struct std430_layout_engine {};
-// TODO: next and type
+consteval auto std430_layout_engine_dispatch(sequence <Ts...>)
+{
+	static constexpr auto padding = std430_layout_engine_impl <Ts...> ();
 
-// TODO: LayoutMappedBuffer <layout T>
+	using field_seq = sequence <Ts...>;
+	using padding_seq = array_to_index_sequence <padding>;
+
+	using stitched = layout_stitcher <field_seq, padding_seq> ::type;
+
+	return typename stitched::trivial_tuple();
+}
+
+template <typename T>
+struct fix_alignment_impl {
+	using type = T;
+};
+
+template <typename T, size_t N>
+struct fix_alignment_impl <T[N]> {
+	static constexpr size_t padding = align_up(sizeof(T), alignment_v <T>) - sizeof(T);
+	using base = padded_t <T, padding>;
+	using type = base[N];
+};
+
+template <typename T>
+struct fix_alignment_impl <T[]> {
+	static constexpr size_t padding = align_up(sizeof(T), alignment_v <T>) - sizeof(T);
+	using base = padded_t <T, padding>;
+	using type = base[];
+};
 
 template <typename ... Ts>
-struct FieldedBuffer {}; // : LayoutMappedBuffer <X_layout_engine <Ts...> ::type> {}
+consteval auto fix_alignment(sequence <Ts...>) -> sequence <typename fix_alignment_impl <Ts> ::type...>;
+
+template <typename ... Ts>
+consteval auto std430_layout_engine(sequence <Ts...> seq)
+{
+	using fseq = decltype(fix_alignment(seq));
+	using tuple = decltype(std430_layout_engine_dispatch(std::declval <fseq> ()));
+	return tuple();
+}
+
+// TODO: pass as template template to buffers, etc?
+template <typename ... Ts>
+using std430_layout_t = decltype(std430_layout_engine(std::declval <sequence <Ts...>> ()));
+
+// TODO: array elements need to be padded as well...
+// use the old strategy for padded tuples...
+using y = decltype(fix_alignment(std::declval <sequence <uint32_t, glm::vec3[3], uint32_t>> ()));
+using x = decltype(std430_layout_engine(std::declval <sequence <uint32_t, glm::vec3[3], uint32_t>> ()));
+using x = std430_layout_t <uint32_t, glm::vec3[3], uint32_t>;
+static_assert(sizeof(x) == 80);
+static_assert(x::offset <0> () == 0);
+static_assert(x::offset <1> () == 16);
+static_assert(x::offset <2> () == 64);
+
+template <template <typename ...> typename Layout, typename ... Ts>
+struct FieldedBuffer {
+	using tuple = Layout <Ts...>;
+}; // : LayoutMappedBuffer <X_layout_engine <Ts...> ::type> {}
+
+using FX = FieldedBuffer <std430_layout_t, uint32_t>;
+auto xx = FX();
+auto xy = FX::tuple();
 
 // template <typename ... Ts>
-// struct Buffer : Buffer {
+// struct ?Buffer : Buffer {
 // 	// TODO: method to write individual fields at a time
 // 	// TODO: alternatively provide a host "staging" item
 // 	// where unsized arrays are converted to vectors or so...
@@ -53,11 +176,6 @@ struct FieldedBuffer {}; // : LayoutMappedBuffer <X_layout_engine <Ts...> ::type
 // serve a host staging/data prep structure; the base type
 // will be a tuple, but then use the scaffold field members
 // to indirectly do this (with overloaded op=)
-
-enum class CommandsPhase {
-	Begin,
-	End,
-};
 
 struct group_device_window {
 	Device &device;
@@ -146,34 +264,9 @@ int main()
 
 	auto window = Window::from(session, device);
 
-	// Are compiler's combinators?
-	// TODO: should allow one/arbitrary argument combinators?
-	// auto compiler = Compiler::from(device, Compiler::Info());
-	// auto vsm = compiler(vs);
-	// auto fsm = compiler(fs);
-	//
-	// auto tgpc = combinators::tgp <Triangle> (Culling::None);
-	// auto ppl = tpgc(vsm, fsm);
-	//
-	// auto mvp_handle = ppl.handle <mvp> ();
-
-	// // Model : List <Mesh>
-	// auto model = Model::load("resources/meshes/armadillo.obj");
-	//
-	// // List::map
-	// auto geobufs = model.map([&](auto &mesh)
-	// {
-	// 	return GeometryBuffer::from(device, mesh);
-	// });
-
 	auto queue = Queue::from(device);
 	auto cpool = CommandPool::from(device, queue);
 	auto cmdbuffers = group(device, cpool).allocate(window.frames_in_flight);
-
-	// auto renderpass = RenderPass::from();
-	// auto framebuffers = List <Framebuffer> ::from();
-	//
-	// auto camera = Camera::from();
 
 	while (window.alive()) {
 		window.poll();
@@ -184,14 +277,45 @@ int main()
 		auto frame = window.next_frame();
 
 		group(device, window).wait(frame);
-		group(device, window).acquire_image(frame);
+		auto acquired = group(device, window).acquire_image(frame);
+		if (!acquired)
+			continue;
 
 		auto &cmd = cmdbuffers[window.frame_index];
 
+		cmd.reset();
 		cmd.begin(vk::CommandBufferBeginInfo());
+
+		auto &image = window.images[frame.image_index];
+		auto &layout = window.image_layouts[frame.image_index];
+		if (layout != vk::ImageLayout::ePresentSrcKHR) {
+			auto range = vk::ImageSubresourceRange()
+				.setAspectMask(vk::ImageAspectFlagBits::eColor)
+				.setBaseArrayLayer(0)
+				.setBaseMipLevel(0)
+				.setLayerCount(1)
+				.setLevelCount(1);
+
+			auto barrier = vk::ImageMemoryBarrier()
+				.setImage(image)
+				.setOldLayout(layout)
+				.setNewLayout(vk::ImageLayout::ePresentSrcKHR)
+				.setSrcAccessMask({})
+				.setDstAccessMask({})
+				.setSubresourceRange(range);
+
+			cmd.pipelineBarrier(
+				vk::PipelineStageFlagBits::eTopOfPipe,
+				vk::PipelineStageFlagBits::eBottomOfPipe,
+				{}, {}, {}, barrier
+			);
+
+			layout = vk::ImageLayout::ePresentSrcKHR;
+		}
+
 		cmd.end();
 
-		vk::PipelineStageFlags wait_stage = vk::PipelineStageFlagBits::eAllCommands;
+		vk::PipelineStageFlags wait_stage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 
 		auto submit_info = vk::SubmitInfo()
 			.setCommandBuffers(cmd)
@@ -207,50 +331,5 @@ int main()
 			.setWaitSemaphores(frame.rendered);
 
 		auto result = queue.presentKHR(present_info);
-
-		// auto result = ldev.waitForFences(next.fence, true, UINT64_MAX, dld);
-
-		// ...
-
-		// ldev.resetFences(next.fence);
-		
-		// Each map Cmd[X] -> Cmd[Y] is a stage?
-		// compositors are then fairly natural...
-		//
-		// EDSL:
-		//
-		// $stage(Frame) $cmd(...) { ... }
-
-		// auto next = window.next_frame_info();
-		// next.wait();
-		//
-		// auto &fbuf = framebuffers[next.image_index];
-		//
-		// auto origin = cmdbuffers[next.frame_index];
-		//
-		// // origin: Commands <Renderpass>
-		// auto a = origin.bind_pipeline(ppl);
-		// for (auto &geobuf : geobufs) {
-		// 	auto mvp = $solid(MVP) {
-		// 		.model = geobuf.xform.matrix(),
-		// 		.view = camera.view_matrix(),
-		// 		.proj = camera.proj_matrix(),
-		// 	};
-		//
-		// 	mvp_handle.write(mvp);
-		//
-		// 	auto b = a.bind_resource(mvp_handle);
-		// 	auto c = b.bind_vertex_buffer(...);
-		//
-		// 	// equivalent to: a = draw_indexed(...)(c);
-		// 	a = c.draw_indexed(...);
-		// }
-		//
-		// a.unbind_pipeline();
-		//
-		// // TODO: also synchronization..
-		// // mark read only usage with (const $use(X), ...)
-		//
-		// queue.submit();
 	}
 }

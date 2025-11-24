@@ -64,7 +64,7 @@ struct parameter_block_filter <Uniform, Resources, T, Ts...> {
 template <typename Uniform, typename Resources, typename T, size_t ... Is, typename ... Ts>
 requires is_resource_reflection_v <T>
 struct parameter_block_filter <Uniform, Resources, field_trace <T, Is...>, Ts...> {
-	using resources = typename Resources::template append_t <field_trace <T, Is...>>;
+	using resources = typename Resources::template push_back_t <field_trace <T, Is...>>;
 	using next = parameter_block_filter <Uniform, resources, Ts...>;
 	using type = next::type;
 };

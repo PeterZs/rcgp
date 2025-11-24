@@ -6,12 +6,6 @@
 #include <glslang/Public/ShaderLang.h>
 #include <glslang/SPIRV/GlslangToSpv.h>
 
-Compiler Compiler::from(const Device &device, const Info &info)
-{
-	(void) info;
-	return Compiler{device.logical};
-}
-
 std::vector <uint32_t> Compiler::glsl_to_spirv(const std::string &glsl, const EShLanguage &stage) const
 {
 	const char *cstr[] = { glsl.c_str() };
@@ -52,4 +46,18 @@ std::vector <uint32_t> Compiler::glsl_to_spirv(const std::string &glsl, const ES
 	std::vector <uint32_t> spirv;
 	glslang::GlslangToSpv(*program.getIntermediate(stage), spirv, &options);
 	return spirv;
+}
+
+vk::ShaderModule Compiler::spirv_to_shader_module(const std::vector <uint32_t> &spirv) const
+{
+	vk::ShaderModuleCreateInfo info;
+	info.setCodeSize(spirv.size() * sizeof(uint32_t));
+	info.setPCode(spirv.data());
+
+	return device.createShaderModule(info);
+}
+
+Compiler Compiler::from(const Device &device, const Info &info)
+{
+	return Compiler(device.logical);
 }
