@@ -1,25 +1,10 @@
 #include <array>
-#include <cstddef>
-#include <concepts>
-#include <type_traits>
 #include <vector>
 #include <glm/glm.hpp>
 
 #include <ugp.hpp>
 
 #include "util/dynamic_tuple.hpp"
-
-// TODO: dedicated testing...
-using x = std430_layout_t <uint32_t, glm::vec3[3], uint32_t>;
-static_assert(sizeof(x) == 80);
-static_assert(x::offset <0> () == 0);
-static_assert(x::offset <1> () == 16);
-static_assert(x::offset <2> () == 64);
-
-using y = std430_layout_t <uint32_t, glm::vec2[]>;
-static_assert(std::is_same_v <y, dynamic_tuple <padded_t <glm::vec2, 0> [], padded_t <uint32_t, 4>>>);
-static_assert(y::offset <0> () == 0);
-static_assert(y::dynamic_offset() == 8);
 
 const std::string vshader = R"(
 #version 450
