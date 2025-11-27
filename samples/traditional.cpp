@@ -1,6 +1,7 @@
 #include <array>
 #include <cstddef>
 #include <concepts>
+#include <type_traits>
 #include <vector>
 #include <glm/glm.hpp>
 
@@ -8,14 +9,17 @@
 
 #include "util/dynamic_tuple.hpp"
 
+// TODO: dedicated testing...
 using x = std430_layout_t <uint32_t, glm::vec3[3], uint32_t>;
 static_assert(sizeof(x) == 80);
 static_assert(x::offset <0> () == 0);
 static_assert(x::offset <1> () == 16);
 static_assert(x::offset <2> () == 64);
 
-template <template <typename ...> typename Layout, typename ... Ts>
-using TBuffer = TupleBuffer <Layout <Ts...>>;
+using y = std430_layout_t <uint32_t, glm::vec2[]>;
+static_assert(std::is_same_v <y, dynamic_tuple <padded_t <glm::vec2, 0> [], padded_t <uint32_t, 4>>>);
+static_assert(y::offset <0> () == 0);
+static_assert(y::dynamic_offset() == 8);
 
 const std::string vshader = R"(
 #version 450
@@ -38,6 +42,12 @@ void main()
 	color = vec4(1);
 }
 )";
+
+template <template <typename Data> typename Scaffold, typename Data>
+struct Mirror : Scaffold <Data> {};
+// TODO: Vertex::scaffold, trivial_tuple <...>
+// Scaffold <T> : T {};
+// field <Data, I> ::operator= -> get <I>
 
 int main()
 {
@@ -138,7 +148,9 @@ int main()
 
 	auto pipeline = TraditionalGraphicsPipeline::from(device, dld, pipeline_info);
 
-	using VBuffer = TupleBuffer <dynamic_tuple <glm::vec2[]>>;
+	// using VBuffer = TupleBuffer <dynamic_tuple <glm::vec2[]>>;
+	// TODO: nested aggregates...
+	using VBuffer = TBuffer <std430_layout_t, glm::vec2[]>;
 
 	auto vbuf = VBuffer::from(
 		device,
@@ -150,7 +162,7 @@ int main()
 
 	auto vbuf_value = VBuffer::value_type();
 
-	auto &dyn = vbuf_value.dynamics();
+	auto &dyn = vbuf_value.dynamic();
 	dyn.resize(3);
 
 	dyn[0] = glm::vec2(-0.5f, -0.5f);

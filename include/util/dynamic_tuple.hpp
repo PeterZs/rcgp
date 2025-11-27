@@ -5,6 +5,7 @@
 
 #include "align.hpp"
 #include "trivial_tuple.hpp"
+#include "sequence.hpp"
 
 template <typename ... Ts>
 class dynamic_tuple;
@@ -17,6 +18,13 @@ class dynamic_tuple <T[], Ts...> {
 	
 	[[no_unique_address]] statics_t statics_storage;
 	std::vector <T> dynamics_storage;
+
+	static constexpr size_t statics_size() {
+		if constexpr (sizeof...(Ts))
+			return sizeof(statics_t);
+		else
+			return 0;
+	}
 public:
 	dynamic_tuple() = default;
 
@@ -38,22 +46,19 @@ public:
 		return statics_t::template offset <Index> ();
 	}
 
-	static constexpr size_t statics_size() {
-		if constexpr (sizeof...(Ts))
-			return sizeof(statics_t);
-		else
-			return 0;
+	static constexpr size_t dynamic_offset() {
+		return align_up(statics_size(), alignof(T));
 	}
 
 	static constexpr size_t size(size_t elements) {
-		return statics_size() + sizeof(T) * elements;
+		return dynamic_offset() + sizeof(T) * elements;
 	}
 
-	std::vector <T> &dynamics() {
+	std::vector <T> &dynamic() {
 		return dynamics_storage;
 	}
 
-	const std::vector <T> &dynamics() const {
+	const std::vector <T> &dynamic() const {
 		return dynamics_storage;
 	}
 
@@ -65,3 +70,6 @@ public:
 		return statics_storage;
 	}
 };
+
+template <typename T, typename ... Ts>
+auto new_dynamic_tuple(T, sequence <Ts...>) -> dynamic_tuple <T[], Ts...>;

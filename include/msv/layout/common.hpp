@@ -5,7 +5,8 @@
 #include <utility>
 
 #include "../alignment.hpp"
-#include "../../util/meta.hpp"
+#include "../../util/sequence.hpp"
+#include "../../util/dynamic_tuple.hpp"
 
 template <typename T, size_t N>
 struct padded_t {
