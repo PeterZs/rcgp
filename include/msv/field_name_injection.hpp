@@ -21,13 +21,13 @@ struct Writer {
 
 void adl_lever();
 
-}
+} // namespace field_name_injection
 
-#define FIELD_NAME_INJECTION(T, field)				\
-	inline static const field_name_injection::Writer <	\
-		field_name_injection::field_ref <		\
-			T, decltype(scaffold::field)::index	\
-		>, $ss(#field)					\
+#define FIELD_NAME_INJECTION(T, field)					\
+	inline static const field_name_injection::Writer <		\
+		field_name_injection::field_ref <			\
+			T, decltype(field_counter::field)::value	\
+		>, $ss(#field)						\
 	> _##field##_name_injector;
 
 #define $field_name(T, index) 						\

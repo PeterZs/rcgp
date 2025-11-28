@@ -28,11 +28,46 @@ void main()
 }
 )";
 
-template <template <typename Data> typename Scaffold, typename Data>
-struct Mirror : Scaffold <Data> {};
-// TODO: Vertex::scaffold, trivial_tuple <...>
-// Scaffold <T> : T {};
-// field <Data, I> ::operator= -> get <I>
+// Actually has data
+template <typename Tuple, aggregate T>
+struct scaffold_with_memory : Tuple, scaffold <Tuple, T> {};
+
+struct X {
+	vec3 x;
+	vec3 y;
+
+	$reflection(x, y);
+};
+
+auto ftn = [] {
+	using S = scaffold_with_memory <dynamic_tuple <glm::vec3[], glm::vec4>, X>;
+
+	S x;
+	x.x= glm::vec4(12.0);
+	x.y->reserve(40);
+};
+
+// NOTE: scaffolds will be used for mirrors:
+// - data mirrors use $mirror(X) and simply translate the
+// 	aggregate into a sequence and apply layout engines to
+// 	get the final tuple type (dynamic or trivial)
+// - resource mirrors obtained from pipeline handles (with .descriptor <ref>)
+// 	will hold a pseudo-descriptor which can be assigned various
+// 	resources (i.e. ggx_handle.set(ggx_buffer)); for parameters
+// 	block we may need to split into a constant and dynamic part?
+// 	OR we can require the free fields (not in buffers) to be constant/ordinary...
+// 	(this is the preferred approach)...
+// 	then each pblock_handle has a constant parts from ordinary fields
+// 	and pseudo-descriptors for the rest; but should we explicitly manage
+// 	the constant part?? I think they should all point to the same pseudo-descriptor...
+// 	SOLN: if a field is in teh constant block then make its constant_block_shadow
+// 	and then provide a constant field which is its own pseudo-desciptor for the whole cblock
+// 	the general philosophy here is: dont manage data for the user, just provide a scaffold
+// 	for the resources and binding...
+// 	as a corellary, parameter block handles are trivial tuples (scaffolds over)
+// 	then we also need a $constant(pblock) mirror which extracts a trviial_tuple from the
+// 	parameter block and sets all resource fields to constant_block_disable
+// 	UNLESS there is some way to mask out fields...
 
 int main()
 {
