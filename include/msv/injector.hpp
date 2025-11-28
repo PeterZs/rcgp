@@ -8,6 +8,7 @@
 #include "reference.hpp"
 #include "reflection.hpp"
 #include "static_string.hpp"
+#include "static_access_chain.hpp"
 
 template <typename T, size_t ... Is>
 struct field_trace;

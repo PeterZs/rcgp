@@ -1,17 +1,67 @@
 #pragma once
 
-#include <array>
 #include <cstddef>
 #include <utility>
 
-#include "../alignment.hpp"
 #include "../../util/sequence.hpp"
-#include "../../util/dynamic_tuple.hpp"
+#include "../../util/align.hpp"
+
+// Padded elements
+template <typename T, size_t N>
+class padded_t : public T {
+	[[no_unique_address]] char _pad[N];
+public:
+	padded_t() = default;
+	padded_t(const T &value_) : T(value_) {}
+
+	auto &operator=(const T &value_) {
+		return T::operator=(value_);
+	}
+
+	operator T &() & {
+		return static_cast <T &> (*this);
+	}
+
+	operator const T &() const {
+		return static_cast <T &> (*this);
+	}
+};
+
+template <typename T, size_t Extent, size_t Pad>
+class padded_t <T[Extent], Pad> {
+	T value[Extent];
+	[[no_unique_address]] char _pad[Pad];
+public:
+	padded_t() = default;
+
+	auto &operator[](size_t index) {
+		return value[index];
+	}
+
+	const auto &operator[](size_t index) const {
+		return value[index];
+	}
+
+	using array_type = T[Extent];
+
+	operator array_type &() {
+		return value;
+	}
+
+	operator const array_type &() const {
+		return value;
+	}
+};
 
 template <typename T, size_t N>
-struct padded_t {
+requires std::is_fundamental_v <T>
+class padded_t <T, N> {
+	// Need to manually place field
 	T value;
 	[[no_unique_address]] char _pad[N];
+public:
+	padded_t() = default;
+	padded_t(const T &value_) : value(value_) {}
 
 	padded_t &operator=(const T &value_) {
 		value = value_;
@@ -27,11 +77,7 @@ struct padded_t {
 	}
 };
 
-template <typename T, size_t N>
-struct alignment <padded_t <T, N>> {
-	static constexpr size_t value = alignment <T> ::value;
-};
-
+// Translating arrays to index sequences at compile-time
 template <auto &A, std::size_t ... Is>
 constexpr auto array_to_index_sequence_impl(std::index_sequence <Is...>)
 {
@@ -41,28 +87,7 @@ constexpr auto array_to_index_sequence_impl(std::index_sequence <Is...>)
 template <auto &A>
 using array_to_index_sequence = decltype(array_to_index_sequence_impl <A> (std::make_index_sequence <A.size()> {}));
 
-template <typename T>
-struct fix_alignment_impl {
-	using type = T;
-};
-
-template <typename T, size_t N>
-struct fix_alignment_impl <T[N]> {
-	static constexpr size_t padding = align_up(sizeof(T), alignment_v <T>) - sizeof(T);
-	using base = padded_t <T, padding>;
-	using type = base[N];
-};
-
-template <typename T>
-struct fix_alignment_impl <T[]> {
-	static constexpr size_t padding = align_up(sizeof(T), alignment_v <T>) - sizeof(T);
-	using base = padded_t <T, padding>;
-	using type = base[];
-};
-
-template <typename ... Ts>
-consteval auto fix_alignment(sequence <Ts...>) -> sequence <typename fix_alignment_impl <Ts> ::type...>;
-
+// Associate fields with padding amounts
 template <typename Fields, typename Padding>
 struct layout_stitcher {
 	using type = sequence <>;

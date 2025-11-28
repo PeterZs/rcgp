@@ -4,6 +4,7 @@
 
 #include "reflection.hpp"
 #include "static_string.hpp"
+#include "static_access_chain.hpp"
 
 template <auto &rsrc>
 struct reference_base {

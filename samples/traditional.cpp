@@ -28,9 +28,80 @@ void main()
 }
 )";
 
-// Actually has data
-template <typename Tuple, aggregate T>
-struct scaffold_with_memory : Tuple, scaffold <Tuple, T> {};
+namespace detail {
+
+// TODO: custom implementation later?
+template <typename T>
+using unsized_array = std::vector <T>;
+
+} // namespace detail
+
+template <typename T, size_t N>
+struct type_and_alignment {
+	using type = T;
+	
+	static constexpr size_t value = N;
+};
+
+// TODO: layouts take reflection and spit out
+// a sequence of type_and_alignment... (or nested sequences)
+
+namespace {
+
+namespace std430 {
+
+template <typename T>
+struct layout_engine {
+	static_assert(false, ($ss("s::layout_engine not implemented for type ") + $ss_type(T)).view());
+};
+
+template <typename Original, typename ... Ts>
+struct layout_engine <aggregate_reflection <Original, Ts...>> {
+	static constexpr size_t alignment = std::max({ layout_engine <Ts> ::alignment... });
+	using type = sequence <typename layout_engine <Ts> ::type...>;
+};
+
+template <native_scalar T, size_t N, size_t M>
+struct layout_engine <primitive_reflection <matrix <T, N, M>>> {
+	// TODO: equals the alignment of row vector
+	static constexpr size_t alignment = 16;
+	using type = type_and_alignment <
+		glm::mat <M, N, T>,
+		alignment
+	>;
+};
+
+} // namespace std430
+
+namespace layouts {
+
+template <typename T>
+using std430 = std430::layout_engine <T>;
+
+} // namespace layouts
+
+struct View {
+	mat4 model;
+	mat4 view;
+	mat4 proj;
+
+	$reflection(model, view, proj);
+};
+
+template <template <typename> typename Engine, typename T>
+struct data_mirror {
+	using layout = Engine <expand_reflection_t <T>>;
+	using type = scaffold_lookup <
+		layout::alignment, T,
+		typename layout::type
+	> ::type;
+};
+
+#define $mirror(L, T) data_mirror <layouts::L, T> ::type
+
+using S = data_mirror <layouts::std430, View> ::type;
+
+}
 
 struct X {
 	vec3 x;
@@ -40,11 +111,30 @@ struct X {
 };
 
 auto ftn = [] {
-	using S = scaffold_with_memory <dynamic_tuple <glm::vec3[], glm::vec4>, X>;
+	// TODO: now layouts will only need to
+	// compute alignment requirements...
+	using Y = scaffold_lookup <
+		4,
+		X,
+		sequence <
+			type_and_alignment <glm::vec3, 4>,
+			type_and_alignment <glm::vec3, 4>
+		>
+	> ::type;
 
-	S x;
-	x.x= glm::vec4(12.0);
-	x.y->reserve(40);
+	static_assert(sizeof(Y) == 24);
+	static_assert(offsetof(Y, x) == 0);
+	static_assert(offsetof(Y, y) == 12);
+
+	Y y {
+		.x = glm::vec3(1.0f),
+		// .y = glm::vec3(2.0f),
+	};
+
+	S s {
+		.model = glm::mat4(1.0),
+		.proj = glm::mat4(0.1),
+	};
 };
 
 // NOTE: scaffolds will be used for mirrors:
@@ -69,6 +159,15 @@ auto ftn = [] {
 // 	parameter block and sets all resource fields to constant_block_disable
 // 	UNLESS there is some way to mask out fields...
 
+// TODO: base TBuffer from this...
+// Static-dynamic partition:
+// 	Static = void --> purely dynamic
+// 	Dynamic = void --> purely static
+template <typename Static, size_t Offset, typename Dynamic>
+struct SDPartition {};
+
+// TODO: write down the implementation design somewhere in docs...
+// will help spotting parts that are stupid
 int main()
 {
 	auto session_info = Session::Info {
@@ -168,9 +267,9 @@ int main()
 
 	auto pipeline = TraditionalGraphicsPipeline::from(device, dld, pipeline_info);
 
-	// using VBuffer = TupleBuffer <dynamic_tuple <glm::vec2[]>>;
-	// TODO: nested aggregates...
-	using VBuffer = TBuffer <std430_layout_t, glm::vec2[]>;
+	// TODO: nested aggregates... TODO: should be array <Vertex>
+	// TODO: will need to rethink TBuffer...
+	using VBuffer = TBuffer <::layouts::std430, glm::vec2[]>;
 
 	auto vbuf = VBuffer::from(
 		device,

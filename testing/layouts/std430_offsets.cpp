@@ -37,6 +37,17 @@ static_assert(repeated_vec2::offset <1> () == 8);
 static_assert(repeated_vec2::offset <2> () == 16);
 static_assert(sizeof(repeated_vec2) == 24);
 
+// Nested aggregate should respect inner alignment
+using nested_struct = std430_layout_t <sequence <glm::vec3, uint32_t>, glm::vec2>;
+static_assert(nested_struct::offset <0> () == 0);
+static_assert(nested_struct::offset <1> () == 16);
+static_assert(sizeof(nested_struct) == 32);
+
+// Single nested aggregate should remain tightly packed
+using single_nested = std430_layout_t <sequence <glm::vec2>>;
+static_assert(single_nested::offset <0> () == 0);
+static_assert(sizeof(single_nested) == 8);
+
 // Static array followed by smaller vector
 using array_and_vec = std430_layout_t <glm::vec3[2], glm::vec2>;
 static_assert(std::is_same_v <

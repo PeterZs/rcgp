@@ -9,6 +9,7 @@
 #include "msv/reconstruct_type.hpp"
 #include "msv/reference.hpp"
 #include "msv/reflection.hpp"
+#include "msv/reflection_builder.hpp"
 #include "msv/resources.hpp"
 #include "msv/return_handler.hpp"
 #include "msv/stage.hpp"

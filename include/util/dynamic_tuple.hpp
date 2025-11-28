@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <vector>
+#include <type_traits>
 
 #include "align.hpp"
 #include "trivial_tuple.hpp"
@@ -27,6 +28,8 @@ class dynamic_tuple <T[], Ts...> {
 			return 0;
 	}
 public:
+	using element_type = T;
+
 	dynamic_tuple() = default;
 
 	template <size_t Index>
@@ -104,4 +107,4 @@ public:
 };
 
 template <typename T, typename ... Ts>
-auto new_dynamic_tuple(T, sequence <Ts...>) -> dynamic_tuple <T[], Ts...>;
+auto new_dynamic_tuple(std::type_identity <T>, sequence <Ts...>) -> dynamic_tuple <T, Ts...>;

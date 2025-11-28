@@ -48,10 +48,6 @@ add_executable(traditional samples/traditional.cpp)
 target_precompile_headers(prototype PRIVATE <vulkan/vulkan.hpp>)
 target_precompile_headers(traditional REUSE_FROM prototype)
 
-target_link_libraries(prototype
-	PRIVATE
-	ugp
-	mrd
-)
+target_link_libraries(prototype PRIVATE ugp mrd)
 
 target_link_libraries(traditional PRIVATE ugp)

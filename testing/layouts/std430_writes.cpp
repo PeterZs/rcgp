@@ -59,7 +59,12 @@ TEST_CASE("std430 dynamic tuple writes match contiguous struct layout", "[std430
 	expected.vectors[1] = tuple.dynamic()[1];
 
 	REQUIRE(layout::size(tuple.dynamic().size()) == sizeof(Mirror));
-	REQUIRE(layout::dynamic_offset() == offsetof(Mirror, vectors));
+
+	const auto mirror_vectors_offset = static_cast <size_t> (
+		reinterpret_cast <std::byte *> (&expected.vectors)
+		- reinterpret_cast <std::byte *> (&expected)
+	);
+	REQUIRE(layout::dynamic_offset() == mirror_vectors_offset);
 
 	std::vector <std::byte> tuple_bytes(layout::size(tuple.dynamic().size()), std::byte { 0 });
 	std::memcpy(tuple_bytes.data(), &tuple.statics(), sizeof(tuple.statics()));

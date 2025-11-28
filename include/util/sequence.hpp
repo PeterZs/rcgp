@@ -4,13 +4,13 @@
 
 #include "trivial_tuple.hpp"
 
-// Tuples without the backage
+// Tuples without the baggage
 template <typename ... Args>
 struct sequence {
-	sequence() = default;
+	static constexpr size_t size = sizeof...(Args);
 
-	template <typename T, typename ... Rest>
-	sequence(T, Rest...) {}
+	sequence(Args...) requires (size > 0) {}
+	sequence(std::type_identity <Args> ...) {}
 
 	template <typename T>
 	using push_front_t = sequence <T, Args...>;
@@ -20,8 +20,16 @@ struct sequence {
 
 	using tuple = std::tuple <Args...>;
 	using trivial_tuple = trivial_tuple <Args...>;
+
+	template <template <typename ...> typename F>
+	using invoke = F <Args...>;
+
+	static inline sequence singleton {
+		std::type_identity <Args> ()...
+	};
 };
 
+// TODO: this can be a Ts...[I] operation...
 template <typename Seq>
 struct last_type;
 

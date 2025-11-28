@@ -6,14 +6,57 @@
 
 // Trivially constructable tuple that supports POD fields and dynamic arrays
 template <typename ... Ts>
-class trivial_tuple {};
+struct trivial_tuple {};
 
 template <>
-class trivial_tuple <> {
-public:
+struct trivial_tuple <> {
 	template <size_t Index>
 	static consteval size_t offset() {
 		static_assert(Index != Index, "tuple index out of range");
+		return 0;
+	}
+};
+
+template <typename T>
+class trivial_tuple <T> {
+	T x;
+public:
+	template <size_t Index>
+	auto &get() {
+		static_assert(Index == 0, "tuple index out of range");
+		return x;
+	}
+
+	template <size_t Index>
+	const auto &get() const {
+		static_assert(Index == 0, "tuple index out of range");
+		return x;
+	}
+
+	// Multi-level indices
+	template <size_t Index, size_t ... Rest>
+	auto &get_recursive() {
+		static_assert(Index == 0, "tuple index out of range");
+
+		if constexpr (sizeof...(Rest))
+			return x.template get <Rest...> ();
+		else
+			return x;
+	}
+
+	template <size_t Index, size_t ... Rest>
+	const auto &get_recursive() const {
+		static_assert(Index == 0, "tuple index out of range");
+
+		if constexpr (sizeof...(Rest))
+			return x.template get <Rest...> ();
+		else
+			return x;
+	}
+
+	template <size_t Index>
+	static consteval size_t offset() {
+		static_assert(Index == 0, "tuple index out of range");
 		return 0;
 	}
 };

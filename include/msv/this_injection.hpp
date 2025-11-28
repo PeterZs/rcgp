@@ -21,9 +21,9 @@ inline void adl_lever();
 template <typename T>
 using Read = std::remove_pointer_t <decltype(adl_lever(Reader <T> {}))>;
 
-};
+} // namespace this_injection
 
-#define THIS_INJECTION()				\
+#define DEFINE_THIS()					\
 	struct _injection_tag {};			\
 	constexpr auto _this_injector() -> decltype(	\
 		this_injection::Writer <		\

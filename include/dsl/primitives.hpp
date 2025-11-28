@@ -8,6 +8,7 @@
 #include "macro_swizzle.hpp"
 #include "../util/logging.hpp"
 #include "../msv/reflection.hpp"
+#include "../msv/reflection_builder.hpp"
 
 // Classifying host primitive types
 template <typename T>
@@ -33,7 +34,7 @@ class scalar : public jems::handle {
 	explicit scalar(const jems::handle &h) : handle(h) {}
 public:
 	using reflection = primitive_reflection <scalar <T>>;
-	UGP_REFLECTION_STAMP;
+	DEFINE_REFLECTION_STAMP();
 
 	using native_scalar_type = T;
 
@@ -147,7 +148,7 @@ struct vector : public vector_base <T, N> {
 	using vector_base <T, N> ::vector_base;
 	
 	using reflection = primitive_reflection <vector <T, N>>;
-	UGP_REFLECTION_STAMP;
+	DEFINE_REFLECTION_STAMP();
 	
 	static auto reinterpret(const jems::handle &h) {
 		return vector(h);
@@ -187,7 +188,7 @@ class matrix : public jems::handle {
 	explicit matrix(const jems::handle &h) : handle(h) {}
 public:
 	using reflection = primitive_reflection <matrix <T, N, M>>;
-	UGP_REFLECTION_STAMP;
+	DEFINE_REFLECTION_STAMP();
 
 	matrix() = default;
 
@@ -245,7 +246,7 @@ concept projectively_int_scalar = projectively_scalar <T>
 template <reflected T, int64_t N = -1>
 struct array : public jems::handle {
 	using reflection = array_reflection <T, N>;
-	UGP_REFLECTION_STAMP;
+	DEFINE_REFLECTION_STAMP();
 
 	template <projectively_int_scalar U>
 	T operator[](const U &idx) const {
