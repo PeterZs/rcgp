@@ -18,6 +18,10 @@ struct aggregate_reflection {
 
 	template <size_t I>
 	using field_type = Ts...[I];
+
+	// TODO: static_assert check here to ensure at most
+	// one dynamic component (and finding the conflicting
+	// ones)
 };
 
 template <typename T, int64_t N>

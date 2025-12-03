@@ -17,7 +17,7 @@ struct Buffer {
 	vk::BufferUsageFlags usage;
 	vk::MemoryPropertyFlags properties;
 
-	void upload(const void *data, size_t bytes, vk::DeviceSize relative_offset = 0) const;
+	void write(const void *data, size_t bytes, vk::DeviceSize relative_offset = 0) const;
 	void destroy();
 
 	// TODO: info with size, usage, memory properties (and defaults)

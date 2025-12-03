@@ -3,7 +3,7 @@
 
 #include "rhi/buffer.hpp"
 
-void Buffer::upload(const void *data, size_t bytes, vk::DeviceSize relative_offset) const
+void Buffer::write(const void *data, size_t bytes, vk::DeviceSize relative_offset) const
 {
 	if (relative_offset + bytes > size)
 		fatal("buffer upload exceeds allocation ({} + {} > {})", relative_offset, bytes, size);
