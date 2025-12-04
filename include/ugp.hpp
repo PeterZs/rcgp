@@ -26,6 +26,7 @@
 
 #include "rhi/buffer.hpp"
 #include "rhi/command_pool.hpp"
+#include "rhi/descriptor_pool.hpp"
 #include "rhi/compiler.hpp"
 #include "rhi/device.hpp"
 #include "rhi/group.hpp"

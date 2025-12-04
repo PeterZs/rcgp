@@ -69,6 +69,13 @@ TraditionalGraphicsPipeline TraditionalGraphicsPipeline::from(const Device &devi
 	auto color_blend = vk::PipelineColorBlendStateCreateInfo()
 		.setAttachments(color_blend_attachment);
 
+	auto depth_stencil = vk::PipelineDepthStencilStateCreateInfo()
+		.setDepthTestEnable(info.depth_test)
+		.setDepthWriteEnable(info.depth_test)
+		.setDepthCompareOp(vk::CompareOp::eLess)
+		.setDepthBoundsTestEnable(false)
+		.setStencilTestEnable(false);
+
 	auto pipeline_layout = info.layout;
 	if (!pipeline_layout)
 		pipeline_layout = device.logical.createPipelineLayout(vk::PipelineLayoutCreateInfo(), nullptr, ldl);
@@ -80,6 +87,7 @@ TraditionalGraphicsPipeline TraditionalGraphicsPipeline::from(const Device &devi
 		.setPRasterizationState(&rasterization)
 		.setPMultisampleState(&multisampling)
 		.setPColorBlendState(&color_blend)
+		.setPDepthStencilState(&depth_stencil)
 		.setPViewportState(&viewport_state)
 		.setStages(shader_stages)
 		.setRenderPass(info.renderpass)

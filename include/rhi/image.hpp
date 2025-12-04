@@ -2,29 +2,32 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "device.hpp"
+#include "../util/logging.hpp"
+
 struct Image {
+	Device device;
 	vk::Image handle;
+	vk::DeviceMemory backing;
 	vk::ImageView view;
 	vk::ImageLayout layout = vk::ImageLayout::eUndefined;
 	vk::Extent2D extent;
 	vk::Format format = vk::Format::eUndefined;
+	vk::ImageUsageFlags usage;
+	vk::MemoryPropertyFlags properties;
+	vk::ImageTiling tiling = vk::ImageTiling::eOptimal;
 
-	vk::ImageMemoryBarrier memory_barrier(vk::ImageLayout new_layout, vk::AccessFlags src_access = {}, vk::AccessFlags dst_access = {}) {
-		vk::ImageMemoryBarrier barrier;
-		barrier.setImage(handle)
-			.setOldLayout(layout)
-			.setNewLayout(new_layout)
-			.setSrcAccessMask(src_access)
-			.setDstAccessMask(dst_access)
-			.setSubresourceRange(
-				vk::ImageSubresourceRange()
-					.setAspectMask(vk::ImageAspectFlagBits::eColor)
-					.setBaseArrayLayer(0)
-					.setBaseMipLevel(0)
-					.setLayerCount(1)
-					.setLevelCount(1)
-			);
-		layout = new_layout;
-		return barrier;
-	}
+	vk::ImageMemoryBarrier memory_barrier(vk::ImageLayout new_layout, vk::AccessFlags src_access = {}, vk::AccessFlags dst_access = {});
+
+	void destroy();
+
+	static Image from(
+		const Device &device,
+		vk::Extent2D extent,
+		vk::Format format,
+		vk::ImageUsageFlags usage,
+		vk::ImageAspectFlags aspect,
+		vk::MemoryPropertyFlags properties,
+		vk::ImageTiling tiling = vk::ImageTiling::eOptimal
+	);
 };

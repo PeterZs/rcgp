@@ -15,13 +15,18 @@ struct MirrorBuffer <T, Engine> : Buffer {
 		return value_type();
 	}
 
-	void write(const value_type &data) const
-	{
+	void write(const value_type &data) const {
 		Buffer::write(&data, sizeof(value_type), 0);
 	}
 
-	static MirrorBuffer from(const Device &device, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties)
-	{
+	vk::DescriptorBufferInfo descriptor_info() const {
+		return vk::DescriptorBufferInfo()
+			.setBuffer(handle)
+			.setOffset(offset)
+			.setRange(sizeof(value_type));
+	}
+
+	static MirrorBuffer from(const Device &device, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties) {
 		auto base = Buffer::from(device, sizeof(value_type), usage, properties);
 
 		MirrorBuffer result;
@@ -39,8 +44,7 @@ struct MirrorBuffer <T, Engine> : Buffer {
 		return value_type();
 	}
 
-	void write(const value_type &data) const
-	{
+	void write(const value_type &data) const {
 		// TODO: do this all in one mapped context
 		auto [dyn, offset] = dynamic_part <T> (data);
 		if (offset > 0)
@@ -51,8 +55,7 @@ struct MirrorBuffer <T, Engine> : Buffer {
 		Buffer::write(dyn.data(), dyn.size() * sizeof(element), offset);
 	}
 
-	static MirrorBuffer from(const Device &device, size_t max_elements, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties)
-	{
+	static MirrorBuffer from(const Device &device, size_t max_elements, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties) {
 		value_type data;
 		auto [dyn, offset] = dynamic_part <T> (data);
 		using element = std::decay_t <decltype(dyn)> ::value_type;

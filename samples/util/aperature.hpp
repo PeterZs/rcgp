@@ -3,8 +3,8 @@
 #include <glm/glm.hpp>
 
 struct Aperature {
-	float aspect = 45.0f;
-	float fovy = 1.0f;
+	float aspect = 1.0f;
+	float fovy = 45.0f;
 	float near = 0.1f;
 	float far = 10000.0f;
 

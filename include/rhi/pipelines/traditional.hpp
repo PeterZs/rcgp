@@ -15,6 +15,7 @@ struct TraditionalGraphicsPipeline : vk::Pipeline {
 		vk::ArrayProxy <const vk::VertexInputBindingDescription> bindings;
 		vk::ArrayProxy <const vk::VertexInputAttributeDescription> attributes;
 		vk::PipelineLayout layout = {};
+		bool depth_test = true;
 	};
 
 	TraditionalGraphicsPipeline() = default;

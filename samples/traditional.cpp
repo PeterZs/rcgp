@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <ugp.hpp>
+#include "rhi/image.hpp"
 
 #include "util/aperature.hpp"
 #include "util/transform.hpp"
@@ -104,6 +105,21 @@ int main()
 
 	auto window = Window::from(session, device);
 
+	const auto depth_format = vk::Format::eD32Sfloat;
+
+	std::vector <Image> depth_images;
+	depth_images.reserve(window.images.size());
+	for (size_t i = 0; i < window.images.size(); ++i) {
+		depth_images.push_back(Image::from(
+			device,
+			window.extent(),
+			depth_format,
+			vk::ImageUsageFlagBits::eDepthStencilAttachment,
+			vk::ImageAspectFlagBits::eDepth,
+			vk::MemoryPropertyFlagBits::eDeviceLocal
+		));
+	}
+
 	auto queue = Queue::from(device);
 	auto cpool = CommandPool::from(device, queue);
 	auto cmdbuffers = group(device, cpool).allocate(window.frames_in_flight);
@@ -154,6 +170,7 @@ int main()
 			.setOffset(0),
 	};
 
+	// TODO: should be able to construct the pipeline layout from the group allocation
 	auto set_layout_binding = vk::DescriptorSetLayoutBinding()
 		.setBinding(0)
 		.setDescriptorCount(1)
@@ -184,24 +201,38 @@ int main()
 		.setInitialLayout(vk::ImageLayout::eColorAttachmentOptimal)
 		.setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
+	attachments["depth"] = vk::AttachmentDescription()
+		.setFormat(depth_format)
+		.setSamples(vk::SampleCountFlagBits::e1)
+		.setLoadOp(vk::AttachmentLoadOp::eClear)
+		.setStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setInitialLayout(vk::ImageLayout::eUndefined)
+		.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
 	auto color = attachments.reference("color", vk::ImageLayout::eColorAttachmentOptimal);
+	auto depth = attachments.reference("depth", vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
 	// TODO: could make this a group(device, dld) method?
 	auto rp = renderpass(device, dld,
 		attachments,
 		subpass(color_attachments { color },
-			depth_attachments {},
+			depth_attachments { depth },
 			color_attachments {},
 			input_attachments {})
 	);
 
 	std::vector <vk::Framebuffer> framebuffers;
 	framebuffers.reserve(window.images.size());
-	for (auto &image : window.images) {
+	for (size_t i = 0; i < window.images.size(); ++i) {
+		auto &image = window.images[i];
+		auto &depth = depth_images[i];
 		// TODO: wrapper... group(device, rp).new_framebuffer(image, 1)?
+		std::array attachments_views { image.view, depth.view };
 		auto fb_info = vk::FramebufferCreateInfo()
 			.setRenderPass(rp)
-			.setAttachments(image.view)
+			.setAttachments(attachments_views)
 			.setWidth(image.extent.width)
 			.setHeight(image.extent.height)
 			.setLayers(1);
@@ -217,6 +248,7 @@ int main()
 		.bindings = binding_descs,
 		.attributes = attribute_descs,
 		.layout = pipeline_layout,
+		.depth_test = true,
 	};
 
 	auto pipeline = TraditionalGraphicsPipeline::from(device, dld, pipeline_info);
@@ -294,7 +326,7 @@ int main()
 	Aperature aperature;
 	Transform xform;
 
-	xform.translation = glm::vec3(0, 0, 20);
+	xform.translation = glm::vec3(0, 0, -10);
 	aperature.aspect = static_cast <float> (window.extent().width) / window.extent().height;
 
 	// TODO: if we have a conditional mirror buffer with prepopulated
@@ -312,17 +344,10 @@ int main()
 		.model = glm::mat4(1.0f),
 	});
 
-	auto pool_size = vk::DescriptorPoolSize()
-		.setType(vk::DescriptorType::eUniformBuffer)
-		.setDescriptorCount(1);
-
-	auto descriptor_pool = device.logical.createDescriptorPool(
-		vk::DescriptorPoolCreateInfo()
-			.setMaxSets(1)
-			.setPoolSizes(pool_size),
-		nullptr,
-		dld
-	);
+	auto descriptor_pool = DescriptorPool::from(device, DescriptorPool::Info {
+		.max_sets = 1,
+		.uniform_buffers = 1,
+	});
 
 	auto descriptor_set = device.logical.allocateDescriptorSets(
 		vk::DescriptorSetAllocateInfo()
@@ -331,10 +356,7 @@ int main()
 		dld
 	).front();
 
-	auto view_buf_info = vk::DescriptorBufferInfo()
-		.setBuffer(view_buf.handle)
-		.setOffset(0)
-		.setRange(sizeof(View));
+	auto view_buf_info = view_buf.descriptor_info();
 
 	auto descriptor_write = vk::WriteDescriptorSet()
 		.setDstSet(descriptor_set)
@@ -358,8 +380,7 @@ int main()
 		view_buf.write($mirror(View) {
 			.proj = aperature.projection_matrix(),
 			.view = xform.view_matrix(),
-			// .model = model,
-			.model = glm::mat4(1.0f),
+			.model = model,
 		});
 
 		// TODO: window.is_pressed(Key::Q)
@@ -393,14 +414,16 @@ int main()
 			.setOffset({ 0, 0 })
 			.setExtent(frame.extent);
 
-		auto clear_value = vk::ClearValue()
-			.setColor(vk::ClearColorValue(std::array <float, 4> { 0.05f, 0.05f, 0.05f, 1.0f }));
+		auto clear_values = std::array {
+			vk::ClearValue().setColor(vk::ClearColorValue(std::array <float, 4> { 0.05f, 0.05f, 0.05f, 1.0f })),
+			vk::ClearValue().setDepthStencil(vk::ClearDepthStencilValue(1.0f, 0)),
+		};
 
 		auto rp_begin = vk::RenderPassBeginInfo()
 			.setRenderPass(rp)
 			.setFramebuffer(framebuffers[frame.image_index])
 			.setRenderArea(render_area)
-			.setClearValues(clear_value);
+			.setClearValues(clear_values);
 
 		cmd.beginRenderPass(rp_begin, vk::SubpassContents::eInline);
 		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);

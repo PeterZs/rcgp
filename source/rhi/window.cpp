@@ -64,6 +64,7 @@ Window Window::from(const Session &session, const Device &device)
 	result.images.reserve(swapchain_images.size());
 	for (auto &handle : swapchain_images) {
 		Image image;
+		image.device = device;
 		image.handle = handle;
 		image.extent = result.extent();
 		image.format = result.format;
