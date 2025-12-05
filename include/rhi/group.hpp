@@ -1,11 +1,13 @@
 #pragma once
 
 #include <cstdint>
+#include <span>
 #include <vulkan/vulkan.hpp>
 
 #include "device.hpp"
 #include "window.hpp"
 #include "command_pool.hpp"
+#include "renderpass.hpp"
 
 struct group_device_window {
 	Device &device;
@@ -50,4 +52,41 @@ struct group_device_cpool {
 inline auto group(const Device &device, const CommandPool &cpool)
 {
 	return group_device_cpool(device, cpool);
+}
+
+struct group_device_dld {
+	Device &device;
+	const vk::detail::DispatchLoaderDynamic &dld;
+
+	template <typename ... Ts>
+	auto new_renderpass(const Attachments &attachments, Ts ... subpasses) const {
+		return ::renderpass(device, dld, attachments, subpasses...);
+	}
+};
+
+inline auto group(Device &device, const vk::detail::DispatchLoaderDynamic &dld)
+{
+	return group_device_dld { device, dld };
+}
+
+struct group_device_renderpass {
+	Device &device;
+	const vk::detail::DispatchLoaderDynamic &dld;
+	vk::RenderPass rp;
+
+	auto new_framebuffer(std::span <const vk::ImageView> attachments, vk::Extent2D extent, uint32_t layers = 1) const {
+		auto fb_info = vk::FramebufferCreateInfo()
+			.setRenderPass(rp)
+			.setAttachments(attachments)
+			.setWidth(extent.width)
+			.setHeight(extent.height)
+			.setLayers(layers);
+
+		return device.logical.createFramebuffer(fb_info, nullptr, dld);
+	}
+};
+
+inline auto group(Device &device, const vk::RenderPass &rp, const vk::detail::DispatchLoaderDynamic &dld)
+{
+	return group_device_renderpass { device, dld, rp };
 }

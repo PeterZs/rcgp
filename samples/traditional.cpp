@@ -1,7 +1,10 @@
 #include <array>
 #include <vector>
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include <GLFW/glfw3.h>
 
 #include <mrd.hpp>
 
@@ -101,7 +104,7 @@ int main()
 	auto cmdbuffers = group(device, cpool).allocate(window.frames_in_flight);
 
 	auto compiler = Compiler::from(device, Compiler::Info());
-	
+
 	using allocation = std::tuple <
 		group_allocation_record <view, 0>
 	>;
@@ -190,8 +193,7 @@ int main()
 	auto color = attachments.reference("color", vk::ImageLayout::eColorAttachmentOptimal);
 	auto depth = attachments.reference("depth", vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
-	// TODO: could make this a group(device, dld) method?
-	auto rp = renderpass(device, dld,
+	auto rp = group(device, dld).new_renderpass(
 		attachments,
 		subpass(color_attachments { color },
 			depth_attachments { depth },
@@ -200,20 +202,16 @@ int main()
 	);
 
 	std::vector <vk::Framebuffer> framebuffers;
-	framebuffers.reserve(window.images.size());
+	framebuffers.resize(window.images.size());
 	for (size_t i = 0; i < window.images.size(); ++i) {
 		auto &image = window.images[i];
 		auto &depth = depth_images[i];
-		// TODO: wrapper... group(device, rp).new_framebuffer(image, 1)?
 		std::array attachments_views { image.view, depth.view };
-		auto fb_info = vk::FramebufferCreateInfo()
-			.setRenderPass(rp)
-			.setAttachments(attachments_views)
-			.setWidth(image.extent.width)
-			.setHeight(image.extent.height)
-			.setLayers(1);
-
-		framebuffers.push_back(device.logical.createFramebuffer(fb_info, nullptr, dld));
+		framebuffers[i] = group(device, rp, dld).new_framebuffer(
+			attachments_views,
+			image.extent,
+			1
+		);
 	}
 
 	auto pipeline_info = TraditionalGraphicsPipeline::Info {
@@ -277,7 +275,7 @@ int main()
 	Aperature aperature;
 	Transform xform;
 
-	xform.translation = glm::vec3(0, 0, -100);
+	xform.translation = glm::vec3(0, 0, -10);
 	aperature.aspect = static_cast <float> (window.extent().width) / window.extent().height;
 
 	// TODO: if we have a conditional mirror buffer with prepopulated
@@ -317,6 +315,16 @@ int main()
 
 	device.logical.updateDescriptorSets(descriptor_write, nullptr, dld);
 
+	window.on_drag(GLFW_MOUSE_BUTTON_LEFT, [&](double /*xpos*/, double /*ypos*/, double dx, double dy) {
+		// Rotate camera in place (viewport tumble): yaw around world up, pitch around camera right.
+		const float rot_speed = 0.005f; // radians per pixel
+		auto yaw = glm::angleAxis(-float(dx * rot_speed), glm::vec3(0.0f, 1.0f, 0.0f));
+		auto pitch = glm::angleAxis(float(dy * rot_speed), xform.right());
+		xform.rotation = glm::normalize(pitch * yaw * xform.rotation);
+	});
+
+	glfwSetInputMode(window.handle, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+
 	while (window.alive()) {
 		window.poll();
 
@@ -325,7 +333,8 @@ int main()
 		float dt = float(now - last_time);
 		last_time = now;
 
-		const float move_speed = 5.0f;
+		const float move_speed = 25.0f;
+
 		glm::vec3 move(0.0f);
 		if (window.is_pressed(Key::W)) move.z += 1.0f;
 		if (window.is_pressed(Key::S)) move.z -= 1.0f;
@@ -333,15 +342,22 @@ int main()
 		if (window.is_pressed(Key::D)) move.x -= 1.0f;
 		if (window.is_pressed(Key::E)) move.y += 1.0f;
 		if (window.is_pressed(Key::Q)) move.y -= 1.0f;
-		if (glm::length(move) > 0.0f)
-			xform.translation += glm::normalize(move) * move_speed * dt;
+		if (glm::length(move) > 0.0f) {
+			auto local = move.z * xform.forward()
+				+ move.x * xform.right()
+				+ move.y * xform.up();
+			xform.translation += glm::normalize(local) * move_speed * dt;
+		}
 
 		auto frame = window.next_frame();
 
 		auto extent = frame.extent;
 		auto angle = static_cast <float> (glfwGetTime());
-		auto model = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::rotate(model, angle * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f));
+		auto model = glm::mat4(1.0f);
+		model = glm::scale(model, glm::vec3(0.1));
+		// auto model = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f));
+		// model = glm::rotate(model, angle * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f));
+	
 		aperature.aspect = static_cast <float> (extent.width) / extent.height;
 
 		view_buf.write($mirror(View) {

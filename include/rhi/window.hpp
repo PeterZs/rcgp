@@ -2,6 +2,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <unordered_map>
 #include <vector>
 
 #include <vulkan/vulkan.hpp>
@@ -50,10 +52,21 @@ struct Window {
 		uint32_t image_index;
 	};
 
+	using MouseButtonHandler = std::function <void(int button, int action, int mods)>;
+	using CursorMoveHandler = std::function <void(double xpos, double ypos, double dx, double dy)>;
+	using DragHandler = std::function <void(double xpos, double ypos, double dx, double dy)>;
+
 	std::vector <Frame> frames;
+	std::vector <MouseButtonHandler> mouse_button_handlers;
+	std::vector <CursorMoveHandler> cursor_move_handlers;
+	std::unordered_map <int, std::vector <DragHandler>> drag_handlers;
 
 	size_t frames_in_flight;
 	size_t frame_index;
+	int dragging_button = -1;
+	bool cursor_initialized = false;
+	double last_x = 0.0;
+	double last_y = 0.0;
 
 	bool alive() const;
 
@@ -66,6 +79,12 @@ struct Window {
 	vk::Extent2D extent() const;
 
 	Frame next_frame();
+
+	void on_mouse_button(MouseButtonHandler handler);
+
+	void on_cursor_move(CursorMoveHandler handler);
+
+	void on_drag(int button, DragHandler handler);
 
 	Image &image(size_t index);
 	const Image &image(size_t index) const;
