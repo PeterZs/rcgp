@@ -10,6 +10,16 @@ void Window::poll() const
 	glfwPollEvents();
 }
 
+bool Window::is_pressed(Key key) const
+{
+	return glfwGetKey(handle, static_cast<int>(key)) == GLFW_PRESS;
+}
+
+void Window::close() const
+{
+	glfwSetWindowShouldClose(handle, true);
+}
+
 vk::Extent2D Window::extent() const
 {
 	int width;
@@ -66,6 +76,7 @@ Window Window::from(const Session &session, const Device &device)
 		Image image;
 		image.device = device;
 		image.handle = handle;
+		image.layout = vk::ImageLayout::ePresentSrcKHR;
 		image.extent = result.extent();
 		image.format = result.format;
 

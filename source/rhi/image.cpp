@@ -1,6 +1,6 @@
 #include "rhi/image.hpp"
 
-vk::ImageMemoryBarrier Image::memory_barrier(vk::ImageLayout new_layout, vk::AccessFlags src_access, vk::AccessFlags dst_access)
+vk::ImageMemoryBarrier Image::memory_barrier(vk::ImageLayout new_layout, vk::AccessFlags src_access, vk::AccessFlags dst_access, vk::ImageAspectFlags aspect)
 {
 	vk::ImageMemoryBarrier barrier;
 	barrier.setImage(handle)
@@ -10,7 +10,7 @@ vk::ImageMemoryBarrier Image::memory_barrier(vk::ImageLayout new_layout, vk::Acc
 		.setDstAccessMask(dst_access)
 		.setSubresourceRange(
 			vk::ImageSubresourceRange()
-				.setAspectMask(vk::ImageAspectFlagBits::eColor)
+				.setAspectMask(aspect)
 				.setBaseArrayLayer(0)
 				.setBaseMipLevel(0)
 				.setLayerCount(1)

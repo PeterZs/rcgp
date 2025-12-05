@@ -17,7 +17,11 @@ struct Image {
 	vk::MemoryPropertyFlags properties;
 	vk::ImageTiling tiling = vk::ImageTiling::eOptimal;
 
-	vk::ImageMemoryBarrier memory_barrier(vk::ImageLayout new_layout, vk::AccessFlags src_access = {}, vk::AccessFlags dst_access = {});
+	vk::ImageMemoryBarrier memory_barrier(
+		vk::ImageLayout new_layout,
+		vk::AccessFlags src_access = {},
+		vk::AccessFlags dst_access = {},
+		vk::ImageAspectFlags aspect = vk::ImageAspectFlagBits::eColor);
 
 	void destroy();
 

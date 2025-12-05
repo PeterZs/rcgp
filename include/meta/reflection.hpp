@@ -30,6 +30,12 @@ struct aggregate_reflection {
 template <typename T, int64_t N>
 struct array_reflection {};
 
+template <auto &ref, typename T>
+struct reference_reflection {};
+
+template <typename R, typename ... Args>
+struct function_reflection {};
+
 template <typename T>
 struct resource_group_reflection {};
 
@@ -42,11 +48,8 @@ struct storage_buffer_reflection {};
 template <typename T, size_t D>
 struct sampler_reflection {};
 
-template <auto &ref, typename T>
-struct reference_reflection {};
-
-template <typename R, typename ... Args>
-struct function_reflection {};
+template <typename T, vk::VertexInputRate>
+struct attribute_stream_reflection {};
 
 // Specific kinds of reflection
 template <typename T>

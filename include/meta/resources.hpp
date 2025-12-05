@@ -6,6 +6,13 @@
 #include "reflection.hpp"
 #include "reflection_builder.hpp"
 
+// Standalone resource, so no qualms about being embedded within parameter blocks
+template <reflected T, vk::VertexInputRate R = vk::VertexInputRate::eVertex>
+struct AttributeStream {
+	using reflection = attribute_stream_reflection <T, R>;
+	DEFINE_REFLECTION_STAMP();
+};
+
 template <reflected T>
 struct ResourceGroup {
 	using reflection = resource_group_reflection <T>;
@@ -73,6 +80,11 @@ constexpr bool is_resource_reflection_v = is_resource_reflection <T> ::value;
 
 // Overriding reference behavior
 template <typename T, ResourceGroup <T> &rsrc>
+struct reference_base <rsrc> {
+	using type = T;
+};
+
+template <reflected T, vk::VertexInputRate R, AttributeStream <T, R> &rsrc>
 struct reference_base <rsrc> {
 	using type = T;
 };

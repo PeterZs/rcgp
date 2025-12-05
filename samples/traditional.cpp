@@ -27,36 +27,6 @@
 // 	// for it to work would be need to pack structs with pragma?
 // };
 
-// TODO: StructuredBuffer becomes:
-// - StorageBuffer <T>
-// - ArrayBuffer <T> := StorageBuffer <array <T>>
-//
-// it shall be a pure handle, and then references
-// must be with ParameterBlock <StorageBuffer <T>>
-// with an alias as StorageBufferResource
-
-template <typename T, vk::VertexInputRate>
-struct attribute_stream_reflection {};
-
-// Standalone resource, so no qualms about being embedded within parameter blocks
-template <reflected T, vk::VertexInputRate R = vk::VertexInputRate::eVertex>
-struct AttributeStream {
-	using reflection = attribute_stream_reflection <T, R>;
-	DEFINE_REFLECTION_STAMP();
-};
-
-template <reflected T, vk::VertexInputRate R, AttributeStream <T, R> &rsrc>
-struct reference_base <rsrc> {
-	using type = T;
-};
-
-template <reflected T, vk::VertexInputRate R, AttributeStream <T, R> &rsrc>
-struct stage_argument_injector <Stage::RepresentationalVertex, reference <rsrc>> {
-	static auto main(reference <rsrc> &value, const InjectionState &state) {
-		return stage_argument_injector <Stage::RepresentationalVertex, T> ::main(value, state);
-	}
-};
-
 struct View {
 	mat4 proj;
 	mat4 view;
@@ -67,22 +37,27 @@ struct View {
 
 AttributeStream <vec3> position;
 AttributeStream <vec3> color;
+AttributeStream <vec3> normal;
 
 MonoConstantBuffer <View> view;
 
-auto vs = $vertex $fn($use(position), $use(color), $use(view)) -> $returns(Position, vec3)
+auto vs = $vertex $fn($use(position), $use(color), $use(normal), $use(view)) -> $returns(Position, vec3)
 {
 	auto mvp = view.proj * view.view * view.model;
-	$return std::tuple(Position(mvp * vec4(position, 1.0)), color);
+	auto world_n = normalize(normal);
+	$return std::tuple(Position(mvp * vec4(position, 1.0)), world_n);
 };
 
-auto fs = $fragment $fn(vec3 color) -> $returns(vec4)
+auto fs = $fragment $fn(vec3 normal) -> $returns(vec4)
 {
-	$return vec4(color, 1);
+	$return vec4(0.5 * normal + 0.5, 1.0f);
 };
 
 // TODO: structs need a layout (defaults to std430)
-
+// 
+// TODO: work group is a parameter to shaders that is an intrinsic...
+// WorkGroup <8, 8> group... group.block_idx, thread_idx and so on
+//
 // TODO: write down the implementation design somewhere in docs...
 // will help spotting parts that are stupid
 int main()
@@ -155,6 +130,10 @@ int main()
 			.setBinding(1)
 			.setStride(sizeof(glm::vec4))
 			.setInputRate(vk::VertexInputRate::eVertex),
+		vk::VertexInputBindingDescription()
+			.setBinding(2)
+			.setStride(sizeof(glm::vec4))
+			.setInputRate(vk::VertexInputRate::eVertex),
 	};
 
 	auto attribute_descs = std::array {
@@ -166,6 +145,11 @@ int main()
 		vk::VertexInputAttributeDescription()
 			.setLocation(1)
 			.setBinding(1)
+			.setFormat(vk::Format::eR32G32B32Sfloat)
+			.setOffset(0),
+		vk::VertexInputAttributeDescription()
+			.setLocation(2)
+			.setBinding(2)
 			.setFormat(vk::Format::eR32G32B32Sfloat)
 			.setOffset(0),
 	};
@@ -198,8 +182,8 @@ int main()
 		.setStoreOp(vk::AttachmentStoreOp::eStore)
 		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
 		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-		.setInitialLayout(vk::ImageLayout::eColorAttachmentOptimal)
-		.setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal);
+		.setInitialLayout(vk::ImageLayout::eUndefined)
+		.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
 
 	attachments["depth"] = vk::AttachmentDescription()
 		.setFormat(depth_format)
@@ -296,6 +280,27 @@ int main()
 		glm::vec3(0, 1, 1), glm::vec3(0, 1, 1), glm::vec3(0, 1, 1),
 	};
 
+	const std::array normals = {
+		// Front (+Z)
+		glm::vec3(0, 0, 1), glm::vec3(0, 0, 1), glm::vec3(0, 0, 1),
+		glm::vec3(0, 0, 1), glm::vec3(0, 0, 1), glm::vec3(0, 0, 1),
+		// Back (-Z)
+		glm::vec3(0, 0,-1), glm::vec3(0, 0,-1), glm::vec3(0, 0,-1),
+		glm::vec3(0, 0,-1), glm::vec3(0, 0,-1), glm::vec3(0, 0,-1),
+		// Left (-X)
+		glm::vec3(-1,0, 0), glm::vec3(-1,0, 0), glm::vec3(-1,0, 0),
+		glm::vec3(-1,0, 0), glm::vec3(-1,0, 0), glm::vec3(-1,0, 0),
+		// Right (+X)
+		glm::vec3(1, 0, 0), glm::vec3(1, 0, 0), glm::vec3(1, 0, 0),
+		glm::vec3(1, 0, 0), glm::vec3(1, 0, 0), glm::vec3(1, 0, 0),
+		// Top (+Y)
+		glm::vec3(0, 1, 0), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0),
+		glm::vec3(0, 1, 0), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0),
+		// Bottom (-Y)
+		glm::vec3(0,-1, 0), glm::vec3(0,-1, 0), glm::vec3(0,-1, 0),
+		glm::vec3(0,-1, 0), glm::vec3(0,-1, 0), glm::vec3(0,-1, 0),
+	};
+
 	auto pbuf = MirrorBuffer <array <vec3>> ::from(
 		device, positions.size(),
 		vk::BufferUsageFlagBits::eVertexBuffer,
@@ -313,14 +318,27 @@ int main()
 		device, colors.size(),
 		vk::BufferUsageFlagBits::eVertexBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible
-		| vk::MemoryPropertyFlagBits::eHostCoherent
+			| vk::MemoryPropertyFlagBits::eHostCoherent
 	);
-	
+		
 	auto cbuf_value = cbuf.new_value();
 	cbuf_value.resize(colors.size());
 	for (size_t i = 0; i < colors.size(); ++i)
 		cbuf_value[i] = colors[i];
 	cbuf.write(cbuf_value);
+
+	auto nbuf = MirrorBuffer <array <vec3>> ::from(
+		device, normals.size(),
+		vk::BufferUsageFlagBits::eVertexBuffer,
+		vk::MemoryPropertyFlagBits::eHostVisible
+			| vk::MemoryPropertyFlagBits::eHostCoherent
+	);
+
+	auto nbuf_value = nbuf.new_value();
+	nbuf_value.resize(normals.size());
+	for (size_t i = 0; i < normals.size(); ++i)
+		nbuf_value[i] = normals[i];
+	nbuf.write(nbuf_value);
 
 	// Camera
 	Aperature aperature;
@@ -369,6 +387,22 @@ int main()
 	while (window.alive()) {
 		window.poll();
 
+		static double last_time = glfwGetTime();
+		double now = glfwGetTime();
+		float dt = float(now - last_time);
+		last_time = now;
+
+		const float move_speed = 5.0f;
+		glm::vec3 move(0.0f);
+		if (window.is_pressed(Key::W)) move.z += 1.0f;
+		if (window.is_pressed(Key::S)) move.z -= 1.0f;
+		if (window.is_pressed(Key::A)) move.x += 1.0f;
+		if (window.is_pressed(Key::D)) move.x -= 1.0f;
+		if (window.is_pressed(Key::E)) move.y += 1.0f;
+		if (window.is_pressed(Key::Q)) move.y -= 1.0f;
+		if (glm::length(move) > 0.0f)
+			xform.translation += glm::normalize(move) * move_speed * dt;
+
 		auto frame = window.next_frame();
 
 		auto extent = frame.extent;
@@ -383,9 +417,8 @@ int main()
 			.model = model,
 		});
 
-		// TODO: window.is_pressed(Key::Q)
-		if (glfwGetKey(window.handle, GLFW_KEY_Q) == GLFW_PRESS)
-			glfwSetWindowShouldClose(window.handle, true);
+		if (window.is_pressed(Key::Escape))
+			window.close();
 
 		group(device, window).wait(frame);
 		auto acquired = group(device, window).acquire_image(frame);
@@ -398,17 +431,6 @@ int main()
 		cmd.begin(vk::CommandBufferBeginInfo());
 
 		auto &image = window.image(frame.image_index);
-		auto to_color = image.memory_barrier(
-			vk::ImageLayout::eColorAttachmentOptimal,
-			{},
-			vk::AccessFlagBits::eColorAttachmentWrite
-		);
-
-		cmd.pipelineBarrier(
-			vk::PipelineStageFlagBits::eTopOfPipe,
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			{}, {}, {}, to_color
-		);
 
 		auto render_area = vk::Rect2D()
 			.setOffset({ 0, 0 })
@@ -430,25 +452,14 @@ int main()
 		cmd.bindDescriptorSets(
 			vk::PipelineBindPoint::eGraphics,
 			pipeline.layout,
-			0,
-			descriptor_set,
-			{}
+			0, descriptor_set, {}
 		);
-		cmd.bindVertexBuffers(0, { pbuf.handle, cbuf.handle }, { 0, 0 });
+		cmd.bindVertexBuffers(0, { pbuf.handle, cbuf.handle, nbuf.handle }, { 0, 0, 0 });
 		cmd.draw(static_cast <uint32_t> (positions.size()), 1, 0, 0);
 		cmd.endRenderPass();
 
-		auto to_present = image.memory_barrier(
-			vk::ImageLayout::ePresentSrcKHR,
-			vk::AccessFlagBits::eColorAttachmentWrite,
-			{}
-		);
-
-		cmd.pipelineBarrier(
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			vk::PipelineStageFlagBits::eBottomOfPipe,
-			{}, {}, {}, to_present
-		);
+		// Render pass final layout is PresentSrcKHR per attachment description; update bookkeeping.
+		image.layout = vk::ImageLayout::ePresentSrcKHR;
 
 		cmd.end();
 

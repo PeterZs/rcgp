@@ -158,11 +158,26 @@ struct vector : public vector_base <T, N> {
 	// Arithmetic operations
 	template <typename U>
 	requires std::is_convertible_v <U, T>
-	friend vector operator*(const U &, const vector &) {}
+	friend vector operator*(const U &s, const vector &v) {
+		return reinterpret(jems::operation(Operation::eMultiply, scalar <T> (s), v));
+	}
 	
 	template <typename U>
 	requires std::is_convertible_v <U, T>
-	friend vector operator+(const U &, const vector &) {}
+	friend vector operator+(const U &s, const vector &v) {
+		return reinterpret(jems::operation(Operation::eAdd, scalar <T> (s), v));
+	}
+	
+	template <typename U>
+	requires std::is_convertible_v <U, T>
+	friend vector operator+(const vector &v, const U &s) {
+		return reinterpret(jems::operation(Operation::eAdd, v, scalar <T> (s)));
+	}
+	
+	template <typename U>
+	friend vector operator+(const vector &a, const vector &b) {
+		return reinterpret(jems::operation(Operation::eAdd, a, b));
+	}
 };
 
 static_assert(sizeof(vector <int32_t, 2>) == sizeof(jems::handle));

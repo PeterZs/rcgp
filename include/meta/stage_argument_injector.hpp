@@ -76,6 +76,14 @@ struct stage_argument_injector <S, T> {
 	}
 };
 
+// TODO: remove the above for vertex shaders...
+template <reflected T, vk::VertexInputRate R, AttributeStream <T, R> &rsrc>
+struct stage_argument_injector <Stage::RepresentationalVertex, reference <rsrc>> {
+	static auto main(reference <rsrc> &value, const InjectionState &state) {
+		return stage_argument_injector <Stage::RepresentationalVertex, T> ::main(value, state);
+	}
+};
+
 template <Stage S, aggregate T>
 requires (S == Stage::RepresentationalVertex || S == Stage::RepresentationalFragment)
 struct stage_argument_injector <S, T> {

@@ -10,6 +10,30 @@
 #include "device.hpp"
 #include "image.hpp"
 
+enum class Key : int {
+	W = GLFW_KEY_W,
+	A = GLFW_KEY_A,
+	S = GLFW_KEY_S,
+	D = GLFW_KEY_D,
+	Q = GLFW_KEY_Q,
+	E = GLFW_KEY_E,
+	Space = GLFW_KEY_SPACE,
+	Escape = GLFW_KEY_ESCAPE,
+	Up = GLFW_KEY_UP,
+	Down = GLFW_KEY_DOWN,
+	Left = GLFW_KEY_LEFT,
+	Right = GLFW_KEY_RIGHT,
+	ShiftLeft = GLFW_KEY_LEFT_SHIFT,
+	ShiftRight = GLFW_KEY_RIGHT_SHIFT,
+	ControlLeft = GLFW_KEY_LEFT_CONTROL,
+	ControlRight = GLFW_KEY_RIGHT_CONTROL,
+	AltLeft = GLFW_KEY_LEFT_ALT,
+	AltRight = GLFW_KEY_RIGHT_ALT,
+	Tab = GLFW_KEY_TAB,
+	Enter = GLFW_KEY_ENTER,
+	Backspace = GLFW_KEY_BACKSPACE,
+};
+
 struct Window {
 	GLFWwindow *handle;
 	vk::SurfaceKHR surface;
@@ -34,6 +58,10 @@ struct Window {
 	bool alive() const;
 
 	void poll() const;
+
+	bool is_pressed(Key key) const;
+
+	void close() const;
 
 	vk::Extent2D extent() const;
 
