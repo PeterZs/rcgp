@@ -62,6 +62,7 @@ struct PrimitiveType : variant <
 	VectorType <float, 3>,
 	VectorType <float, 4>,
 	// Matrix types
+	MatrixType <float, 3, 3>,
 	MatrixType <float, 4, 4>
 > {
 	using variant_self::variant;
@@ -146,6 +147,8 @@ struct BuiltinIntrinsic {
 		eMax,
 		eMin,
 		eNormalize,
+		eTranspose,
+		eInverse,
 		eSample,
 		eSin,
 		eTan,

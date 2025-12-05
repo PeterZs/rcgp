@@ -46,4 +46,4 @@ target_precompile_headers(traditional REUSE_FROM prototype)
 
 target_link_libraries(prototype PRIVATE ugp mrd)
 
-target_link_libraries(traditional PRIVATE ugp)
+target_link_libraries(traditional PRIVATE ugp mrd)

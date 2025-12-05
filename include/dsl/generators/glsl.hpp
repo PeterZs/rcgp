@@ -141,6 +141,8 @@ struct GLSL {
 			case BuiltinIntrinsic::eDot: out = "dot"; break;
 			case BuiltinIntrinsic::eMax: out = "max"; break;
 			case BuiltinIntrinsic::eNormalize: out = "normalize"; break;
+			case BuiltinIntrinsic::eTranspose: out = "transpose"; break;
+			case BuiltinIntrinsic::eInverse: out = "inverse"; break;
 			default:
 				break;
 			}
@@ -198,6 +200,7 @@ struct GLSL {
 			vcase(VectorType <float, 2>): return "vec2";
 			vcase(VectorType <float, 3>): return "vec3";
 			vcase(VectorType <float, 4>): return "vec4";
+			vcase(MatrixType <float, 3, 3>): return "mat3";
 			vcase(MatrixType <float, 4, 4>): return "mat4";
 			default:
 				break;

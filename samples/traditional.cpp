@@ -3,8 +3,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <mrd.hpp>
+
 #include <ugp.hpp>
-#include "rhi/image.hpp"
 
 #include "util/aperature.hpp"
 #include "util/transform.hpp"
@@ -36,21 +37,21 @@ struct View {
 };
 
 AttributeStream <vec3> position;
-AttributeStream <vec3> color;
 AttributeStream <vec3> normal;
 
 MonoConstantBuffer <View> view;
 
-auto vs = $vertex $fn($use(position), $use(color), $use(normal), $use(view)) -> $returns(Position, vec3)
+auto vs = $vertex $fn($use(position), $use(normal), $use(view)) -> $returns(Position, vec3)
 {
 	auto mvp = view.proj * view.view * view.model;
-	auto world_n = normalize(normal);
+	auto normal_mat = transpose(inverse(mat3(view.model)));
+	auto world_n = normalize(normal_mat * normal);
 	$return std::tuple(Position(mvp * vec4(position, 1.0)), world_n);
 };
 
 auto fs = $fragment $fn(vec3 normal) -> $returns(vec4)
 {
-	$return vec4(0.5 * normal + 0.5, 1.0f);
+	$return vec4(0.5 * normalize(normal) + 0.5, 1.0f);
 };
 
 // TODO: structs need a layout (defaults to std430)
@@ -124,15 +125,11 @@ int main()
 	auto binding_descs = std::array {
 		vk::VertexInputBindingDescription()
 			.setBinding(0)
-			.setStride(sizeof(glm::vec4))
+			.setStride(sizeof(glm::vec3))
 			.setInputRate(vk::VertexInputRate::eVertex),
 		vk::VertexInputBindingDescription()
 			.setBinding(1)
-			.setStride(sizeof(glm::vec4))
-			.setInputRate(vk::VertexInputRate::eVertex),
-		vk::VertexInputBindingDescription()
-			.setBinding(2)
-			.setStride(sizeof(glm::vec4))
+			.setStride(sizeof(glm::vec3))
 			.setInputRate(vk::VertexInputRate::eVertex),
 	};
 
@@ -145,11 +142,6 @@ int main()
 		vk::VertexInputAttributeDescription()
 			.setLocation(1)
 			.setBinding(1)
-			.setFormat(vk::Format::eR32G32B32Sfloat)
-			.setOffset(0),
-		vk::VertexInputAttributeDescription()
-			.setLocation(2)
-			.setBinding(2)
 			.setFormat(vk::Format::eR32G32B32Sfloat)
 			.setOffset(0),
 	};
@@ -237,114 +229,55 @@ int main()
 
 	auto pipeline = TraditionalGraphicsPipeline::from(device, dld, pipeline_info);
 
-	// Positions
-	const std::array positions = {
-		// Front (+Z)
-		glm::vec3(-1.0f, -1.0f,  1.0f), glm::vec3( 1.0f, -1.0f,  1.0f), glm::vec3( 1.0f,  1.0f,  1.0f),
-		glm::vec3(-1.0f, -1.0f,  1.0f), glm::vec3( 1.0f,  1.0f,  1.0f), glm::vec3(-1.0f,  1.0f,  1.0f),
-		// Back (-Z)
-		glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(-1.0f,  1.0f, -1.0f), glm::vec3( 1.0f,  1.0f, -1.0f),
-		glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3( 1.0f,  1.0f, -1.0f), glm::vec3( 1.0f, -1.0f, -1.0f),
-		// Left (-X)
-		glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(-1.0f, -1.0f,  1.0f), glm::vec3(-1.0f,  1.0f,  1.0f),
-		glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(-1.0f,  1.0f,  1.0f), glm::vec3(-1.0f,  1.0f, -1.0f),
-		// Right (+X)
-		glm::vec3( 1.0f, -1.0f, -1.0f), glm::vec3( 1.0f,  1.0f, -1.0f), glm::vec3( 1.0f,  1.0f,  1.0f),
-		glm::vec3( 1.0f, -1.0f, -1.0f), glm::vec3( 1.0f,  1.0f,  1.0f), glm::vec3( 1.0f, -1.0f,  1.0f),
-		// Top (+Y)
-		glm::vec3(-1.0f,  1.0f, -1.0f), glm::vec3(-1.0f,  1.0f,  1.0f), glm::vec3( 1.0f,  1.0f,  1.0f),
-		glm::vec3(-1.0f,  1.0f, -1.0f), glm::vec3( 1.0f,  1.0f,  1.0f), glm::vec3( 1.0f,  1.0f, -1.0f),
-		// Bottom (-Y)
-		glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3( 1.0f, -1.0f, -1.0f), glm::vec3( 1.0f, -1.0f,  1.0f),
-		glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3( 1.0f, -1.0f,  1.0f), glm::vec3(-1.0f, -1.0f,  1.0f),
-	};
+	constexpr mrd::ModelEncodings encodings;
 
-	const std::array colors = {
-		// Front (red)
-		glm::vec3(1, 0, 0), glm::vec3(1, 0, 0), glm::vec3(1, 0, 0),
-		glm::vec3(1, 0, 0), glm::vec3(1, 0, 0), glm::vec3(1, 0, 0),
-		// Back (green)
-		glm::vec3(0, 1, 0), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0),
-		glm::vec3(0, 1, 0), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0),
-		// Left (blue)
-		glm::vec3(0, 0, 1), glm::vec3(0, 0, 1), glm::vec3(0, 0, 1),
-		glm::vec3(0, 0, 1), glm::vec3(0, 0, 1), glm::vec3(0, 0, 1),
-		// Right (yellow)
-		glm::vec3(1, 1, 0), glm::vec3(1, 1, 0), glm::vec3(1, 1, 0),
-		glm::vec3(1, 1, 0), glm::vec3(1, 1, 0), glm::vec3(1, 1, 0),
-		// Top (magenta)
-		glm::vec3(1, 0, 1), glm::vec3(1, 0, 1), glm::vec3(1, 0, 1),
-		glm::vec3(1, 0, 1), glm::vec3(1, 0, 1), glm::vec3(1, 0, 1),
-		// Bottom (cyan)
-		glm::vec3(0, 1, 1), glm::vec3(0, 1, 1), glm::vec3(0, 1, 1),
-		glm::vec3(0, 1, 1), glm::vec3(0, 1, 1), glm::vec3(0, 1, 1),
-	};
+	using Model = mrd::Model <encodings>;
 
-	const std::array normals = {
-		// Front (+Z)
-		glm::vec3(0, 0, 1), glm::vec3(0, 0, 1), glm::vec3(0, 0, 1),
-		glm::vec3(0, 0, 1), glm::vec3(0, 0, 1), glm::vec3(0, 0, 1),
-		// Back (-Z)
-		glm::vec3(0, 0,-1), glm::vec3(0, 0,-1), glm::vec3(0, 0,-1),
-		glm::vec3(0, 0,-1), glm::vec3(0, 0,-1), glm::vec3(0, 0,-1),
-		// Left (-X)
-		glm::vec3(-1,0, 0), glm::vec3(-1,0, 0), glm::vec3(-1,0, 0),
-		glm::vec3(-1,0, 0), glm::vec3(-1,0, 0), glm::vec3(-1,0, 0),
-		// Right (+X)
-		glm::vec3(1, 0, 0), glm::vec3(1, 0, 0), glm::vec3(1, 0, 0),
-		glm::vec3(1, 0, 0), glm::vec3(1, 0, 0), glm::vec3(1, 0, 0),
-		// Top (+Y)
-		glm::vec3(0, 1, 0), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0),
-		glm::vec3(0, 1, 0), glm::vec3(0, 1, 0), glm::vec3(0, 1, 0),
-		// Bottom (-Y)
-		glm::vec3(0,-1, 0), glm::vec3(0,-1, 0), glm::vec3(0,-1, 0),
-		glm::vec3(0,-1, 0), glm::vec3(0,-1, 0), glm::vec3(0,-1, 0),
-	};
+	auto model = Model::load("/home/venki/data/models/asian-dragon.stl");
+	auto &mesh = model.meshes[0];
+	fmt::println("# of verts: {}, # of triangles: {}", mesh.positions.size(), mesh.primitives.size());
 
-	auto pbuf = MirrorBuffer <array <vec3>> ::from(
-		device, positions.size(),
+	auto pbuf = MirrorBuffer <array <vec3>, layouts::scalar> ::from(
+		device, mesh.positions.size(),
 		vk::BufferUsageFlagBits::eVertexBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible
 		| vk::MemoryPropertyFlagBits::eHostCoherent
 	);
 
 	auto pbuf_value = pbuf.new_value();
-	pbuf_value.resize(positions.size());
-	for (size_t i = 0; i < positions.size(); ++i)
-		pbuf_value[i] = positions[i];
+	pbuf_value.resize(mesh.positions.size());
+	std::memcpy(pbuf_value.data(), mesh.positions.data(), sizeof(glm::vec3) * pbuf_value.size());
 	pbuf.write(pbuf_value);
 
-	auto cbuf = MirrorBuffer <array <vec3>> ::from(
-		device, colors.size(),
-		vk::BufferUsageFlagBits::eVertexBuffer,
-		vk::MemoryPropertyFlagBits::eHostVisible
-			| vk::MemoryPropertyFlagBits::eHostCoherent
-	);
-		
-	auto cbuf_value = cbuf.new_value();
-	cbuf_value.resize(colors.size());
-	for (size_t i = 0; i < colors.size(); ++i)
-		cbuf_value[i] = colors[i];
-	cbuf.write(cbuf_value);
-
-	auto nbuf = MirrorBuffer <array <vec3>> ::from(
-		device, normals.size(),
+	auto nbuf = MirrorBuffer <array <vec3>, layouts::scalar> ::from(
+		device, mesh.normals.size(),
 		vk::BufferUsageFlagBits::eVertexBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible
 			| vk::MemoryPropertyFlagBits::eHostCoherent
 	);
 
 	auto nbuf_value = nbuf.new_value();
-	nbuf_value.resize(normals.size());
-	for (size_t i = 0; i < normals.size(); ++i)
-		nbuf_value[i] = normals[i];
+	nbuf_value.resize(mesh.normals.size());
+	std::memcpy(nbuf_value.data(), mesh.normals.data(), sizeof(glm::vec3) * nbuf_value.size());
 	nbuf.write(nbuf_value);
+
+	auto ibuf = MirrorBuffer <array <ivec3>, layouts::scalar> ::from(
+		device, mesh.primitives.size(),
+		vk::BufferUsageFlagBits::eIndexBuffer,
+		vk::MemoryPropertyFlagBits::eHostVisible
+			| vk::MemoryPropertyFlagBits::eHostCoherent
+	);
+
+	auto ibuf_value = ibuf.new_value();
+	ibuf_value.resize(mesh.primitives.size());
+	std::memcpy(ibuf_value.data(), mesh.primitives.data(), sizeof(glm::ivec3) * ibuf_value.size());
+	ibuf.write(ibuf_value);
 
 	// Camera
 	Aperature aperature;
 	Transform xform;
 
-	xform.translation = glm::vec3(0, 0, -10);
+	xform.translation = glm::vec3(0, 0, -100);
 	aperature.aspect = static_cast <float> (window.extent().width) / window.extent().height;
 
 	// TODO: if we have a conditional mirror buffer with prepopulated
@@ -430,8 +363,6 @@ int main()
 		cmd.reset();
 		cmd.begin(vk::CommandBufferBeginInfo());
 
-		auto &image = window.image(frame.image_index);
-
 		auto render_area = vk::Rect2D()
 			.setOffset({ 0, 0 })
 			.setExtent(frame.extent);
@@ -454,13 +385,10 @@ int main()
 			pipeline.layout,
 			0, descriptor_set, {}
 		);
-		cmd.bindVertexBuffers(0, { pbuf.handle, cbuf.handle, nbuf.handle }, { 0, 0, 0 });
-		cmd.draw(static_cast <uint32_t> (positions.size()), 1, 0, 0);
+		cmd.bindVertexBuffers(0, { pbuf.handle, nbuf.handle }, { 0, 0 });
+		cmd.bindIndexBuffer(ibuf.handle, 0, vk::IndexType::eUint32);
+		cmd.drawIndexed(3 * mesh.primitives.size(), 1, 0, 0, 0);
 		cmd.endRenderPass();
-
-		// Render pass final layout is PresentSrcKHR per attachment description; update bookkeeping.
-		image.layout = vk::ImageLayout::ePresentSrcKHR;
-
 		cmd.end();
 
 		vk::PipelineStageFlags wait_stage = vk::PipelineStageFlagBits::eColorAttachmentOutput;

@@ -208,11 +208,19 @@ public:
 
 	matrix() = default;
 
+	template <size_t A, size_t B>
+	explicit matrix(const matrix <T, A, B> &other)
+		: handle(jems::construct(
+			jems::type(MatrixType <T, N, M> ()),
+			other
+		)) {}
+
 	static auto reinterpret(const jems::handle &h) {
 		return matrix(h);
 	}
 };
 
+using mat3 = matrix <float, 3, 3>;
 using mat4 = matrix <float, 4, 4>;
 
 // concepts to go with the stuff...
@@ -315,4 +323,16 @@ template <native_float_scalar T, size_t N>
 vector <T, N> normalize(const vector <T, N> &v)
 {
 	return vector <T, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsic::eNormalize, v));
+}
+
+template <native_scalar T, size_t N, size_t M>
+matrix <T, M, N> transpose(const matrix <T, N, M> &m)
+{
+	return matrix <T, M, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsic::eTranspose, m));
+}
+
+template <native_float_scalar T, size_t N>
+matrix <T, N, N> inverse(const matrix <T, N, N> &m)
+{
+	return matrix <T, N, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsic::eInverse, m));
 }
