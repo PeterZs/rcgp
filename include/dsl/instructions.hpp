@@ -1,8 +1,9 @@
 #pragma once
 
 #include <map>
-#include <set>
 #include <memory>
+#include <optional>
+#include <set>
 #include <source_location>
 
 #include <fmt/format.h>

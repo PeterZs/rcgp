@@ -15,9 +15,6 @@ set(MRD_GLM_PATH "${CMAKE_CURRENT_LIST_DIR}/ext/glm")
 add_subdirectory(ext/glslang EXCLUDE_FROM_ALL)
 add_subdirectory(ext/mrd EXCLUDE_FROM_ALL)
 
-# TODO: remove if not using
-# add_subdirectory(ext/Catch2 EXCLUDE_FROM_ALL)
-
 include_directories(include ext/glslang ext/glm ext/mrd)
 
 add_library(ugp STATIC
@@ -41,9 +38,15 @@ target_link_libraries(ugp PUBLIC
 add_executable(prototype samples/prototype.cpp)
 add_executable(traditional samples/traditional.cpp)
 
-target_precompile_headers(prototype PRIVATE <vulkan/vulkan.hpp>)
-target_precompile_headers(traditional REUSE_FROM prototype)
+add_executable(test
+	source/test/main.cpp
+	source/test/mirror/std430.cpp
+	source/test/mirror/scalar.cpp)
 
+target_precompile_headers(test PRIVATE <vulkan/vulkan.hpp>)
+target_precompile_headers(traditional REUSE_FROM test)
+target_precompile_headers(traditional REUSE_FROM test)
+
+target_link_libraries(test PRIVATE ugp mrd)
 target_link_libraries(prototype PRIVATE ugp mrd)
-
 target_link_libraries(traditional PRIVATE ugp mrd)

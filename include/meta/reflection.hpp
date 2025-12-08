@@ -2,6 +2,8 @@
 
 #include <cstdlib>
 
+#include <vulkan/vulkan.hpp>
+
 #include "../util/sequence.hpp"
 #include "static_string.hpp"
 #include "field_name_injection.hpp"

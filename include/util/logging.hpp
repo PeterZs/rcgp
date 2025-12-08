@@ -4,6 +4,42 @@
 #include <fmt/color.h>
 
 template <typename ... Ts>
+void info(fmt::format_string <Ts...> fmt_str, Ts &&...args)
+{
+	auto header = fmt::format(fmt::emphasis::bold, "ugp:");
+	auto alert = fmt::format(fmt::emphasis::bold | fmt::fg(fmt::color::blue), "info:");
+	auto message = fmt::format(fmt_str, std::forward <Ts> (args)...);
+	fmt::println(stderr, "{} {} {}", header, alert, message);
+}
+
+template <typename ... Ts>
+void warning(fmt::format_string <Ts...> fmt_str, Ts &&...args)
+{
+	auto header = fmt::format(fmt::emphasis::bold, "ugp:");
+	auto alert = fmt::format(fmt::emphasis::bold | fmt::fg(fmt::color::yellow), "warning:");
+	auto message = fmt::format(fmt_str, std::forward <Ts> (args)...);
+	fmt::println(stderr, "{} {} {}", header, alert, message);
+}
+
+template <typename ... Ts>
+void error(fmt::format_string <Ts...> fmt_str, Ts &&...args)
+{
+	auto header = fmt::format(fmt::emphasis::bold, "ugp:");
+	auto alert = fmt::format(fmt::emphasis::bold | fmt::fg(fmt::color::red), "error:");
+	auto message = fmt::format(fmt_str, std::forward <Ts> (args)...);
+	fmt::println(stderr, "{} {} {}", header, alert, message);
+}
+
+template <typename ... Ts>
+void ok(fmt::format_string <Ts...> fmt_str, Ts &&...args)
+{
+	auto header = fmt::format(fmt::emphasis::bold, "ugp:");
+	auto alert = fmt::format(fmt::emphasis::bold | fmt::fg(fmt::color::green), "ok:");
+	auto message = fmt::format(fmt_str, std::forward <Ts> (args)...);
+	fmt::println(stderr, "{} {} {}", header, alert, message);
+}
+
+template <typename ... Ts>
 [[noreturn]] void fatal(fmt::format_string <Ts...> fmt_str, Ts &&...args)
 {
 	// TODO: source location...

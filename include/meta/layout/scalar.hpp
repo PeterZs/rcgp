@@ -21,7 +21,14 @@ struct layout_engine {
 
 template <typename Original, typename ... Ts>
 struct layout_engine <aggregate_reflection <Original, Ts...>> {
-	static constexpr size_t alignment = std::max({ layout_engine <Ts> ::alignment... });
+	static constexpr bool dynamic = (is_dynamic_reflection_v <Ts> || ...);
+	static constexpr size_t alignment = [] {
+		if constexpr (dynamic)
+			return 0;
+		else
+			return std::max({ layout_engine <Ts> ::alignment... });
+	} ();
+
 	using hint = scaffold_hint <
 		sequence <typename layout_engine <Ts> ::hint...>,
 		alignment
@@ -40,7 +47,7 @@ struct layout_engine <array_reflection <T, N>> {
 
 template <typename T>
 struct layout_engine <array_reflection <T, -1>> {
-	static constexpr size_t alignment = layout_engine <T> ::alignment;
+	static constexpr size_t alignment = 0;
 	using hint = scaffold_hint <
 		unsized_array <typename layout_engine <T> ::hint>,
 		alignment

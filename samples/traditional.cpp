@@ -8,24 +8,6 @@
 #include "util/aperature.hpp"
 #include "util/transform.hpp"
 
-// struct alignas(0) Points {
-// 	u32 count;
-//
-// 	struct Array {
-// 		vec3 delta;
-//
-// 		// array <u32> positions;
-// 		array <vec2> positions;
-//
-// 		$reflection(delta, positions);
-// 	} array;
-//
-// 	$reflection(count, array);
-// 	// TODO: if T is a dynamic aggregate,
-// 	// then align should fallback to 0 (i.e. natural)
-// 	// for it to work would be need to pack structs with pragma?
-// };
-
 struct View {
 	mat4 proj;
 	mat4 view;
