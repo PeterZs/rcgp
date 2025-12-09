@@ -49,29 +49,22 @@ auto fs = $fragment $fn($use(light_direction), $use(shared), vec3 normal) -> $re
 	$return vec4(shared.tint * shade, 1.0f);
 };
 
-template <typename T>
-struct command_state {};
+template <typename X, typename Y>
+struct Commands {};
 
-// struct TGP {
-// 	auto dispatch() {
-// 		return command_state <int> ();
-// 	}
-// };
-
-template <typename ... Ts>
+template <typename GroupAllocation>
 struct AnnotatedRasterizationPipeline {
 	vk::Pipeline handle;
 	vk::PipelineLayout layout;
 	std::vector <vk::DescriptorSetLayout> dsls;
 
-	using VertexBuffer = void;
-	// using IndexBuffer = void; TODO: ?
-};
+	// TODO: using VertexBuffer <ref> = ?
+	// TODO: using IndexBuffer = ?
 
-auto begin_command_buffer()
-{
-	return command_state <int> ();
-}
+	// TODO: new_descriptor <ref> () method
+
+	// TODO: bind_vertex_buffers(...) -> Commands[X, Y]
+};
 
 template <typename T, Stage ... Ss>
 struct stage_wrapper {
@@ -141,8 +134,52 @@ auto add_implicit_context(const sequence <Ts...> &in, const implicit_context <b,
 		return out;
 }
 
+constexpr vk::ShaderStageFlags stage_to_flag(Stage S)
+{
+	switch (S) {
+	case Stage::Vertex: return vk::ShaderStageFlagBits::eVertex;
+	case Stage::Fragment: return vk::ShaderStageFlagBits::eFragment;
+	default:
+		return vk::ShaderStageFlagBits::eAll;
+	}
+}
+
+// TODO: flesh out with an impl method with handles things recursively...
+template <auto &ref, Stage ... Ss>
+auto reference_to_descriptor_bindings(const Device &device, const stage_wrapper <reference <ref>, Ss...> &)
+{
+	using base = typename reference <ref> ::raw_base;
+	using R = expand_reflection_t <base>;
+
+	// TODO: collect all dslbs and pc ranges recursively
+	// TODO: if its a resource group then we need to filter it...
+	auto dslbs = std::array {
+		vk::DescriptorSetLayoutBinding()
+			.setBinding(0)
+			.setDescriptorCount(1)
+			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+			.setStageFlags((stage_to_flag(Ss) | ...))
+	};
+
+	auto dsl_info = vk::DescriptorSetLayoutCreateInfo()
+		.setBindings(dslbs);
+
+	// TODO: return the dsl and pc ranges separately
+	return device.logical.createDescriptorSetLayout(dsl_info);
+}
+
+template <typename ... Ts>
+auto reference_sequence_to_descriptor_bindings(const Device &device, const sequence <Ts...> &)
+{
+	// TODO: separate arrays for dsl and pc ranges
+	return std::array {
+		reference_to_descriptor_bindings(device, Ts())...
+	};
+}
+
 template <typename ... Ts>
 struct RasterizationPipelineCombinator {
+	const Device &device;
 	// TODO: options...
 
 	template <typename VRet, typename ... As, typename FRet, typename ... Bs>
@@ -163,7 +200,14 @@ struct RasterizationPipelineCombinator {
 		vs.apply_group_allocation_map(gamap);
 		fs.apply_group_allocation_map(gamap);
 
-		return grvs;
+		auto dsls = reference_sequence_to_descriptor_bindings(device, grvs);
+
+		auto layout_info = vk::PipelineLayoutCreateInfo()
+			.setSetLayouts(dsls);
+
+		auto layout = device.logical.createPipelineLayout(layout_info);
+
+		return std::make_tuple(grvs, dsls, layout);
 	}
 };
 
@@ -224,13 +268,11 @@ int main()
 	auto compiler = Compiler::from(device, Compiler::Info());
 
 	// TODO: comb from compiler and other options...
-	auto comb = rpc();
-	auto c = comb(vs, fs);
+	auto comb = rpc {
+		.device = device
+	};
 
-	// auto alloc = sequence_to_group_allocation(c);
-	// auto map = new_allocation(alloc);
-	// vs.apply_group_allocation_map(map);
-	// fs.apply_group_allocation_map(map);
+	auto [c, dsls, pipeline_layout] = comb(vs, fs);
 
 	auto vshader = generators::GLSL(vs).generate();
 	auto fshader = generators::GLSL(fs).generate();
@@ -267,52 +309,6 @@ int main()
 			.setFormat(vk::Format::eR32G32B32Sfloat)
 			.setOffset(0),
 	};
-
-	// TODO: should be able to construct the pipeline layout from the group allocation
-	auto view_binding = vk::DescriptorSetLayoutBinding()
-			.setBinding(0)
-			.setDescriptorCount(1)
-			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-			.setStageFlags(vk::ShaderStageFlagBits::eVertex);
-
-	auto light_binding = vk::DescriptorSetLayoutBinding()
-			.setBinding(0)
-			.setDescriptorCount(1)
-			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
-
-	auto shared_binding = vk::DescriptorSetLayoutBinding()
-			.setBinding(0)
-			.setDescriptorCount(1)
-			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-			.setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
-
-	auto view_dsl = device.logical.createDescriptorSetLayout(
-		vk::DescriptorSetLayoutCreateInfo().setBindings(view_binding),
-		nullptr,
-		dld
-	);
-	
-	auto light_dsl = device.logical.createDescriptorSetLayout(
-		vk::DescriptorSetLayoutCreateInfo().setBindings(light_binding),
-		nullptr,
-		dld
-	);
-	
-	auto shared_dsl = device.logical.createDescriptorSetLayout(
-		vk::DescriptorSetLayoutCreateInfo().setBindings(shared_binding),
-		nullptr,
-		dld
-	);
-
-	// auto dsls = std::array { view_dsl, light_dsl, shared_dsl };
-	auto dsls = std::array { view_dsl, shared_dsl, light_dsl };
-
-	auto pipeline_layout = device.logical.createPipelineLayout(
-		vk::PipelineLayoutCreateInfo().setSetLayouts(dsls),
-		nullptr,
-		dld
-	);
 
 	auto attachments = Attachments();
 
@@ -399,7 +395,7 @@ int main()
 	std::memcpy(pbuf_value.data(), mesh.positions.data(), pbuf_value.size_bytes());
 	pbuf.write(pbuf_value);
 
-	auto nbuf = MirrorBuffer <array <vec3>> ::from(
+	auto nbuf = MirrorBuffer <array <vec3>, layouts::scalar> ::from(
 		device, mesh.normals.size(),
 		vk::BufferUsageFlagBits::eVertexBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible
@@ -488,8 +484,6 @@ int main()
 		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 		.setBufferInfo(light_buf_info);
 
-	// TODO: during command seq we should auto batch descriptor set
-	// operations and do one updatedescriptorsets call just before dispatch
 	device.logical.updateDescriptorSets(
 		{ view_write, shared_write, light_write },
 		nullptr, dld

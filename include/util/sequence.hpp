@@ -10,6 +10,9 @@ struct sequence {
 	sequence(Args...) requires (size > 0) {}
 	sequence(std::type_identity <Args> ...) {}
 
+	template <size_t I>
+	using get = Args...[I];
+
 	template <typename T>
 	using push_front_t = sequence <T, Args...>;
 
