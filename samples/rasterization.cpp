@@ -1,7 +1,3 @@
-#include <array>
-#include <vector>
-#include <cstdint>
-
 #include <mrd.hpp>
 
 #include <ugp.hpp>
@@ -24,9 +20,41 @@ struct Shared {
 	$reflection(tint, scale);
 };
 
-AttributeStream <vec3> position;
+AttributeStream <vec3, layouts::std430> position;
 AttributeStream <vec3> normal;
 
+// TODO: mirror buffer needs minimum buffer usage flags...
+// template flags...
+// e.g. vertex buffer, uniform buffer, storage buffer, index buffer...
+
+// Vertex buffer associated to a stream resource
+template <auto &ref>
+struct VertexBuffer {};
+
+template <reflected T, template <typename> typename L, vk::VertexInputRate R>
+auto binding_description_for_attribute_stream(const AttributeStream <T, L, R> &, size_t binding)
+{
+	using M = data_mirror <T, L> ::type;
+	return vk::VertexInputBindingDescription()
+		.setBinding(binding)
+		.setStride(sizeof(M))
+		.setInputRate(R);
+}
+
+// TODO: handle aggregates and such
+template <reflected T, template <typename> typename L, vk::VertexInputRate R>
+auto attribute_description_for_attribute_stream(const AttributeStream <T, L, R> &, size_t binding, size_t &location)
+{
+	return std::array {
+		vk::VertexInputAttributeDescription()
+			.setLocation(location++)
+			.setBinding(binding)
+			.setFormat(symbolic_format <T> ::value)
+			.setOffset(0)
+	};
+}
+
+// TODO: should also have a layout
 MonoConstantBuffer <View> view;
 MonoConstantBuffer <Shared> shared;
 
@@ -52,7 +80,13 @@ auto fs = $fragment $fn($use(light_direction), $use(shared), vec3 normal) -> $re
 template <typename X, typename Y>
 struct Commands {};
 
-template <typename GroupAllocation>
+// TODO: descriptor mirrors for each resource group...
+// for monoX this degenerates to a single descriptor write
+// for aggregates we need a proper mirror...
+
+// AttributeStreams := sequence <reference <Stream>...>
+// GroupAllocation := sequence <reference <GRV>...>
+template <typename AttributeStreams, typename GroupAllocation>
 struct AnnotatedRasterizationPipeline {
 	vk::Pipeline handle;
 	vk::PipelineLayout layout;
@@ -79,12 +113,52 @@ struct stage_wrapper {
 	>;
 };
 
+template <typename T, size_t ... Ns>
+auto concat(const std::array <T, Ns> &... arrays)
+{
+	std::array <T, (Ns + ...)> result {};
+	size_t idx = 0;
+	auto append = [&](const auto &arr) {
+		for (const auto &el : arr)
+			result[idx++] = el;
+	};
+	(append(arrays), ...);
+	return result;
+}
+
 template <typename ... Ts>
 struct find_implicit_context {
 	static constexpr auto contexts = std::array { is_implicit_context_v <Ts>... };
 	static constexpr auto idx = first_on(contexts);
 	using type = Ts...[idx];
 };
+
+template <auto &... refs, size_t ... Is>
+auto sequence_to_vertex_bindings_impl(const sequence <reference <refs>...> &, const std::index_sequence <Is...> &)
+{
+	return std::array {
+		binding_description_for_attribute_stream(refs, Is)...
+	};
+}
+
+template <auto &... refs>
+auto sequence_to_vertex_bindings(const sequence <reference <refs>...> &in)
+{
+	return sequence_to_vertex_bindings_impl(in, std::make_index_sequence <sizeof...(refs)> ());
+}
+
+template <auto &... refs, size_t ... Is>
+auto sequence_to_vertex_attributes_impl(const sequence <reference <refs>...> &, const std::index_sequence <Is...> &)
+{
+	size_t location = 0;
+	return concat(attribute_description_for_attribute_stream(refs, Is, location)...);
+}
+
+template <auto &... refs>
+auto sequence_to_vertex_attributes(const sequence <reference <refs>...> &in)
+{
+	return sequence_to_vertex_attributes_impl(in, std::make_index_sequence <sizeof...(refs)> ());
+}
 
 template <auto &... refs, size_t ... Is>
 auto sequence_to_group_allocation_impl(const sequence <reference <refs>...> &, const std::index_sequence <Is...> &)
@@ -101,8 +175,33 @@ auto sequence_to_group_allocation(const sequence <Ts...> &)
 	);
 }
 
+template <auto &ref, typename ... Ts>
+auto add_stream(const sequence <Ts...> &in)
+{
+	using base = reference <ref> ::raw_base;
+	if constexpr (!is_attribute_stream_v <base>) {
+		return in;
+	} else {
+		constexpr auto exists = (std::same_as <Ts, reference <ref>> || ...);
+		if constexpr (exists)
+			return in;
+		else
+			return sequence <Ts..., reference <ref>> ::singleton;
+	}
+}
+
+template <typename ... Ts, auto &b, auto &... bs>
+auto add_stream_from_implicit_context(const sequence <Ts...> &in, const implicit_context <b, bs...> &)
+{
+	auto out = add_stream <b> (in);
+	if constexpr (sizeof...(bs))
+		return add_stream_from_implicit_context(out, implicit_context <bs...> ());
+	else
+		return out;
+}
+
 template <Stage S, auto &ref, typename ... Ts>
-auto add_global_resource(const sequence <Ts...> &in)
+auto add_grv(const sequence <Ts...> &in)
 {
 	using base = reference <ref> ::raw_base;
 	if constexpr (!is_global_resource_v <base>) {
@@ -125,11 +224,11 @@ auto add_global_resource(const sequence <Ts...> &in)
 }
 
 template <Stage S, typename ... Ts, auto &b, auto &...bs>
-auto add_implicit_context(const sequence <Ts...> &in, const implicit_context <b, bs...> &)
+auto add_grv_from_implicit_context(const sequence <Ts...> &in, const implicit_context <b, bs...> &)
 {
-	auto out = add_global_resource <S, b> (in);
+	auto out = add_grv <S, b> (in);
 	if constexpr (sizeof...(bs))
-		return add_implicit_context <S> (out, implicit_context <bs...> ());
+		return add_grv_from_implicit_context <S> (out, implicit_context <bs...> ());
 	else
 		return out;
 }
@@ -145,6 +244,7 @@ constexpr vk::ShaderStageFlags stage_to_flag(Stage S)
 }
 
 // TODO: flesh out with an impl method with handles things recursively...
+// TODO: fallback...
 template <auto &ref, Stage ... Ss>
 auto reference_to_descriptor_bindings(const Device &device, const stage_wrapper <reference <ref>, Ss...> &)
 {
@@ -177,6 +277,8 @@ auto reference_sequence_to_descriptor_bindings(const Device &device, const seque
 	};
 }
 
+
+
 template <typename ... Ts>
 struct RasterizationPipelineCombinator {
 	const Device &device;
@@ -184,16 +286,18 @@ struct RasterizationPipelineCombinator {
 
 	template <typename VRet, typename ... As, typename FRet, typename ... Bs>
 	auto operator()(stage <Stage::Vertex, VRet, As...> &vertex,
-		 	stage <Stage::Fragment, FRet, Bs...> &fragment)
-	{
+		 	stage <Stage::Fragment, FRet, Bs...> &fragment) {
 		// TODO: check between vshader output and fshader input
 		// TODO: store # of attachments required from # of fshader outputs
 		using vertex_icontext = find_implicit_context <As...> ::type;
 		using fragment_icontext = find_implicit_context <Bs...> ::type;
 
 		auto grvs0 = sequence <> ::singleton;
-		auto grvs1 = add_implicit_context <Stage::Vertex> (grvs0, vertex_icontext());
-		auto grvs = add_implicit_context <Stage::Fragment> (grvs1, fragment_icontext());
+		auto grvs1 = add_grv_from_implicit_context <Stage::Vertex> (grvs0, vertex_icontext());
+		auto grvs = add_grv_from_implicit_context <Stage::Fragment> (grvs1, fragment_icontext());
+
+		auto streams0 = sequence <> ::singleton;
+		auto streams = add_stream_from_implicit_context(streams0, vertex_icontext());
 
 		auto alloc = sequence_to_group_allocation(grvs);
 		auto gamap = new_allocation(alloc);
@@ -201,21 +305,16 @@ struct RasterizationPipelineCombinator {
 		fs.apply_group_allocation_map(gamap);
 
 		auto dsls = reference_sequence_to_descriptor_bindings(device, grvs);
-
-		auto layout_info = vk::PipelineLayoutCreateInfo()
-			.setSetLayouts(dsls);
-
+		auto layout_info = vk::PipelineLayoutCreateInfo().setSetLayouts(dsls);
 		auto layout = device.logical.createPipelineLayout(layout_info);
 
-		return std::make_tuple(grvs, dsls, layout);
+		return std::make_tuple(grvs, streams, dsls, layout);
 	}
 };
 
 template <typename ... Ts>
 using rpc = RasterizationPipelineCombinator <Ts...>;
 
-// TODO: structs need a layout (defaults to std430)
-// 
 // TODO: work group is a parameter to shaders that is an intrinsic...
 // WorkGroup <8, 8> group... group.block_idx, thread_idx and so on
 //
@@ -254,82 +353,23 @@ int main()
 		));
 	}
 
-	auto queue = Queue::from(device);
-	auto cpool = CommandPool::from(device, queue);
-	auto cmdbuffers = group(device, cpool).allocate(window.frames_in_flight);
-
-	auto dpool_info = DescriptorPool::Info {
-		.max_sets = 1 << 10,
-		.uniform_buffers = 1 << 10,
-	};
-
-	auto dpool = DescriptorPool::from(device, dpool_info);
-
-	auto compiler = Compiler::from(device, Compiler::Info());
-
-	// TODO: comb from compiler and other options...
-	auto comb = rpc {
-		.device = device
-	};
-
-	auto [c, dsls, pipeline_layout] = comb(vs, fs);
-
-	auto vshader = generators::GLSL(vs).generate();
-	auto fshader = generators::GLSL(fs).generate();
-
-	fmt::println("vertex shader:\n{}", vshader);
-	fmt::println("fragment shader:\n{}", fshader);
-	
-	auto vspv = compiler.glsl_to_spirv(vshader, EShLangVertex);
-	auto fspv = compiler.glsl_to_spirv(fshader, EShLangFragment);
-
-	auto vmodule = compiler.spirv_to_shader_module(vspv);
-	auto fmodule = compiler.spirv_to_shader_module(fspv);
-
-	auto binding_descs = std::array {
-		vk::VertexInputBindingDescription()
-			.setBinding(0)
-			.setStride(sizeof(glm::vec3))
-			.setInputRate(vk::VertexInputRate::eVertex),
-		vk::VertexInputBindingDescription()
-			.setBinding(1)
-			.setStride(sizeof(glm::vec3))
-			.setInputRate(vk::VertexInputRate::eVertex),
-	};
-
-	auto attribute_descs = std::array {
-		vk::VertexInputAttributeDescription()
-			.setLocation(0)
-			.setBinding(0)
-			.setFormat(vk::Format::eR32G32B32Sfloat)
-			.setOffset(0),
-		vk::VertexInputAttributeDescription()
-			.setLocation(1)
-			.setBinding(1)
-			.setFormat(vk::Format::eR32G32B32Sfloat)
-			.setOffset(0),
-	};
-
 	auto attachments = Attachments();
 
-	attachments["color"] = vk::AttachmentDescription()
-		.setFormat(window.format)
+	auto common = vk::AttachmentDescription()
 		.setSamples(vk::SampleCountFlagBits::e1)
 		.setLoadOp(vk::AttachmentLoadOp::eClear)
-		.setStoreOp(vk::AttachmentStoreOp::eStore)
 		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
 		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-		.setInitialLayout(vk::ImageLayout::eUndefined)
+		.setInitialLayout(vk::ImageLayout::eUndefined);
+
+	attachments["color"] = common
+		.setFormat(window.format)
+		.setStoreOp(vk::AttachmentStoreOp::eStore)
 		.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
 
-	attachments["depth"] = vk::AttachmentDescription()
+	attachments["depth"] = common
 		.setFormat(depth_format)
-		.setSamples(vk::SampleCountFlagBits::e1)
-		.setLoadOp(vk::AttachmentLoadOp::eClear)
 		.setStoreOp(vk::AttachmentStoreOp::eDontCare)
-		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-		.setInitialLayout(vk::ImageLayout::eUndefined)
 		.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
 	auto color = attachments.reference("color", vk::ImageLayout::eColorAttachmentOptimal);
@@ -349,12 +389,52 @@ int main()
 		auto &image = window.images[i];
 		auto &depth = depth_images[i];
 		std::array attachments_views { image.view, depth.view };
+		// TODO: one group <Ts...> with all the methods,
+		// which are restricted based on the Ts...
+		// e.g. here we need Ts... = (device, renderpass, dld)
+		// and we can give static assertion message for the fallback
 		framebuffers[i] = group(device, rp, dld).new_framebuffer(
 			attachments_views,
 			image.extent,
 			1
 		);
 	}
+
+	auto queue = Queue::from(device);
+	auto cpool = CommandPool::from(device, queue);
+	auto cmdbuffers = group(device, cpool).allocate(window.frames_in_flight);
+
+	auto dpool_info = DescriptorPool::Info {
+		.max_sets = 1 << 10,
+		.uniform_buffers = 1 << 10,
+	};
+
+	auto dpool = DescriptorPool::from(device, dpool_info);
+
+	auto compiler = Compiler::from(device, Compiler::Info());
+
+	// TODO: comb from compiler and other options...
+	auto comb = rpc {
+		.device = device
+	};
+
+	auto [grvs, streams, dsls, pipeline_layout] = comb(vs, fs);
+
+	auto vshader = generators::GLSL(vs).generate();
+	auto fshader = generators::GLSL(fs).generate();
+
+	fmt::println("vertex shader:\n{}", vshader);
+	fmt::println("fragment shader:\n{}", fshader);
+	
+	auto vspv = compiler.glsl_to_spirv(vshader, EShLangVertex);
+	auto fspv = compiler.glsl_to_spirv(fshader, EShLangFragment);
+
+	auto vmodule = compiler.spirv_to_shader_module(vspv);
+	auto fmodule = compiler.spirv_to_shader_module(fspv);
+
+	// TODO: automate the input assembler
+	auto binding_descs = sequence_to_vertex_bindings(streams);
+	auto attribute_descs = sequence_to_vertex_attributes(streams);
 
 	// TODO: shoudl eventually remove RasterizationPipeline
 	auto pipeline_info = RasterizationPipeline::Info {
@@ -383,41 +463,38 @@ int main()
 	mesh.deduplicate();
 	fmt::println("bytes: {} MB", mb(mesh.size_bytes()));
 
-	auto pbuf = MirrorBuffer <array <vec3>> ::from(
+	auto pbuf = MirrorBuffer <array <vec3>, layouts::std430> ::from(
 		device, mesh.positions.size(),
 		vk::BufferUsageFlagBits::eVertexBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible
 		| vk::MemoryPropertyFlagBits::eHostCoherent
-	);
-
-	auto pbuf_value = pbuf.new_value();
-	pbuf_value.resize(mesh.positions.size());
-	std::memcpy(pbuf_value.data(), mesh.positions.data(), pbuf_value.size_bytes());
-	pbuf.write(pbuf_value);
+	).write(span(mesh.positions).map(
+		[](auto p) -> $mirror(vec3, layouts::std430) {
+			return { p.x, p.y, p.z };
+		}
+	));
 
 	auto nbuf = MirrorBuffer <array <vec3>, layouts::scalar> ::from(
 		device, mesh.normals.size(),
 		vk::BufferUsageFlagBits::eVertexBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible
-			| vk::MemoryPropertyFlagBits::eHostCoherent
-	);
-
-	auto nbuf_value = nbuf.new_value();
-	nbuf_value.resize(mesh.normals.size());
-	std::memcpy(nbuf_value.data(), mesh.normals.data(), nbuf_value.size_bytes());
-	nbuf.write(nbuf_value);
+		| vk::MemoryPropertyFlagBits::eHostCoherent
+	).write(span(mesh.normals).map(
+		[](auto p) -> $mirror(vec3, layouts::scalar) {
+			return { p.x, p.y, p.z };
+		}
+	));
 
 	auto ibuf = MirrorBuffer <array <ivec3>, layouts::scalar> ::from(
 		device, mesh.primitives.size(),
 		vk::BufferUsageFlagBits::eIndexBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible
-			| vk::MemoryPropertyFlagBits::eHostCoherent
-	);
-
-	auto ibuf_value = ibuf.new_value();
-	ibuf_value.resize(mesh.primitives.size());
-	std::memcpy(ibuf_value.data(), mesh.primitives.data(), sizeof(glm::ivec3) * ibuf_value.size());
-	ibuf.write(ibuf_value);
+		| vk::MemoryPropertyFlagBits::eHostCoherent
+	).write(span(mesh.primitives).map(
+		[](auto p) -> $mirror(ivec3, layouts::scalar) {
+			return { p.x, p.y, p.z };
+		}
+	));
 
 	// Camera
 	Aperature aperature;

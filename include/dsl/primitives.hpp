@@ -29,6 +29,7 @@ template <typename T>
 concept native_float_scalar = bool(false
 	| std::same_as <T, float>);
 
+// TODO: split into multiple files...
 // Scalars in GPU code
 template <native_scalar T>
 class scalar : public jems::handle {

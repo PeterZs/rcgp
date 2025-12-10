@@ -24,6 +24,10 @@ struct sequence {
 	template <template <typename ...> typename F>
 	using invoke = F <Args...>;
 
+	static constexpr auto iseq() {
+		return std::make_index_sequence <size> ();
+	}
+
 	static inline sequence singleton {
 		std::type_identity <Args> ()...
 	};

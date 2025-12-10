@@ -5,9 +5,10 @@
 #include "reference.hpp"
 #include "reflection.hpp"
 #include "reflection_builder.hpp"
+#include "layout/all.hpp"
 
-// Standalone resource, so no qualms about being embedded within parameter blocks
-template <reflected T, vk::VertexInputRate R = vk::VertexInputRate::eVertex>
+// TODO: shoudl be more restrictive than reflected... at least must be static
+template <reflected T,  template <typename> typename L = layouts::scalar, vk::VertexInputRate R = vk::VertexInputRate::eVertex>
 struct AttributeStream {
 	using reflection = attribute_stream_reflection <T, R>;
 	DEFINE_REFLECTION_STAMP();
@@ -20,6 +21,7 @@ struct ResourceGroup {
 	DEFINE_REFLECTION_STAMP();
 };
 
+// TODO: these need layouts...
 template <reflected T>
 struct ConstantBuffer : T {
 	using reflection = constant_buffer_reflection <T>;
@@ -86,13 +88,27 @@ constexpr bool is_global_resource_reflection_v = is_global_resource_reflection <
 template <typename T>
 constexpr bool is_global_resource_v = is_global_resource_reflection <typename T::reflection> ::value;
 
+// Attribute stream detection
+template <typename T>
+struct is_attribute_stream_reflection : std::false_type {};
+
+template <typename T, vk::VertexInputRate R>
+struct is_attribute_stream_reflection <attribute_stream_reflection <T, R>> : std::true_type {};
+
+template <typename T>
+constexpr bool is_attribute_stream_reflection_v = is_attribute_stream_reflection <T> ::value;
+
+template <typename T>
+constexpr bool is_attribute_stream_v =
+	has_reflection <T> () && is_attribute_stream_reflection_v <typename T::reflection>;
+
 // Overriding reference behavior
 template <typename T, ResourceGroup <T> &rsrc>
 struct reference_base <rsrc> {
 	using type = T;
 };
 
-template <reflected T, vk::VertexInputRate R, AttributeStream <T, R> &rsrc>
+template <reflected T, template <typename> typename L, vk::VertexInputRate R, AttributeStream <T, L, R> &rsrc>
 struct reference_base <rsrc> {
 	using type = T;
 };

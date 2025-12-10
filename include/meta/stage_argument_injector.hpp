@@ -62,13 +62,15 @@ struct stage_argument_injector <S, reference <rsrc>> {
 	}
 };
 
-// For vertex and fragment shaders, primitive arguments are thread inputs
+// For fragment shaders primitive arguments are thread inputs;
+// 	vertex stage is included for simplicity of implementation,
+// 	but users will not be allowed to write vertex shaders without
+// 	explicit references to the streams
 template <Stage S, primitive T>
 requires (S == Stage::Vertex || S == Stage::Fragment)
 struct stage_argument_injector <S, T> {
 	static auto main(T &value, const InjectionState &state) {
 		auto type = reconstruct_type <T> ();
-		// TODO: if fragment shader, then properties needs to be Deferred
 		auto tin = ThreadInput(type, state.threadidx);
 		$tsb.context.add_thread_input(tin);
 		injector <T> ::main(value, jems::thread_input(tin));
@@ -76,8 +78,8 @@ struct stage_argument_injector <S, T> {
 	}
 };
 
-// TODO: remove the above for vertex shaders...
-template <reflected T, vk::VertexInputRate R, AttributeStream <T, R> &rsrc>
+// For vertex shaders streams are thread inputs
+template <reflected T, template <typename> typename L, vk::VertexInputRate R, AttributeStream <T, L, R> &rsrc>
 struct stage_argument_injector <Stage::Vertex, reference <rsrc>> {
 	static auto main(reference <rsrc> &value, const InjectionState &state) {
 		return stage_argument_injector <Stage::Vertex, T> ::main(value, state);

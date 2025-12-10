@@ -40,6 +40,11 @@ template <reflected T, template <typename> typename Engine>
 requires (is_dynamic_v <T>)
 struct MirrorBuffer <T, Engine> : Buffer {
 	using value_type = data_mirror <T, Engine> ::type;
+	using element_type = decltype([] {
+		value_type data;
+		auto [dyn, offset] = dynamic_part <T> (data);
+		return typename std::decay_t <decltype(dyn)> ::value_type();
+	} ());
 	
 	value_type new_value() const {
 		return value_type();
@@ -51,18 +56,15 @@ struct MirrorBuffer <T, Engine> : Buffer {
 		if (offset > 0)
 			Buffer::write(&data, offset, 0);
 
-		using element = std::decay_t <decltype(dyn)> ::value_type;
-
-		Buffer::write(dyn.data(), dyn.size() * sizeof(element), offset);
+		Buffer::write(dyn.data(), std::span(dyn).size_bytes(), offset);
 		return *this;
 	}
 
 	static MirrorBuffer from(const Device &device, size_t max_elements, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties) {
+		// TODO: dynamic_offset() static constexpr method
 		value_type data;
 		auto [dyn, offset] = dynamic_part <T> (data);
-		using element = std::decay_t <decltype(dyn)> ::value_type;
-
-		auto base = Buffer::from(device, offset + max_elements * sizeof(element), usage, properties);
+		auto base = Buffer::from(device, offset + max_elements * sizeof(element_type), usage, properties);
 
 		MirrorBuffer result;
 		static_cast <Buffer &> (result) = base;

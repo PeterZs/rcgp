@@ -8,13 +8,7 @@ template <reflected T, int64_t N>
 struct array;
 
 template <typename T>
-struct unsized_array : std::vector <T> {
-	using std::vector <T> ::vector;
-
-	size_t size_bytes() const {
-		return sizeof(T) * this->size();
-	}
-};
+using unsized_array = std::vector <T>;
 
 // Pair of type and manual alignment
 template <typename T, size_t N>
@@ -78,26 +72,30 @@ struct scaffold_lookup <scaffold_hint <sequence <Ts...>, Align>, View, AlignTopL
 };
 
 // Statically sized array types
-// TODO: need to align each element
-template <typename Element, size_t N1, size_t Align, reflected ElementView, int64_t N2>
+template <typename Element, size_t N1, size_t Align, reflected ElementView, int64_t N2, bool AlignTopLevel>
 struct scaffold_lookup <
 	scaffold_hint <std::array <Element, N1>, Align>,
-	array <ElementView, N2>
+	array <ElementView, N2>,
+	AlignTopLevel
 >
 {
 	static_assert(N1 == N2, "bad");
 	using element = scaffold_lookup <Element, ElementView, true> ::type;
-	using type = std::array <element, N1>;
+        // NOTE: AlignTopLevel is ignored here because we already have each
+        // element aligned, and thus the array should be aligned the same
+        using type = std::array <element, N1>;
 };
 
 // Dynamically sized array types
-template <typename Element, size_t Align, reflected ElementView>
+template <typename Element, size_t Align, reflected ElementView, bool AlignTopLevel>
 struct scaffold_lookup <
 	scaffold_hint <unsized_array <Element>, Align>,
-	array <ElementView, -1>
+	array <ElementView, -1>,
+	AlignTopLevel
 >
 {
 	using element = scaffold_lookup <Element, ElementView, true> ::type;
+	// NOTE: AlignTopLevel is ignored because this is a dynamic element
 	using type = unsized_array <element>;
 };
 
