@@ -23,38 +23,7 @@ struct Shared {
 AttributeStream <vec3, layouts::std430> position;
 AttributeStream <vec3> normal;
 
-// TODO: mirror buffer needs minimum buffer usage flags...
-// template flags...
-// e.g. vertex buffer, uniform buffer, storage buffer, index buffer...
-
-// Vertex buffer associated to a stream resource
-template <auto &ref>
-struct VertexBuffer {};
-
-template <reflected T, template <typename> typename L, vk::VertexInputRate R>
-auto binding_description_for_attribute_stream(const AttributeStream <T, L, R> &, size_t binding)
-{
-	using M = data_mirror <T, L> ::type;
-	return vk::VertexInputBindingDescription()
-		.setBinding(binding)
-		.setStride(sizeof(M))
-		.setInputRate(R);
-}
-
-// TODO: handle aggregates and such
-template <reflected T, template <typename> typename L, vk::VertexInputRate R>
-auto attribute_description_for_attribute_stream(const AttributeStream <T, L, R> &, size_t binding, size_t &location)
-{
-	return std::array {
-		vk::VertexInputAttributeDescription()
-			.setLocation(location++)
-			.setBinding(binding)
-			.setFormat(symbolic_format <T> ::value)
-			.setOffset(0)
-	};
-}
-
-// TODO: should also have a layout
+// TODO: should also have a layout; this needs to be written in the shader though
 MonoConstantBuffer <View> view;
 MonoConstantBuffer <Shared> shared;
 
@@ -67,7 +36,7 @@ auto vs = $vertex $fn($use(position), $use(normal), $use(view), $use(shared)) ->
 	$return std::tuple(Position(mvp * vec4(position, 1.0)), world_n);
 };
 
-// TODO: push constant
+// TODO: push constants
 MonoConstantBuffer <vec3> light_direction;
 
 auto fs = $fragment $fn($use(light_direction), $use(shared), vec3 normal) -> $returns(vec4)
@@ -100,32 +69,13 @@ struct AnnotatedRasterizationPipeline {
 	// TODO: bind_vertex_buffers(...) -> Commands[X, Y]
 };
 
-template <typename T, ShaderStage ... Ss>
-struct stage_wrapper {
-	using stages = std::integer_sequence <ShaderStage, Ss...>;
-	using type = T;
+// TODO: mirror buffer needs minimum buffer usage flags...
+// template flags...
+// e.g. vertex buffer, uniform buffer, storage buffer, index buffer...
 
-	template <ShaderStage S>
-	using append_stage = std::conditional_t <
-		((Ss == S) || ...),
-		stage_wrapper <T, Ss...>,
-		stage_wrapper <T, Ss..., S>
-	>;
-};
-
-// TODO: move to util
-template <typename T, size_t ... Ns>
-auto concat(const std::array <T, Ns> &... arrays)
-{
-	std::array <T, (Ns + ...)> result {};
-	size_t idx = 0;
-	auto append = [&](const auto &arr) {
-		for (const auto &el : arr)
-			result[idx++] = el;
-	};
-	(append(arrays), ...);
-	return result;
-}
+// Vertex buffer associated to a stream resource
+template <auto &ref>
+struct VertexBuffer {};
 
 template <typename ... Ts>
 struct find_implicit_context {
@@ -133,33 +83,6 @@ struct find_implicit_context {
 	static constexpr auto idx = first_on(contexts);
 	using type = Ts...[idx];
 };
-
-template <auto &... refs, size_t ... Is>
-auto sequence_to_vertex_bindings_impl(const sequence <reference <refs>...> &, const std::index_sequence <Is...> &)
-{
-	return std::array {
-		binding_description_for_attribute_stream(refs, Is)...
-	};
-}
-
-template <auto &... refs>
-auto sequence_to_vertex_bindings(const sequence <reference <refs>...> &in)
-{
-	return sequence_to_vertex_bindings_impl(in, std::make_index_sequence <sizeof...(refs)> ());
-}
-
-template <auto &... refs, size_t ... Is>
-auto sequence_to_vertex_attributes_impl(const sequence <reference <refs>...> &, const std::index_sequence <Is...> &)
-{
-	size_t location = 0;
-	return concat(attribute_description_for_attribute_stream(refs, Is, location)...);
-}
-
-template <auto &... refs>
-auto sequence_to_vertex_attributes(const sequence <reference <refs>...> &in)
-{
-	return sequence_to_vertex_attributes_impl(in, std::make_index_sequence <sizeof...(refs)> ());
-}
 
 template <auto &... refs, size_t ... Is>
 auto sequence_to_group_allocation_impl(const sequence <reference <refs>...> &, const std::index_sequence <Is...> &)
@@ -174,64 +97,6 @@ auto sequence_to_group_allocation(const sequence <Ts...> &)
 		sequence <typename Ts::type...> ::singleton,
 		std::make_index_sequence <sizeof...(Ts)> ()
 	);
-}
-
-template <auto &ref, typename ... Ts>
-auto add_stream(const sequence <Ts...> &in)
-{
-	using base = reference <ref> ::raw_base;
-	if constexpr (!is_attribute_stream_v <base>) {
-		return in;
-	} else {
-		constexpr auto exists = (std::same_as <Ts, reference <ref>> || ...);
-		if constexpr (exists)
-			return in;
-		else
-			return sequence <Ts..., reference <ref>> ::singleton;
-	}
-}
-
-template <typename ... Ts, auto &b, auto &... bs>
-auto add_stream_from_implicit_context(const sequence <Ts...> &in, const implicit_context <b, bs...> &)
-{
-	auto out = add_stream <b> (in);
-	if constexpr (sizeof...(bs))
-		return add_stream_from_implicit_context(out, implicit_context <bs...> ());
-	else
-		return out;
-}
-
-template <ShaderStage S, auto &ref, typename ... Ts>
-auto add_gvr(const sequence <Ts...> &in)
-{
-	using base = reference <ref> ::raw_base;
-	if constexpr (!is_global_resource_v <base>) {
-		return in;
-	} else {
-		constexpr auto exists = (std::same_as <typename Ts::type, reference <ref>> || ...);
-
-		if constexpr (exists) {
-			return sequence <
-				std::conditional_t <
-					std::same_as <typename Ts::type, reference <ref>>,
-					typename Ts::template append_stage <S>,
-					Ts
-				> ...
-			> ::singleton;
-		} else {
-			return sequence <Ts..., stage_wrapper <reference <ref>, S>> ::singleton;
-		}
-	}
-}
-
-template <ShaderStage S, typename ... Ts, auto &b, auto &...bs>
-auto add_gvr_from_implicit_context(const sequence <Ts...> &in, const implicit_context <b, bs...> &)
-{
-	auto out = add_gvr <S, b> (in);
-	if constexpr (sizeof...(bs))
-		return add_gvr_from_implicit_context <S> (out, implicit_context <bs...> ());
-	else
-		return out;
 }
 
 // TODO: flesh out with an impl method with handles things recursively...
@@ -375,10 +240,10 @@ struct RasterizationPipelineCombinator {
 		auto color_blend_attachment = vk::PipelineColorBlendAttachmentState()
 			.setBlendEnable(false)
 			.setColorWriteMask(
-				vk::ColorComponentFlagBits::eR |
-				vk::ColorComponentFlagBits::eG |
-				vk::ColorComponentFlagBits::eB |
-				vk::ColorComponentFlagBits::eA
+				vk::ColorComponentFlagBits::eR
+				| vk::ColorComponentFlagBits::eG
+				| vk::ColorComponentFlagBits::eB
+				| vk::ColorComponentFlagBits::eA
 			);
 
 		auto color_blend = vk::PipelineColorBlendStateCreateInfo()
@@ -391,7 +256,6 @@ struct RasterizationPipelineCombinator {
 			.setDepthBoundsTestEnable(false)
 			.setStencilTestEnable(false);
 
-		// TODO: new_graphics_pipeline(...)
 		auto pipeline_info = vk::GraphicsPipelineCreateInfo()
 			.setLayout(layout)
 			.setPInputAssemblyState(&input_assembly)
@@ -406,9 +270,13 @@ struct RasterizationPipelineCombinator {
 			.setSubpass(0);
 
 		auto [result, pipeline] = device.logical.createGraphicsPipeline(nullptr, pipeline_info, nullptr);
+		assertion(result == vk::Result::eSuccess, "failed to compile pipeline");
 
-		// return std::make_tuple(gvrs, streams, dsls, layout);
-		return AnnotatedRasterizationPipeline <void, void, dsls.size()> {
+		return AnnotatedRasterizationPipeline <
+			decltype(streams),
+			decltype(gvrs),
+			dsls.size()
+		> {
 			.handle = pipeline,
 			.layout = layout,
 			.dsls = dsls,
@@ -486,7 +354,7 @@ int main()
 	auto color = attachments.reference("color", vk::ImageLayout::eColorAttachmentOptimal);
 	auto depth = attachments.reference("depth", vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
-	auto rp = group(device, dld).new_render_pass(
+	auto render_pass = group(device, dld).new_render_pass(
 		attachments,
 		subpass(color_attachments { color },
 			depth_attachments { depth },
@@ -504,7 +372,7 @@ int main()
 		// which are restricted based on the Ts...
 		// e.g. here we need Ts... has (device, renderpass, dld)
 		// and we can give static assertion message for the fallback
-		framebuffers[i] = group(device, rp, dld).new_framebuffer(
+		framebuffers[i] = group(device, render_pass, dld).new_framebuffer(
 			attachments_views,
 			image.extent,
 			1
@@ -524,18 +392,15 @@ int main()
 
 	auto dpool = DescriptorPool::from(device, dpool_info);
 
-	auto compiler = Compiler::from(device, Compiler::Info());
-
-	// TODO: comb from compiler and other options...
-	auto comb = RasterizationPipelineCombinator {
+	auto combinator = RasterizationPipelineCombinator {
 		.device = device,
-		.compiler = compiler,
-		.render_pass = rp,
+		.compiler = Compiler::from(device, Compiler::Info()),
+		.render_pass = render_pass,
 		.extent = window.extent(),
 		.depth_test = true,
 	};
 
-	auto pipeline = comb(vs, fs);
+	auto pipeline = combinator(vs, fs);
 
 	constexpr mrd::ModelEncodings encodings;
 
@@ -550,9 +415,8 @@ int main()
 	mesh.deduplicate();
 	fmt::println("bytes: {} MB", mb(mesh.size_bytes()));
 
-	auto pbuf = MirrorBuffer <array <vec3>, layouts::std430> ::from(
+	auto pbuf = VertexMirrorBuffer <array <vec3>, layouts::std430> ::from(
 		device, mesh.positions.size(),
-		vk::BufferUsageFlagBits::eVertexBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible
 		| vk::MemoryPropertyFlagBits::eHostCoherent
 	).write(span(mesh.positions).map(
@@ -561,20 +425,19 @@ int main()
 		}
 	));
 
-	auto nbuf = MirrorBuffer <array <vec3>, layouts::scalar> ::from(
+	auto nbuf = VertexMirrorBuffer <array <vec3>, layouts::scalar> ::from(
 		device, mesh.normals.size(),
-		vk::BufferUsageFlagBits::eVertexBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible
-		| vk::MemoryPropertyFlagBits::eHostCoherent
+		| vk::MemoryPropertyFlagBits::eHostCoherent,
+		vk::BufferUsageFlagBits::eTransferDst
 	).write(span(mesh.normals).map(
 		[](auto p) -> $mirror(vec3, layouts::scalar) {
 			return { p.x, p.y, p.z };
 		}
 	));
 
-	auto ibuf = MirrorBuffer <array <ivec3>, layouts::scalar> ::from(
+	auto ibuf = IndexMirrorBuffer <array <ivec3>, layouts::scalar> ::from(
 		device, mesh.primitives.size(),
-		vk::BufferUsageFlagBits::eIndexBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible
 		| vk::MemoryPropertyFlagBits::eHostCoherent
 	).write(span(mesh.primitives).map(
@@ -590,11 +453,8 @@ int main()
 	xform.translation = glm::vec3(0, 0, -10);
 	aperature.aspect = float(window.extent().width) / window.extent().height;
 
-	// TODO: if we have a conditional mirror buffer with prepopulated
-	// flags, then move extra flags to the last param...
-	auto view_buf = MirrorBuffer <View> ::from(
+	auto view_buf = UniformMirrorBuffer <View, layouts::std430> ::from(
 		device,
-		vk::BufferUsageFlagBits::eUniformBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible
 		| vk::MemoryPropertyFlagBits::eHostCoherent
 	).write($mirror(View) {
@@ -603,16 +463,14 @@ int main()
 		.model = glm::mat4(1.0f),
 	});
 	
-	auto light_buf = MirrorBuffer <vec3> ::from(
+	auto light_buf = UniformMirrorBuffer <vec3, layouts::std430> ::from(
 		device,
-		vk::BufferUsageFlagBits::eUniformBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible
 		| vk::MemoryPropertyFlagBits::eHostCoherent
 	).write(glm::normalize(glm::vec3(1, 1, 1)));
 	
-	auto shared_buf = MirrorBuffer <Shared> ::from(
+	auto shared_buf = UniformMirrorBuffer <Shared, layouts::std430> ::from(
 		device,
-		vk::BufferUsageFlagBits::eUniformBuffer,
 		vk::MemoryPropertyFlagBits::eHostVisible
 		| vk::MemoryPropertyFlagBits::eHostCoherent
 	).write($mirror(Shared) {
@@ -729,7 +587,7 @@ int main()
 		};
 
 		auto rp_begin = vk::RenderPassBeginInfo()
-			.setRenderPass(rp)
+			.setRenderPass(render_pass)
 			.setFramebuffer(framebuffers[frame.image_index])
 			.setRenderArea(render_area)
 			.setClearValues(clear_values);

@@ -3,13 +3,13 @@
 #include "mirror.hpp"
 #include "../rhi/buffer.hpp"
 
-template <reflected T, template <typename> typename Engine = layouts::std430>
+template <reflected T, template <typename> typename L, vk::BufferUsageFlagBits F>
 struct MirrorBuffer : Buffer {};
 
-template <reflected T, template <typename> typename Engine>
+template <reflected T, template <typename> typename L, vk::BufferUsageFlagBits F>
 requires (is_static_v <T>)
-struct MirrorBuffer <T, Engine> : Buffer {
-	using value_type = data_mirror <T, Engine> ::type;
+struct MirrorBuffer <T, L, F> : Buffer {
+	using value_type = data_mirror <T, L> ::type;
 
 	value_type new_value() const {
 		return value_type();
@@ -27,8 +27,10 @@ struct MirrorBuffer <T, Engine> : Buffer {
 			.setRange(sizeof(value_type));
 	}
 
-	static MirrorBuffer from(const Device &device, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties) {
-		auto base = Buffer::from(device, sizeof(value_type), usage, properties);
+	static MirrorBuffer from(const Device &device,
+			  	 vk::MemoryPropertyFlags properties,
+			  	 vk::BufferUsageFlags extra_usage = vk::BufferUsageFlagBits(0)) {
+		auto base = Buffer::from(device, sizeof(value_type), F | extra_usage, properties);
 
 		MirrorBuffer result;
 		static_cast <Buffer &> (result) = base;
@@ -36,10 +38,10 @@ struct MirrorBuffer <T, Engine> : Buffer {
 	}
 };
 
-template <reflected T, template <typename> typename Engine>
+template <reflected T, template <typename> typename L, vk::BufferUsageFlagBits F>
 requires (is_dynamic_v <T>)
-struct MirrorBuffer <T, Engine> : Buffer {
-	using value_type = data_mirror <T, Engine> ::type;
+struct MirrorBuffer <T, L, F> : Buffer {
+	using value_type = data_mirror <T, L> ::type;
 	using element_type = decltype([] {
 		value_type data;
 		auto [dyn, offset] = dynamic_part <T> (data);
@@ -60,14 +62,27 @@ struct MirrorBuffer <T, Engine> : Buffer {
 		return *this;
 	}
 
-	static MirrorBuffer from(const Device &device, size_t max_elements, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties) {
+	static MirrorBuffer from(const Device &device,
+			  	 size_t max_elements,
+			  	 vk::MemoryPropertyFlags properties,
+			  	 vk::BufferUsageFlags extra_usage = vk::BufferUsageFlagBits(0)) {
 		// TODO: dynamic_offset() static constexpr method
 		value_type data;
 		auto [dyn, offset] = dynamic_part <T> (data);
-		auto base = Buffer::from(device, offset + max_elements * sizeof(element_type), usage, properties);
+		auto base = Buffer::from(device, offset + max_elements * sizeof(element_type), F | extra_usage, properties);
 
 		MirrorBuffer result;
 		static_cast <Buffer &> (result) = base;
 		return result;
 	}
 };
+
+// Aliases for specific kinds of buffers
+template <reflected T, template <typename> typename L>
+using VertexMirrorBuffer = MirrorBuffer <T, L, vk::BufferUsageFlagBits::eVertexBuffer>;
+
+template <reflected T, template <typename> typename L>
+using IndexMirrorBuffer = MirrorBuffer <T, L, vk::BufferUsageFlagBits::eIndexBuffer>;
+
+template <reflected T, template <typename> typename L>
+using UniformMirrorBuffer = MirrorBuffer <T, L, vk::BufferUsageFlagBits::eUniformBuffer>;

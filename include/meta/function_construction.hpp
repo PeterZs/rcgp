@@ -6,6 +6,7 @@
 #include "function_return_injection.hpp"
 #include "injection_state.hpp"
 #include "shader_stage.hpp"
+#include "stage_argument_injector.hpp"
 
 template <ShaderStage S, typename R, typename ... Args>
 struct signature {
