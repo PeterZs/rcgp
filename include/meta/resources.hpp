@@ -82,13 +82,6 @@ using Sampler3D = Sampler <float, 3>;
 template <typename T>
 struct RayPayload : T {};
 
-// Aliases for single resource blocks
-template <reflected T>
-using MonoConstantBuffer = ResourceGroup <UniformBuffer <T>>;
-
-template <reflected T>
-using MonoStorageBuffer = ResourceGroup <StorageBuffer <T>>;
-
 // Introspection
 // TODO: we can move this to reflection.hpp
 template <typename T>

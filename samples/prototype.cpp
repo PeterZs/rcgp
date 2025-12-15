@@ -42,11 +42,11 @@ struct Camera {
 	$reflection(view, proj);
 };
 
-ResourceGroup <Camera> camera;
+UniformBuffer <Camera> camera;
 
 using Transforms = array <mat4>;
 
-ResourceGroup <StorageBuffer <Transforms>> transforms;
+StorageBuffer <Transforms> transforms;
 
 int main()
 {

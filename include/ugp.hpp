@@ -21,7 +21,6 @@
 #include "meta/reference_introspection.hpp"
 #include "meta/reflection.hpp"
 #include "meta/reflection_builder.hpp"
-#include "meta/resource_group_filter.hpp"
 #include "meta/resources.hpp"
 #include "meta/return_handler.hpp"
 #include "meta/shader_stage.hpp"

@@ -318,13 +318,13 @@ struct GLSL {
 						fatal("not implemented");
 					} else {
 						std::string modifier;
-						// TODO: xconstant must be resolved
-						if (grsrc.kind == GlobalResource::eXConstant)
-							modifier = "uniform";
-						else if (grsrc.kind == GlobalResource::eUniformBuffer)
-							modifier = "uniform";
-						else if (grsrc.kind == GlobalResource::eStorageBuffer)
-							modifier = "buffer";
+						switch (grsrc.kind) {
+						case GlobalResource::eUniformBuffer: modifier = "uniform"; break;
+						case GlobalResource::eStorageBuffer: modifier = "buffer"; break;
+						case GlobalResource::ePushConstant:
+						default:
+							fatal("unsupported global resource kind");
+						}
 
 						auto group = grsrc.group.value_or(-1);
 						auto index = grsrc.index.value_or(-1);

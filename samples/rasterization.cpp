@@ -24,11 +24,11 @@ AttributeStream <vec3, layouts::std430> position;
 AttributeStream <vec3> normal;
 
 // TODO: should also have a layout; this needs to be written in the shader though
-MonoConstantBuffer <View> view;
+UniformBuffer <View> view;
 // TODO: we should allow standalone resource handles to act as references...
 // then we can avoid the hokey pokey of referece_base being different/specialized
 // in any case ray payloads would be standalone references
-MonoConstantBuffer <Shared> shared;
+UniformBuffer <Shared> shared;
 
 auto vs = $vertex $fn($use(position), $use(normal), $use(view), $use(shared)) -> $returns(Position, vec3)
 {
@@ -40,7 +40,7 @@ auto vs = $vertex $fn($use(position), $use(normal), $use(view), $use(shared)) ->
 };
 
 // TODO: push constants
-MonoConstantBuffer <vec3> light;
+UniformBuffer <vec3> light;
 
 auto fs = $fragment $fn($use(light), $use(shared), vec3 normal) -> $returns(vec4)
 {

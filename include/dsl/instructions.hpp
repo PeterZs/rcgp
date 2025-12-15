@@ -102,8 +102,6 @@ struct GlobalResource {
 	Reference type;
 
 	enum Kind {
-		// TODO: remove XConstant
-		eXConstant,
 		ePushConstant,
 		eUniformBuffer,
 		eStorageBuffer,

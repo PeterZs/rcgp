@@ -116,7 +116,6 @@ struct Assembly {
 	std::string stringify(GlobalResource x, Reference ref) {
 		std::string kind = "?";
 		switch (x.kind) {
-		case GlobalResource::eXConstant: kind = "xconstant"; break;
 		case GlobalResource::ePushConstant: kind = "push_constant"; break;
 		case GlobalResource::eUniformBuffer: kind = "constant_buffer"; break;
 		case GlobalResource::eStorageBuffer: kind = "storage_buffer"; break;

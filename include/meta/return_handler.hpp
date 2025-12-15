@@ -46,9 +46,7 @@ struct return_handler_t <T> {
 template <typename ... Args>
 struct return_handler_t <std::tuple <Args...>> {
 	static void main(const std::tuple <Args...> &args, size_t &argi) {
-		std::apply([&](auto ... xs) {
-			std::make_tuple(return_handler(xs, argi)...);
-		}, args);
+		std::apply([&](auto ... xs) { (return_handler(xs, argi),...); }, args);
 	}
 };
 
@@ -65,9 +63,7 @@ struct return_handler_t <T> {
 		};
 
 		auto els = el_series(std::make_index_sequence <field_count> ());
-		std::apply([&](auto ... xs) {
-			std::make_tuple(proc(xs)...);
-		}, els);
+		std::apply([&](auto ... xs) { (proc(xs), ...); }, els);
 	}
 };
 
