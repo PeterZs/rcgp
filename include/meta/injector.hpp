@@ -6,7 +6,7 @@
 #include "reference.hpp"
 #include "reflection.hpp"
 #include "static_string.hpp"
-#include "static_access_chain.hpp"
+#include "field_access.hpp"
 
 template <typename T, size_t ... Is>
 struct field_trace;
@@ -32,7 +32,7 @@ template <typename T, size_t ... Is>
 struct injector <field_trace <T, Is...>> {
 	template <auto &rsrc>
 	static void main(reference <rsrc> &value, Reference ref) {
-		static_access_chain <Is...> (value).override_reference(ref);
+		field_access <Is...> (value).override_reference(ref);
 	}
 };
 

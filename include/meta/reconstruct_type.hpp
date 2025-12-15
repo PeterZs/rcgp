@@ -4,7 +4,7 @@
 #include "../dsl/primitives.hpp"
 #include "expand_reflection.hpp"
 #include "reflection.hpp"
-#include "static_access_chain.hpp"
+#include "field_access.hpp"
 #include "static_string.hpp"
 
 template <typename T>

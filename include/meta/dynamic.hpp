@@ -3,7 +3,7 @@
 #include "../util/array.hpp"
 #include "expand_reflection.hpp"
 #include "reflection.hpp"
-#include "static_access_chain.hpp"
+#include "field_access.hpp"
 
 template <typename T>
 requires is_dynamic_reflection_v <T>
