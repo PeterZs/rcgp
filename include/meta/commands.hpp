@@ -137,8 +137,8 @@ inline auto begin_render_pass(const vk::RenderPass &render_pass,
 	> { binder };
 }
 
-template <typename AttributeStreams, typename GlobalResources, size_t Sets>
-auto bind_pipeline(const AnnotatedRasterizationPipeline <AttributeStreams, GlobalResources, Sets> &pipeline)
+template <Topology T, typename AttributeStreams, typename GlobalResources, size_t Sets>
+auto bind_pipeline(const AnnotatedRasterizationPipeline <T, AttributeStreams, GlobalResources, Sets> &pipeline)
 {
 	// TODO: write bind point and layout in an interm state (CommandBufferAux &)?
 	auto binder = [=](const vk::CommandBuffer &cmd, CommandsTraceAux &aux) {
@@ -221,6 +221,8 @@ auto bind_vertex_buffers(const VertexBufferOf <refs> &... buffers)
 	> { binder };
 }
 
+// TODO: take in an index mirror buffer...
+// and add a state tag that encodes this... ProvidedIndexBuffer <T>
 inline auto bind_index_buffer(const Buffer &buffer)
 {
 	// TODO: templates for inferring the index type

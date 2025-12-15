@@ -30,9 +30,10 @@ auto vs = $vertex $fn($use(position), $use(normal), $use(view), $use(shared)) ->
 {
 	auto mvp = shared.scale * view.proj * view.view * view.model;
 	// auto mvp = view.proj * view.view * view.model;
-	auto normal_mat = transpose(inverse(mat3(view.model)));
+	auto normal_mat = transpose(inverse(mat3(shared.scale * view.model)));
 	auto world_n = normalize(normal_mat * normal);
 	$return std::tuple(Position(mvp * vec4(position, 1.0)), world_n);
+	// $return std::tuple(Position(mvp * vec4(position, 1.0)), normal);
 };
 
 // TODO: push constants
@@ -41,19 +42,18 @@ UniformBuffer <vec3> light;
 auto fs = $fragment $fn($use(light), $use(shared), vec3 normal) -> $returns(vec4)
 {
 	// $return vec4(0.5 * normalize(normal) + 0.5, 1.0f);
-	auto shade = max(dot(light, normal), 0.0f);
+	// auto shade = max(dot(light, normal), 0.0f);
+	auto shade = max(dot(vec3(0, 1, 0), normal), 0.0f);
 	$return vec4(shared.tint * shade, 1.0f);
 };
 
-// TODO: work group is a parameter to shaders that is an intrinsic...
-// WorkGroup <8, 8> group... group.block_idx, thread_idx and so on
-//
-// TODO: write down the implementation design somewhere in docs...
-// will help spotting parts that are stupid
-//
-// TODO: at some point use codex to filter out unused code
-int main()
+int main(int argc, char *argv[])
 {
+	if (argc < 2) {
+		error("expected model file");
+		return EXIT_FAILURE;
+	}
+
 	auto session_info = Session::Info {
 		.validation_bootstrap = false,
 	};
@@ -75,15 +75,15 @@ int main()
 	std::vector <Image> depth_images;
 	depth_images.reserve(window.images.size());
 	for (size_t i = 0; i < window.images.size(); ++i) {
-		// TODO: image info struct...
-		depth_images.push_back(Image::from(
-			device,
-			window.extent(),
-			depth_format,
-			vk::ImageUsageFlagBits::eDepthStencilAttachment,
-			vk::ImageAspectFlagBits::eDepth,
-			vk::MemoryPropertyFlagBits::eDeviceLocal
-		));
+		auto image_info = Image::Info {
+			.extent = window.extent(),
+			.format = depth_format,
+			.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment,
+			.properties = vk::MemoryPropertyFlagBits::eDeviceLocal,
+			.aspect = vk::ImageAspectFlagBits::eDepth,
+		};
+
+		depth_images.push_back(Image::from(device, image_info));
 	}
 
 	auto attachments = Attachments();
@@ -125,7 +125,7 @@ int main()
 		framebuffers[i] = device.new_framebuffer(
 			render_pass,
 			attachments_views,
-			image.extent
+			image.info.extent
 		);
 	}
 
@@ -140,12 +140,17 @@ int main()
 
 	auto dpool = DescriptorPool::from(device, dpool_info);
 
-	auto combinator = RasterizationPipelineCombinator {
+	auto compiler = Compiler::from(device, Compiler::Info());
+	
+	auto combinator = RasterizationCombinator {
+		.topology = marker_v <Topology::eTriangleList>,
 		.device = device,
-		.compiler = Compiler::from(device, Compiler::Info()),
+		.compiler = compiler,
 		.render_pass = render_pass,
-		.extent = window.extent(),
-		.depth_test = true,
+		.options = RasterizationOptions {
+			.extent = window.extent(),
+			.depth_test = true
+		}
 	};
 
 	auto pipeline = combinator(vs, fs);
@@ -154,14 +159,9 @@ int main()
 
 	using Model = mrd::Model <encodings>;
 
-	auto mb = [](uint32_t bytes) { return bytes / (1 << 20); };
-
-	auto model = Model::load("/home/venki/data/models/asian-dragon.stl");
+	auto model = Model::load(argv[1]);
 	auto &mesh = model.meshes[0];
-	fmt::println("# of verts: {}, # of triangles: {}", mesh.positions.size(), mesh.primitives.size());
-	fmt::println("bytes: {} MB", mb(mesh.size_bytes()));
 	mesh.deduplicate();
-	fmt::println("bytes: {} MB", mb(mesh.size_bytes()));
 
 	auto pbuf = VertexBufferOf <position> ::from(
 		device, mesh.positions.size(),
@@ -176,8 +176,7 @@ int main()
 	auto nbuf = VertexBufferOf <normal> ::from(
 		device, mesh.normals.size(),
 		vk::MemoryPropertyFlagBits::eHostVisible
-		| vk::MemoryPropertyFlagBits::eHostCoherent,
-		vk::BufferUsageFlagBits::eTransferDst
+		| vk::MemoryPropertyFlagBits::eHostCoherent
 	).write(span(mesh.normals).map(
 		[](auto p) -> DynamicDataTypeOf <normal> {
 			return { p.x, p.y, p.z };
@@ -239,16 +238,14 @@ int main()
 		// TODO: DescriptorCopyPair or something?
 	);
 
-	// TODO: enum for mouse buttons
-	window.on_drag(GLFW_MOUSE_BUTTON_LEFT, [&](double, double, double dx, double dy) {
+	window.on_drag(MouseButton::Left, [&](double, double, double dx, double dy) {
 		const float speed = 0.005f;
 		auto yaw = glm::angleAxis(-float(dx * speed), glm::vec3(0.0f, 1.0f, 0.0f));
 		auto pitch = glm::angleAxis(float(dy * speed), xform.right());
 		xform.rotation = glm::normalize(pitch * yaw * xform.rotation);
 	});
 
-	// TODO: window method for this...
-	glfwSetInputMode(window.handle, GLFW_RAW_MOUSE_MOTION, true);
+	window.set_input_mode(GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 
 	while (window.alive()) {
 		window.poll();
@@ -279,8 +276,7 @@ int main()
 		auto extent = frame.extent;
 		auto angle = static_cast <float> (glfwGetTime());
 		auto model = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::rotate(model, angle * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f));
-	
+		
 		aperature.aspect = static_cast <float> (extent.width) / extent.height;
 
 		view_buf.write(DataTypeOf <view> {

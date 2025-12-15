@@ -2,11 +2,12 @@
 
 #include "../../rhi/descriptor_pool.hpp"
 #include "../descriptor.hpp"
+#include "../resources.hpp"
 
 // AttributeStreams := sequence <reference <Stream>...>
 // GroupAllocation := sequence <reference <GRV>...>
 // TODO: Sets should be inferred from GroupAllocation::size... or something
-template <typename AttributeStreams, typename GroupAllocation, size_t Sets>
+template <Topology T, typename AttributeStreams, typename GroupAllocation, size_t Sets>
 struct AnnotatedRasterizationPipeline {
 	vk::Device device;
 	vk::Pipeline handle;

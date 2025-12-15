@@ -70,6 +70,11 @@ bool Window::is_pressed(Key key) const
 	return glfwGetKey(handle, static_cast<int>(key)) == GLFW_PRESS;
 }
 
+void Window::set_input_mode(int mode, int value) const
+{
+	glfwSetInputMode(handle, mode, value);
+}
+
 vk::Extent2D Window::extent() const
 {
 	int width;
@@ -98,9 +103,9 @@ void Window::on_cursor_move(CursorMoveHandler handler)
 	cursor_move_handlers.push_back(std::move(handler));
 }
 
-void Window::on_drag(int button, DragHandler handler)
+void Window::on_drag(MouseButton button, DragHandler handler)
 {
-	drag_handlers[button].push_back(std::move(handler));
+	drag_handlers[static_cast<int>(button)].push_back(std::move(handler));
 }
 
 Window Window::from(const Session &session, const Device &device)
@@ -143,11 +148,12 @@ Window Window::from(const Session &session, const Device &device)
 	result.images.reserve(swapchain_images.size());
 	for (auto &handle : swapchain_images) {
 		Image image;
-		image.device = device;
+		image.device = device.logical;
 		image.handle = handle;
 		image.layout = vk::ImageLayout::ePresentSrcKHR;
-		image.extent = result.extent();
-		image.format = result.format;
+		image.info.extent = result.extent();
+		image.info.format = result.format;
+		image.info.aspect = vk::ImageAspectFlagBits::eColor;
 
 		auto view_info = vk::ImageViewCreateInfo()
 			.setImage(handle)

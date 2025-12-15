@@ -27,8 +27,7 @@ struct VertexBufferOf  <ref> : VertexMirrorBuffer <array <T>, L> {
 	static VertexBufferOf from(const Device &device,
 			  	 size_t max_elements,
 			  	 vk::MemoryPropertyFlags properties,
-			  	 vk::BufferUsageFlags extra_usage = vk::BufferUsageFlagBits(0))
-	{
+			  	 vk::BufferUsageFlags extra_usage = vk::BufferUsageFlagBits(0)) {
 		return VertexMirrorBuffer <array <T>, L> ::from(device, max_elements, properties, extra_usage);
 	}
 };

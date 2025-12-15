@@ -36,6 +36,12 @@ enum class Key : int {
 	Backspace = GLFW_KEY_BACKSPACE,
 };
 
+enum class MouseButton : int {
+	Left = GLFW_MOUSE_BUTTON_LEFT,
+	Right = GLFW_MOUSE_BUTTON_RIGHT,
+	Middle = GLFW_MOUSE_BUTTON_MIDDLE,
+};
+
 struct Frame {
 	vk::SwapchainKHR swapchain;
 	vk::Fence fence;
@@ -76,6 +82,7 @@ struct Window {
 	
 	bool alive() const;
 	bool is_pressed(Key key) const;
+	void set_input_mode(int mode, int value) const;
 
 	vk::Extent2D extent() const;
 
@@ -83,7 +90,7 @@ struct Window {
 
 	void on_mouse_button(MouseButtonHandler handler);
 	void on_cursor_move(CursorMoveHandler handler);
-	void on_drag(int button, DragHandler handler);
+	void on_drag(MouseButton button, DragHandler handler);
 
 	Image &image(size_t index);
 	const Image &image(size_t index) const;

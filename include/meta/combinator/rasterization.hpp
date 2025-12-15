@@ -84,14 +84,35 @@ auto reference_sequence_to_dsl_and_pcr(const Device &device, const sequence <Ts.
 	}
 }
 
-template <typename ... Subpasses>
-struct RasterizationPipelineCombinator {
-	const Device &device;
-	const Compiler &compiler;
-	const RenderPass <Subpasses...> &render_pass;
+consteval vk::PrimitiveTopology translate_topology(Topology T)
+{
+	switch (T) {
+	case Topology::eTriangleList: return vk::PrimitiveTopology::eTriangleList;
+	case Topology::eTriangleFan:  return vk::PrimitiveTopology::eTriangleFan;
+	}
+
+	return vk::PrimitiveTopology::eTriangleList;
+}
+
+struct RasterizationOptions {
 	// TODO: dynamic extent or fixed extent
 	const vk::Extent2D &extent;
 	bool depth_test;
+};
+
+template <auto T>
+struct marker {};
+
+template <auto T>
+static constexpr auto marker_v = marker <T> {};
+
+template <Topology T, typename ... Subpasses>
+struct RasterizationCombinator {
+	const marker <T> &topology;
+	const Device &device;
+	const Compiler &compiler;
+	const RenderPass <Subpasses...> &render_pass;
+	RasterizationOptions options;
 
 	template <typename VRet, typename ... As, typename FRet, typename ... Bs>
 	auto operator()(shader_stage <ShaderStage::Vertex, VRet, As...> &vertex,
@@ -149,26 +170,25 @@ struct RasterizationPipelineCombinator {
 				.setPName("main"),
 		};
 
-		// TODO: new_pipeline_vertex_input_state
 		auto vertex_input = vk::PipelineVertexInputStateCreateInfo()
 			.setVertexBindingDescriptions(vbindings)
 			.setVertexAttributeDescriptions(vattributes);
 
 		auto input_assembly = vk::PipelineInputAssemblyStateCreateInfo()
-			.setTopology(vk::PrimitiveTopology::eTriangleList)
+			.setTopology(translate_topology(T))
 			.setPrimitiveRestartEnable(false);
 
 		auto viewport = vk::Viewport()
 			.setX(0.0f)
 			.setY(0.0f)
-			.setWidth(float(extent.width))
-			.setHeight(float(extent.height))
+			.setWidth(float(options.extent.width))
+			.setHeight(float(options.extent.height))
 			.setMinDepth(0.0f)
 			.setMaxDepth(1.0f);
 
 		auto scissor = vk::Rect2D()
 			.setOffset({ 0, 0 })
-			.setExtent(extent);
+			.setExtent(options.extent);
 
 		auto viewport_state = vk::PipelineViewportStateCreateInfo()
 			.setViewports(viewport)
@@ -201,8 +221,8 @@ struct RasterizationPipelineCombinator {
 			.setAttachments(color_blend_attachment);
 
 		auto depth_stencil = vk::PipelineDepthStencilStateCreateInfo()
-			.setDepthTestEnable(depth_test)
-			.setDepthWriteEnable(depth_test)
+			.setDepthTestEnable(options.depth_test)
+			.setDepthWriteEnable(options.depth_test)
 			.setDepthCompareOp(vk::CompareOp::eLess)
 			.setDepthBoundsTestEnable(false)
 			.setStencilTestEnable(false);
@@ -224,6 +244,7 @@ struct RasterizationPipelineCombinator {
 		assertion(result == vk::Result::eSuccess, "failed to compile pipeline");
 
 		return AnnotatedRasterizationPipeline <
+			T,
 			decltype(streams),
 			decltype(alloc),
 			dsls.size()
@@ -235,13 +256,3 @@ struct RasterizationPipelineCombinator {
 		};
 	}
 };
-
-// CTAD for aggregate initialization, deducing subpasses from the render pass.
-template <typename ... Subpasses>
-RasterizationPipelineCombinator(
-	const Device &,
-	const Compiler &,
-	const RenderPass <Subpasses...> &,
-	const vk::Extent2D &,
-	bool
-) -> RasterizationPipelineCombinator <Subpasses...>;
