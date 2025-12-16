@@ -191,6 +191,11 @@ struct Assembly {
 	std::string stringify(BuiltinIntrinsic x, Reference ref) {
 		std::string ftn = "?";
 		switch (x.code) {
+		case BuiltinIntrinsic::eCross: ftn = "cross"; break;
+		case BuiltinIntrinsic::eDFdx: ftn = "dFdx"; break;
+		case BuiltinIntrinsic::eDFdy: ftn = "dFdy"; break;
+		case BuiltinIntrinsic::eDFdxFine: ftn = "dFdxFine"; break;
+		case BuiltinIntrinsic::eDFdyFine: ftn = "dFdyFine"; break;
 		case BuiltinIntrinsic::eSample: ftn = "sample"; break;
 		case BuiltinIntrinsic::eDot: ftn = "dot"; break;
 		case BuiltinIntrinsic::eNormalize: ftn = "normalize"; break;

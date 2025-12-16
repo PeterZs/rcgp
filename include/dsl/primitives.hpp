@@ -45,6 +45,10 @@ public:
 	scalar(const T &value, $location)
 		: handle(jems::constant_loc(loc, value)) {}
 
+	friend scalar operator-(const scalar &v) {
+		return scalar(jems::operation(Operation::eMultiply, scalar <T> (-1), v));
+	}
+
 	static auto reinterpret(const jems::handle &h) {
 		return scalar(h);
 	}
@@ -161,6 +165,14 @@ struct vector : public vector_base <T, N> {
 		return reinterpret(jems::operation(Operation::eAdd, a, b));
 	}
 
+	friend vector operator-(const vector &a, const vector &b) {
+		return reinterpret(jems::operation(Operation::eSubtract, a, b));
+	}
+
+	friend vector operator-(const vector &v) {
+		return reinterpret(jems::operation(Operation::eMultiply, scalar <T> (-1), v));
+	}
+
 	template <typename U>
 	requires std::is_convertible_v <U, scalar <T>>
 	friend vector operator+(const U &s, const vector &v) {
@@ -172,17 +184,45 @@ struct vector : public vector_base <T, N> {
 	friend vector operator+(const vector &v, const U &s) {
 		return reinterpret(jems::operation(Operation::eAdd, v, scalar <T> (s)));
 	}
+
+	template <typename U>
+	requires std::is_convertible_v <U, scalar <T>>
+	friend vector operator-(const vector &v, const U &s) {
+		return reinterpret(jems::operation(Operation::eSubtract, v, scalar <T> (s)));
+	}
+
+	template <typename U>
+	requires std::is_convertible_v <U, scalar <T>>
+	friend vector operator-(const U &s, const vector &v) {
+		return reinterpret(jems::operation(Operation::eSubtract, scalar <T> (s), v));
+	}
 	
 	template <typename U>
 	requires std::is_convertible_v <U, scalar <T>>
 	friend vector operator*(const U &s, const vector &v) {
 		return reinterpret(jems::operation(Operation::eMultiply, scalar <T> (s), v));
 	}
-	
+
 	template <typename U>
 	requires std::is_convertible_v <U, scalar <T>>
 	friend vector operator*(const vector &v, const U &s) {
 		return reinterpret(jems::operation(Operation::eMultiply, v, scalar <T> (s)));
+	}
+
+	friend vector operator/(const vector &a, const vector &b) {
+		return reinterpret(jems::operation(Operation::eDivide, a, b));
+	}
+
+	template <typename U>
+	requires std::is_convertible_v <U, scalar <T>>
+	friend vector operator/(const vector &v, const U &s) {
+		return reinterpret(jems::operation(Operation::eDivide, v, scalar <T> (s)));
+	}
+
+	template <typename U>
+	requires std::is_convertible_v <U, scalar <T>>
+	friend vector operator/(const U &s, const vector &v) {
+		return reinterpret(jems::operation(Operation::eDivide, scalar <T> (s), v));
 	}
 };
 
@@ -230,6 +270,10 @@ public:
 	requires std::is_convertible_v <U, scalar <T>>
 	friend matrix operator*(const U &s, const matrix &m) {
 		return reinterpret(jems::operation(Operation::eMultiply, scalar <T> (s), m));
+	}
+
+	friend matrix operator-(const matrix &m) {
+		return reinterpret(jems::operation(Operation::eMultiply, scalar <T> (-1), m));
 	}
 };
 
@@ -338,6 +382,12 @@ vector <T, N> normalize(const vector <T, N> &v)
 	return vector <T, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsic::eNormalize, v));
 }
 
+template <native_float_scalar T>
+vector <T, 3> cross(const vector <T, 3> &a, const vector <T, 3> &b)
+{
+	return vector <T, 3> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsic::eCross, a, b));
+}
+
 template <native_scalar T, size_t N, size_t M>
 matrix <T, M, N> transpose(const matrix <T, N, M> &m)
 {
@@ -348,4 +398,52 @@ template <native_float_scalar T, size_t N>
 matrix <T, N, N> inverse(const matrix <T, N, N> &m)
 {
 	return matrix <T, N, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsic::eInverse, m));
+}
+
+template <native_float_scalar T>
+scalar <T> dFdx(const scalar <T> &v)
+{
+	return scalar <T> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsic::eDFdx, v));
+}
+
+template <native_float_scalar T>
+scalar <T> dFdy(const scalar <T> &v)
+{
+	return scalar <T> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsic::eDFdy, v));
+}
+
+template <native_float_scalar T>
+scalar <T> dFdxFine(const scalar <T> &v)
+{
+	return scalar <T> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsic::eDFdxFine, v));
+}
+
+template <native_float_scalar T>
+scalar <T> dFdyFine(const scalar <T> &v)
+{
+	return scalar <T> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsic::eDFdyFine, v));
+}
+
+template <native_float_scalar T, size_t N>
+vector <T, N> dFdx(const vector <T, N> &v)
+{
+	return vector <T, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsic::eDFdx, v));
+}
+
+template <native_float_scalar T, size_t N>
+vector <T, N> dFdy(const vector <T, N> &v)
+{
+	return vector <T, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsic::eDFdy, v));
+}
+
+template <native_float_scalar T, size_t N>
+vector <T, N> dFdxFine(const vector <T, N> &v)
+{
+	return vector <T, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsic::eDFdxFine, v));
+}
+
+template <native_float_scalar T, size_t N>
+vector <T, N> dFdyFine(const vector <T, N> &v)
+{
+	return vector <T, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsic::eDFdyFine, v));
 }

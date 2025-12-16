@@ -149,6 +149,11 @@ struct ThreadOutput {
 struct BuiltinIntrinsic {
 	enum Code {
 		eCos,
+		eCross,
+		eDFdx,
+		eDFdy,
+		eDFdxFine,
+		eDFdyFine,
 		eDot,
 		eMax,
 		eMin,

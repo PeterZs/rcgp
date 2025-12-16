@@ -97,12 +97,12 @@ struct GLSL {
 		}
 
 		std::string impl(Operation operation) {
-			// TODO: handle unary minus and not
-
 			std::string op = "?";
 			switch (operation.code) {
 			case Operation::eAdd: op = "+"; break;
+			case Operation::eSubtract: op = "-"; break;
 			case Operation::eMultiply: op = "*"; break;
+			case Operation::eDivide: op = "/"; break;
 			default:
 				break;
 			}
@@ -148,6 +148,11 @@ struct GLSL {
 			std::string out = "?";
 
 			switch (builtin.code) {
+			case BuiltinIntrinsic::eCross: out = "cross"; break;
+			case BuiltinIntrinsic::eDFdx: out = "dFdx"; break;
+			case BuiltinIntrinsic::eDFdy: out = "dFdy"; break;
+			case BuiltinIntrinsic::eDFdxFine: out = "dFdxFine"; break;
+			case BuiltinIntrinsic::eDFdyFine: out = "dFdyFine"; break;
 			case BuiltinIntrinsic::eDot: out = "dot"; break;
 			case BuiltinIntrinsic::eMax: out = "max"; break;
 			case BuiltinIntrinsic::eNormalize: out = "normalize"; break;

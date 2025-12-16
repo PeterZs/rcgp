@@ -13,38 +13,28 @@ struct View {
 	$reflection(proj, view, model);
 };
 
-struct Shared {
-	vec3 tint;
-	f32 scale;
-
-	$reflection(tint, scale);
-};
-
-AttributeStream <vec3, layouts::std430> position;
+AttributeStream <vec3> position;
 AttributeStream <vec3> normal;
 
-UniformBuffer <View, layouts::scalar> view;
-UniformBuffer <Shared> shared;
+UniformBuffer <View> view;
 
-auto vs = $vertex $fn($use(position), $use(normal), $use(view), $use(shared)) -> $returns(Position, vec3)
+auto vs = $vertex $fn($use(position), $use(normal), $use(view)) -> $returns(Position, Smooth <vec3>)
 {
-	auto mvp = shared.scale * view.proj * view.view * view.model;
-	// auto mvp = view.proj * view.view * view.model;
-	auto normal_mat = transpose(inverse(mat3(shared.scale * view.model)));
-	auto world_n = normalize(normal_mat * normal);
-	$return std::tuple(Position(mvp * vec4(position, 1.0)), world_n);
-	// $return std::tuple(Position(mvp * vec4(position, 1.0)), normal);
+	auto mvp = view.proj * view.view * view.model;
+	auto nmat = transpose(inverse(mat3(view.model)));
+	auto wn = normalize(mat3(view.model) * normal);
+	auto pp = mvp * vec4(position, 1.0);
+	$return std::tuple(pp, wn);
 };
 
 // TODO: push constants
 UniformBuffer <vec3> light;
 
-auto fs = $fragment $fn($use(light), $use(shared), vec3 normal) -> $returns(vec4)
+auto fs = $fragment $fn($use(light), vec3 world_normal) -> $returns(vec4)
 {
-	// $return vec4(0.5 * normalize(normal) + 0.5, 1.0f);
-	// auto shade = max(dot(light, normal), 0.0f);
-	auto shade = max(dot(vec3(0, 1, 0), normal), 0.0f);
-	$return vec4(shared.tint * shade, 1.0f);
+	auto normal = normalize(world_normal);
+	auto shade = max(dot(light, normal), 0.0f);
+	$return vec4(vec3(1, 0.5, 0.5) * shade, 1.0f);
 };
 
 int main(int argc, char *argv[])
@@ -159,9 +149,14 @@ int main(int argc, char *argv[])
 
 	using Model = mrd::Model <encodings>;
 
+	using Mesh = mrd::Mesh <encodings.meshes>;
+
 	auto model = Model::load(argv[1]);
 	auto &mesh = model.meshes[0];
-	mesh.deduplicate();
+	// mesh.deduplicate();
+	mesh.recalculate_normals();
+	// auto mesh = Mesh::uv_sphere();
+	// auto mesh = Mesh::box();
 
 	auto pbuf = VertexBufferOf <position> ::from(
 		device, mesh.positions.size(),
@@ -216,26 +211,14 @@ int main(int argc, char *argv[])
 		device,
 		vk::MemoryPropertyFlagBits::eHostVisible
 		| vk::MemoryPropertyFlagBits::eHostCoherent
-	).write(glm::normalize(glm::vec3(1, 1, 1)));
-	
-	auto shared_buf = ResourceMirrorOf <shared> ::from(
-		device,
-		vk::MemoryPropertyFlagBits::eHostVisible
-		| vk::MemoryPropertyFlagBits::eHostCoherent
-	).write(DataTypeOf <shared> {
-		.tint = glm::vec3(1, 0.5, 0.5),
-		.scale = 1.5f,
-	});
+	).write(glm::vec3(0, 1, 0));
 	
 	auto view_descriptor = pipeline.new_descriptor <view> (dpool);
-	auto shared_descriptor = pipeline.new_descriptor <shared> (dpool);
 	auto light_descriptor = pipeline.new_descriptor <light> (dpool);
 
-	auto [view_ds, shared_ds, light_ds] = device.update_descriptors(
+	auto [view_ds, light_ds] = device.update_descriptors(
 		DescriptorWritePair { view_descriptor, view_buf },
-		DescriptorWritePair { shared_descriptor, shared_buf },
 		DescriptorWritePair { light_descriptor, light_buf }
-		// TODO: DescriptorCopyPair or something?
 	);
 
 	window.on_drag(MouseButton::Left, [&](double, double, double dx, double dy) {
@@ -275,7 +258,10 @@ int main(int argc, char *argv[])
 
 		auto extent = frame.extent;
 		auto angle = static_cast <float> (glfwGetTime());
-		auto model = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f));
+		
+		// TODO: use transform...
+		auto model = glm::mat4(1.0f);
+		model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 1.0f));
 		
 		aperature.aspect = static_cast <float> (extent.width) / extent.height;
 
@@ -303,7 +289,7 @@ int main(int argc, char *argv[])
 
 		auto a = begin_render_pass(render_pass, framebuffers[frame.image_index], render_area, clear_values);
 		auto b = bind_pipeline(pipeline);
-		auto c = bind_descriptors(view_ds, shared_ds, light_ds);
+		auto c = bind_descriptors(view_ds, light_ds);
 		auto d = bind_vertex_buffers(pbuf, nbuf);
 		auto e = bind_index_buffer(ibuf);
 		auto f = draw_indexed(3 * mesh.primitives.size());
