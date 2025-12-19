@@ -11,13 +11,14 @@
 struct Compiler {
 	const vk::Device &device;
 
-	struct Info {
-		// TODO: pipeline state?
-	};
-
 	std::vector <uint32_t> glsl_to_spirv(const std::string &glsl, const EShLanguage &stage) const;
 	
 	vk::ShaderModule spirv_to_shader_module(const std::vector <uint32_t> &spirv) const;
 
-	static Compiler from(const Device &device, const Info &info);
+	struct Options {
+		bool debug_info = true;
+		// TODO: pipeline state/cache?
+	};
+
+	static Compiler from(const Device &device, const Options &info);
 };

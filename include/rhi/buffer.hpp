@@ -1,12 +1,8 @@
 #pragma once
 
-#include <cstddef>
-#include <vector>
-
 #include <vulkan/vulkan.hpp>
 
 #include "device.hpp"
-#include "../util/logging.hpp"
 
 struct Buffer {
 	Device device;
@@ -20,9 +16,12 @@ struct Buffer {
 	void write(const void *data, size_t bytes, vk::DeviceSize relative_offset = 0) const;
 	void destroy();
 
-	// TODO: info with size, usage, memory properties (and defaults)
-
-	static Buffer from(const Device &device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties);
+	static Buffer from(
+		const Device &device,
+		vk::DeviceSize size,
+		vk::BufferUsageFlags usage,
+		vk::MemoryPropertyFlags properties
+	);
 };
 
 // struct BufferArena {

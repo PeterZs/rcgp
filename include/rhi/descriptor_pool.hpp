@@ -5,7 +5,7 @@
 #include "device.hpp"
 
 struct DescriptorPool : vk::DescriptorPool {
-	struct Info {
+	struct Options {
 		uint32_t max_sets = 0;
 		uint32_t samplers = 0;
 		uint32_t combined_image_samplers = 0;
@@ -22,5 +22,5 @@ struct DescriptorPool : vk::DescriptorPool {
 		uint32_t acceleration_structures = 0; // VK_KHR_acceleration_structure
 	};
 
-	static DescriptorPool from(const Device &device, const Info &info);
+	static DescriptorPool from(const Device &device, const Options &info);
 };

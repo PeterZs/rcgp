@@ -19,11 +19,6 @@ struct Device {
 	vk::PhysicalDeviceMemoryProperties properties;
 	vk::detail::DispatchLoaderDynamic loader;
 
-	// Device construction
-	struct Info {
-		std::vector <const char *> extensions;
-	};
-
 	auto find_memory_type(uint32_t filter, vk::MemoryPropertyFlags flags) const -> uint32_t;
 
 	auto new_framebuffer(
@@ -52,5 +47,13 @@ struct Device {
 	void wait_for_frame(const Frame &frame, uint64_t timeout = UINT64_MAX) const;
 	bool acquire_image_for_frame(Frame &frame, uint64_t timeout = UINT64_MAX) const;
 
-	static Device from(const Session &session, vk::detail::DispatchLoaderDynamic &dld, const Info &info);
+	struct Options {
+		std::vector <const char *> extensions;
+	};
+
+	static Device from(
+		const Session &session,
+		vk::detail::DispatchLoaderDynamic &dld,
+		const Options &info
+	);
 };

@@ -1,6 +1,6 @@
 #include <cstring>
-#include <utility>
 
+#include "util/logging.hpp"
 #include "rhi/buffer.hpp"
 
 void Buffer::write(const void *data, size_t bytes, vk::DeviceSize relative_offset) const
@@ -29,7 +29,12 @@ void Buffer::destroy()
 	size = 0;
 }
 
-Buffer Buffer::from(const Device &device, vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties)
+Buffer Buffer::from(
+	const Device &device,
+	vk::DeviceSize size,
+	vk::BufferUsageFlags usage,
+	vk::MemoryPropertyFlags properties
+)
 {
 	Buffer result;
 	result.device = device;

@@ -57,7 +57,7 @@ vk::ShaderModule Compiler::spirv_to_shader_module(const std::vector <uint32_t> &
 	return device.createShaderModule(info);
 }
 
-Compiler Compiler::from(const Device &device, const Info &info)
+Compiler Compiler::from(const Device &device, const Options &info)
 {
 	return Compiler(device.logical);
 }

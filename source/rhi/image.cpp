@@ -18,11 +18,12 @@ void Image::destroy()
 
 Image Image::from(
 	const Device &device,
-	const Info &info)
+	const Description &info
+)
 {
 	Image result;
 	result.device = device.logical;
-	result.info = info;
+	result.description = info;
 
 	auto image_info = vk::ImageCreateInfo()
 		.setImageType(vk::ImageType::e2D)

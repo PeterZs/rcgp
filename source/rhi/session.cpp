@@ -6,8 +6,8 @@
 #include "rhi/session.hpp"
 #include "rhi/glfw.hpp"
 
-VKAPI_ATTR VKAPI_CALL vk::Bool32 validation_callback
-(
+VKAPI_ATTR VKAPI_CALL
+vk::Bool32 validation_callback(
 	vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
 	vk::DebugUtilsMessageTypeFlagsEXT types,
 	const vk::DebugUtilsMessengerCallbackDataEXT *data,
@@ -45,7 +45,7 @@ VKAPI_ATTR VKAPI_CALL vk::Bool32 validation_callback
 	return false;
 }
 
-std::tuple <Session, vk::detail::DispatchLoaderDynamic> Session::from(const Info &info)
+std::tuple <Session, vk::detail::DispatchLoaderDynamic> Session::from(const Options &info)
 {
 	auto product = std::tuple <Session, vk::detail::DispatchLoaderDynamic> {};
 	auto &[session, dld] = product;
@@ -97,13 +97,19 @@ std::tuple <Session, vk::detail::DispatchLoaderDynamic> Session::from(const Info
 		.setEngineVersion(info.engine_version)
 		.setPEngineName(info.engine_name.c_str());
 
+	auto validation_features = vk::ValidationFeaturesEXT()
+		.setEnabledValidationFeatures(info.validation_features);
+
 	auto instance_info = vk::InstanceCreateInfo()
 		.setPApplicationInfo(&app_info)
 		.setPEnabledLayerNames(layers)
 		.setPEnabledExtensionNames(extensions);
 
-	if (info.validation && info.validate_instance)
-		instance_info.setPNext(&debug_info);
+	if (info.validation) {
+		instance_info.setPNext(&validation_features);
+		if (info.validate_instance)
+			validation_features.setPNext(&debug_info);
+	}
 
 	session.handle = vk::createInstance(instance_info, nullptr, dld);
 

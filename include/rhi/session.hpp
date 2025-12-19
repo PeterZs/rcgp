@@ -3,21 +3,12 @@
 #include <tuple>
 #include <vulkan/vulkan.hpp>
 
-VKAPI_ATTR VKAPI_CALL vk::Bool32 validation_callback
-(
-	vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
-	vk::DebugUtilsMessageTypeFlagsEXT types,
-	const vk::DebugUtilsMessengerCallbackDataEXT *data,
-	void *user_data
-);
-
 struct Session {
 	vk::Instance handle;
 	vk::DebugUtilsMessengerEXT debugger;
 	bool trap_on_error = true;
 
-	// Session construction
-	struct Info {
+	struct Options {
 		const std::string &application_name;
 		uint32_t application_version = VK_MAKE_VERSION(0, 1, 0);
 		const std::string &engine_name;
@@ -25,7 +16,8 @@ struct Session {
 		bool validation = true;
 		bool validate_instance = true;
 		bool trap_on_error = true;
+		std::vector <vk::ValidationFeatureEnableEXT> validation_features;
 	};
 
-	static std::tuple <Session, vk::detail::DispatchLoaderDynamic> from(const Info &info);
+	static std::tuple <Session, vk::detail::DispatchLoaderDynamic> from(const Options &info);
 };

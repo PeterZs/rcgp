@@ -3,10 +3,9 @@
 #include <vulkan/vulkan.hpp>
 
 #include "device.hpp"
-#include "../util/logging.hpp"
 
 struct Image {
-	struct Info {
+	struct Description {
 		vk::Extent2D extent {};
 		vk::Format format = vk::Format::eUndefined;
 		vk::ImageUsageFlags usage {};
@@ -20,9 +19,9 @@ struct Image {
 	vk::DeviceMemory backing;
 	vk::ImageView view;
 	vk::ImageLayout layout = vk::ImageLayout::eUndefined;
-	Info info;
+	Description description;
 
 	void destroy();
 
-	static Image from(const Device &device, const Info &info);
+	static Image from(const Device &device, const Description &info);
 };

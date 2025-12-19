@@ -2,7 +2,7 @@
 
 #include <vector>
 
-DescriptorPool DescriptorPool::from(const Device &device, const Info &info)
+DescriptorPool DescriptorPool::from(const Device &device, const Options &info)
 {
 	std::vector <vk::DescriptorPoolSize> sizes;
 	sizes.reserve(14);

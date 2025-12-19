@@ -151,9 +151,9 @@ Window Window::from(const Session &session, const Device &device)
 		image.device = device.logical;
 		image.handle = handle;
 		image.layout = vk::ImageLayout::ePresentSrcKHR;
-		image.info.extent = result.extent();
-		image.info.format = result.format;
-		image.info.aspect = vk::ImageAspectFlagBits::eColor;
+		image.description.extent = result.extent();
+		image.description.format = result.format;
+		image.description.aspect = vk::ImageAspectFlagBits::eColor;
 
 		auto view_info = vk::ImageViewCreateInfo()
 			.setImage(handle)

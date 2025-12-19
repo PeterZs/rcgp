@@ -71,7 +71,11 @@ bool Device::acquire_image_for_frame(Frame &frame, uint64_t timeout) const
 	return !(acq.result == vk::Result::eErrorOutOfDateKHR || acq.result == vk::Result::eSuboptimalKHR);
 }
 
-Device Device::from(const Session &session, vk::detail::DispatchLoaderDynamic &dld, const Info &info)
+Device Device::from(
+	const Session &session,
+	vk::detail::DispatchLoaderDynamic &dld,
+	const Options &info
+)
 {
 	Device device;
 
