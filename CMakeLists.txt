@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 4.0)
 
-project(ugp CXX)
+project(rcgp CXX)
 
 set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_LINKER_TYPE MOLD)
@@ -12,7 +12,7 @@ add_subdirectory(ext/glslang EXCLUDE_FROM_ALL)
 
 include_directories(include ext/glslang ext/glm)
 
-add_library(ugp STATIC
+add_library(rcgp STATIC
 	source/dsl/instructions.cpp
 	source/rhi/buffer.cpp
 	source/rhi/command_pool.cpp
@@ -27,7 +27,7 @@ add_library(ugp STATIC
 	source/rhi/window.cpp
 )
 
-target_link_libraries(ugp PUBLIC
+target_link_libraries(rcgp PUBLIC
 	fmt
 	glfw
 	Vulkan::Vulkan
@@ -42,4 +42,4 @@ add_executable(test EXCLUDE_FROM_ALL
 )
 
 target_precompile_headers(test PRIVATE <vulkan/vulkan.hpp>)
-target_link_libraries(test PRIVATE ugp mrd)
+target_link_libraries(test PRIVATE rcgp mrd)
