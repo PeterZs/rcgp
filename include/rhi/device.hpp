@@ -21,12 +21,25 @@ struct Device {
 
 	auto find_memory_type(uint32_t filter, vk::MemoryPropertyFlags flags) const -> uint32_t;
 
+	template <typename Extent>
 	auto new_framebuffer(
 		const vk::RenderPass &render_pass,
 		const std::span <const vk::ImageView> &attachments,
-		const vk::Extent2D &extent,
+		const Extent &extent,
 		uint32_t layers = 1
-	) const -> vk::Framebuffer;
+	) const -> vk::Framebuffer {
+		static_assert(std::same_as <Extent, vk::Extent2D>
+			|| std::same_as <Extent, vk::Extent3D>);
+
+		auto fb_info = vk::FramebufferCreateInfo()
+			.setRenderPass(render_pass)
+			.setAttachments(attachments)
+			.setWidth(extent.width)
+			.setHeight(extent.height)
+			.setLayers(layers);
+
+		return logical.createFramebuffer(fb_info);
+	}
 
 	// TODO: return neutral command buffers
 	auto new_command_buffers(const CommandPool &cpool, size_t count) const -> std::vector <vk::CommandBuffer>;

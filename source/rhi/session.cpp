@@ -93,9 +93,9 @@ std::tuple <Session, vk::detail::DispatchLoaderDynamic> Session::from(const Opti
 	auto app_info = vk::ApplicationInfo()
 		.setApiVersion(VK_API_VERSION_1_4)
 		.setApplicationVersion(info.application_version)
-		.setPApplicationName(info.application_name.c_str())
+		.setPApplicationName(info.application_name)
 		.setEngineVersion(info.engine_version)
-		.setPEngineName(info.engine_name.c_str());
+		.setPEngineName(info.engine_name);
 
 	auto validation_features = vk::ValidationFeaturesEXT()
 		.setEnabledValidationFeatures(info.validation_features);

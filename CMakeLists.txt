@@ -13,6 +13,7 @@ add_subdirectory(ext/glslang EXCLUDE_FROM_ALL)
 include_directories(include ext/glslang ext/glm)
 
 add_library(ugp STATIC
+	source/dsl/instructions.cpp
 	source/rhi/buffer.cpp
 	source/rhi/command_pool.cpp
 	source/rhi/compiler.cpp

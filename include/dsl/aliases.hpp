@@ -20,3 +20,5 @@ using int4 = vector <int32_t, 4>;
 
 using mat3 = matrix <float, 3, 3>;
 using mat4 = matrix <float, 4, 4>;
+
+// TODO: float2, float3, etc. style

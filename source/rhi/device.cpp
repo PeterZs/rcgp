@@ -18,19 +18,6 @@ auto Device::find_memory_type(uint32_t filter, vk::MemoryPropertyFlags flags) co
 	fatal("no compatible memory type for buffer");
 }
 
-auto Device::new_framebuffer(const vk::RenderPass &render_pass, const std::span <const vk::ImageView> &attachments, const vk::Extent2D &extent, uint32_t layers) const
-	-> vk::Framebuffer
-{
-	auto fb_info = vk::FramebufferCreateInfo()
-		.setRenderPass(render_pass)
-		.setAttachments(attachments)
-		.setWidth(extent.width)
-		.setHeight(extent.height)
-		.setLayers(layers);
-
-	return logical.createFramebuffer(fb_info);
-}
-
 auto Device::new_command_buffers(const CommandPool &cpool, size_t count) const
 	-> std::vector <vk::CommandBuffer>
 {

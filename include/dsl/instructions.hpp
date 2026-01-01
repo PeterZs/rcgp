@@ -5,6 +5,8 @@
 #include <optional>
 #include <set>
 #include <source_location>
+#include <string>
+#include <vector>
 
 #include <fmt/format.h>
 
@@ -216,6 +218,8 @@ struct Swizzle {
 	Reference value;
 };
 
+std::string swizzle_string(Swizzle::Code code);
+
 struct FieldAccess {
 	Reference value;
 	uint32_t fidx;
@@ -328,15 +332,6 @@ struct Instruction : variant <
 	Instruction(const variant_self &base, Debug debug_info_ = {})
 		: variant_self(base), debug_info(debug_info_) {}
 };
-
-inline void Block::apply_group_allocation_map(const group_allocation_map &map)
-{
-	for (auto &[addr, group] : map) {
-		auto &refs = context.global_resources[addr];
-		for (auto &ref : refs)
-			ref->as <GlobalResource> ().group = group;
-	}
-}
 
 template <typename T>
 Reference Block::add(const T &sub, const Debug aux)

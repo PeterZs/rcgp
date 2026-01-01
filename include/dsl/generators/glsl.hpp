@@ -140,6 +140,11 @@ struct GLSL {
 			return fmt::format("{}[{}]", main(access.value), main(access.index));
 		}
 
+		std::string impl(Swizzle swizzle) {
+			return fmt::format("{}.{}",
+				main(swizzle.value), swizzle_string(swizzle.code));
+		}
+
 		std::string impl(GlobalResource grsrc) {
 			return parent.reference.impl(grsrc);
 		}

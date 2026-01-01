@@ -151,7 +151,7 @@ Window Window::from(const Session &session, const Device &device)
 		image.device = device.logical;
 		image.handle = handle;
 		image.layout = vk::ImageLayout::ePresentSrcKHR;
-		image.description.extent = result.extent();
+		image.description.extent = vk::Extent3D(result.extent(), 1);
 		image.description.format = result.format;
 		image.description.aspect = vk::ImageAspectFlagBits::eColor;
 
