@@ -8,7 +8,7 @@ template <typename ... Ts>
 void info(fmt::format_string <Ts...> fmt_str, Ts &&...args)
 {
 	auto header = fmt::format(fmt::emphasis::bold, "rcgp:");
-	auto alert = fmt::format(fmt::emphasis::bold | fmt::fg(fmt::color::blue), "info:");
+	auto alert = fmt::format(fmt::emphasis::bold | fmt::fg(fmt::color::light_blue), "info:");
 	auto message = fmt::format(fmt_str, std::forward <Ts> (args)...);
 	fmt::println(stderr, "{} {} {}", header, alert, message);
 }

@@ -36,6 +36,7 @@ add_library(rcgp STATIC
 	source/rhi/window.cpp
 )
 
+target_precompile_headers(rcgp PRIVATE <vulkan/vulkan.hpp>)
 target_link_libraries(rcgp PUBLIC
 	fmt
 	glfw
