@@ -29,6 +29,12 @@ struct MirrorBuffer <T, L, F> : Buffer {
 		Buffer::write(&data, sizeof(value_type), 0);
 		return *this;
 	}
+	
+	template <typename U>
+	auto &write_unsafe(std::span <U> memory, size_t offset = 0) const {
+		Buffer::write <U> (memory, offset);
+		return *this;
+	}
 
 	vk::DescriptorBufferInfo descriptor_info() const {
 		return vk::DescriptorBufferInfo()
@@ -59,13 +65,19 @@ struct MirrorBuffer <T, L, F> : Buffer {
 		return value_type();
 	}
 
-	auto &write(const value_type &data) const {
+	void write(const value_type &data) const {
+		// TODO: handle flushing if not host coherent
 		// TODO: do this all in one mapped context
 		auto [dyn, offset] = dynamic_part <T> (data);
 		if (offset > 0)
 			Buffer::write(&data, offset, 0);
 
 		Buffer::write(dyn.data(), std::span(dyn).size_bytes(), offset);
+	}
+	
+	template <typename U>
+	auto &write_unsafe(std::span <U> memory, size_t offset = 0) const {
+		Buffer::write <U> (memory, offset);
 		return *this;
 	}
 

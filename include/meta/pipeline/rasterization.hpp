@@ -39,6 +39,12 @@ struct IndexBuffer : index_buffer_base_t <T, I> {
 		base::write(data);
 		return *this;
 	}
+
+	template <typename U>
+	auto &write_unsafe(std::span <U> memory, size_t offset = 0) const {
+		Buffer::write <U> (memory, offset);
+		return *this;
+	}
 	
 	static IndexBuffer from(const Device &device,
 			  	size_t max_elements,

@@ -127,7 +127,7 @@ auto bind_descriptors(const DescriptorOf <refs, true> &... descriptors)
 }
 
 template <auto &ref, Topology T, typename AttributeStreams, typename GroupAllocation, typename GlobalResources, size_t Sets>
-auto push_constants(const AnnotatedRasterizationPipeline <T, AttributeStreams, GroupAllocation, GlobalResources, Sets> &,
+auto bind_push_constants(const AnnotatedRasterizationPipeline <T, AttributeStreams, GroupAllocation, GlobalResources, Sets> &,
 		    const ResourceTypeOf <ref> &constants)
 {
 	static_assert(is_push_constant_v <reference_base_t <ref>>);

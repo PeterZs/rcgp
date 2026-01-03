@@ -20,7 +20,13 @@ struct VertexBufferOf  <ref> : VertexMirrorBuffer <array <T>, L> {
 		VertexMirrorBuffer <array <T>, L> ::write(data);
 		return *this;
 	}
-	
+
+	template <typename U>
+	auto &write_unsafe(std::span <U> memory, size_t offset = 0) const {
+		Buffer::write <U> (memory, offset);
+		return *this;
+	}
+
 	static VertexBufferOf from(const Device &device,
 			  	 size_t max_elements,
 			  	 vk::MemoryPropertyFlags properties,

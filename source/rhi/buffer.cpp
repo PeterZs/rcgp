@@ -3,25 +3,28 @@
 #include "util/logging.hpp"
 #include "rhi/buffer.hpp"
 
-void Buffer::write(const void *data, size_t bytes, vk::DeviceSize relative_offset) const
+auto Buffer::write(const void *data, size_t bytes, vk::DeviceSize relative_offset) const
+	-> const Buffer &
 {
 	if (relative_offset + bytes > size)
 		fatal("buffer upload exceeds allocation ({} + {} > {})", relative_offset, bytes, size);
 
-	auto mapped = device.logical.mapMemory(backing, offset + relative_offset, bytes);
+	auto mapped = device.mapMemory(backing, offset + relative_offset, bytes);
 	std::memcpy(mapped, data, bytes);
-	device.logical.unmapMemory(backing);
+	device.unmapMemory(backing);
+
+	return *this;
 }
 
 void Buffer::destroy()
 {
 	if (handle) {
-		device.logical.destroyBuffer(handle);
+		device.destroyBuffer(handle);
 		handle = nullptr;
 	}
 
 	if (backing) {
-		device.logical.freeMemory(backing);
+		device.freeMemory(backing);
 		backing = nullptr;
 	}
 
@@ -29,15 +32,15 @@ void Buffer::destroy()
 	size = 0;
 }
 
-Buffer Buffer::from(
+auto Buffer::from(
 	const Device &device,
 	vk::DeviceSize size,
 	vk::BufferUsageFlags usage,
 	vk::MemoryPropertyFlags properties
-)
+) -> Buffer
 {
 	Buffer result;
-	result.device = device;
+	result.device = device.logical;
 	result.offset = 0;
 	result.size = size;
 	result.usage = usage;
@@ -61,30 +64,3 @@ Buffer Buffer::from(
 
 	return result;
 }
-
-// BufferArena::BufferArena(Buffer backing, vk::DeviceSize alignment_)
-// 	: buffer(std::move(backing))
-// 	, alignment(alignment_)
-// 	{}
-//
-// Buffer BufferArena::allocate(vk::DeviceSize bytes)
-// {
-// 	auto align_up = [](vk::DeviceSize value, vk::DeviceSize alignment) {
-// 		return (value + alignment - 1) & ~(alignment - 1);
-// 	};
-//
-// 	auto start = align_up(head, alignment);
-// 	auto end = start + bytes;
-//
-// 	if (end > buffer.size)
-// 		fatal("arena allocation exceeded buffer size ({} > {})", end, buffer.size);
-//
-// 	head = end;
-//
-// 	Buffer slice = buffer;
-// 	slice.offset = buffer.offset + start;
-// 	slice.size = bytes;
-//
-// 	slices.push_back(slice);
-// 	return slice;
-// }
