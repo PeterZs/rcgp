@@ -4,44 +4,61 @@
 
 namespace {
 
+struct HandlerTable {
+	int dragging_button = -1;
+	bool cursor_initialized = false;
+	double last_x = 0.0;
+	double last_y = 0.0;
+
+	std::vector <MouseButtonHandler> mouse_button;
+	std::vector <CursorMoveHandler> cursor_move;
+	std::unordered_map <int, std::vector <DragHandler>> drag;
+};
+
+inline std::vector <HandlerTable> handler_tables;
+
 void dispatch_mouse_button(GLFWwindow *w, int button, int action, int mods)
 {
-	auto *self = static_cast <Window *> (glfwGetWindowUserPointer(w));
-	if (!self)
-		return;
-	for (auto &cb : self->mouse_button_handlers)
+	auto user = glfwGetWindowUserPointer(w);
+	auto handler_index = reinterpret_cast <std::intptr_t> (user);
+
+	auto &ht = handler_tables[handler_index];
+	for (auto &cb : ht.mouse_button)
 		cb(button, action, mods);
 
 	if (action == GLFW_PRESS) {
-		self->dragging_button = button;
-		glfwGetCursorPos(w, &self->last_x, &self->last_y);
-		self->cursor_initialized = true;
+		ht.dragging_button = button;
+		glfwGetCursorPos(w, &ht.last_x, &ht.last_y);
+		ht.cursor_initialized = true;
 	} else if (action == GLFW_RELEASE) {
-		if (self->dragging_button == button)
-			self->dragging_button = -1;
+		if (ht.dragging_button == button)
+			ht.dragging_button = -1;
 	}
 }
 
 void dispatch_cursor_pos(GLFWwindow *w, double xpos, double ypos)
 {
-	auto *self = static_cast <Window *> (glfwGetWindowUserPointer(w));
-	if (!self)
-		return;
+	auto user = glfwGetWindowUserPointer(w);
+	auto handler_index = reinterpret_cast <std::intptr_t> (user);
+
+	auto &ht = handler_tables[handler_index];
+
 	double dx = 0.0;
 	double dy = 0.0;
-	if (self->cursor_initialized) {
-		dx = xpos - self->last_x;
-		dy = ypos - self->last_y;
+	if (ht.cursor_initialized) {
+		dx = xpos - ht.last_x;
+		dy = ypos - ht.last_y;
 	}
-	self->last_x = xpos;
-	self->last_y = ypos;
-	self->cursor_initialized = true;
 
-	for (auto &cb : self->cursor_move_handlers)
+	ht.last_x = xpos;
+	ht.last_y = ypos;
+	ht.cursor_initialized = true;
+	for (auto &cb : ht.cursor_move)
 		cb(xpos, ypos, dx, dy);
-	if (self->dragging_button != -1) {
-		auto it = self->drag_handlers.find(self->dragging_button);
-		if (it != self->drag_handlers.end()) {
+
+	if (ht.dragging_button != -1) {
+		auto it = ht.drag.find(ht.dragging_button);
+		if (it != ht.drag.end()) {
 			for (auto &cb : it->second)
 				cb(xpos, ypos, dx, dy);
 		}
@@ -95,29 +112,46 @@ Frame Window::next_frame()
 
 void Window::on_mouse_button(MouseButtonHandler handler)
 {
-	mouse_button_handlers.push_back(std::move(handler));
+	auto &ht = handler_tables[handler_index];
+	ht.mouse_button.push_back(std::move(handler));
 }
 
 void Window::on_cursor_move(CursorMoveHandler handler)
 {
-	cursor_move_handlers.push_back(std::move(handler));
+	auto &ht = handler_tables[handler_index];
+	ht.cursor_move.push_back(std::move(handler));
 }
 
 void Window::on_drag(MouseButton button, DragHandler handler)
 {
-	drag_handlers[static_cast<int>(button)].push_back(std::move(handler));
+	auto idx = std::to_underlying(button);
+	auto &ht = handler_tables[handler_index];
+	ht.drag[idx].push_back(std::move(handler));
 }
 
-Window Window::from(const Session &session, const Device &device)
+Image &Window::image(size_t index)
+{
+	return images[index];
+}
+
+const Image &Window::image(size_t index) const
+{
+	return images[index];
+}
+
+Window Window::from(const Session &session, const Device &device, const Options &options)
 {
 	auto &ldev = device.logical;
 	auto &pdev = device.physical;
 
 	Window result;
 
-	result.handle = glfwCreateWindow(1024, 1024, "ugp", nullptr, nullptr);
+	result.handle = glfwCreateWindow(options.width, options.height, options.title, nullptr, nullptr);
+	result.handler_index = handler_tables.size();
+	handler_tables.emplace_back();
 
-	glfwSetWindowUserPointer(result.handle, &result);
+	auto user = reinterpret_cast <void *> (result.handler_index);
+	glfwSetWindowUserPointer(result.handle, user);
 	glfwSetMouseButtonCallback(result.handle, dispatch_mouse_button);
 	glfwSetCursorPosCallback(result.handle, dispatch_cursor_pos);
 
@@ -189,14 +223,4 @@ Window Window::from(const Session &session, const Device &device)
 	}
 
 	return result;
-}
-
-Image &Window::image(size_t index)
-{
-	return images[index];
-}
-
-const Image &Window::image(size_t index) const
-{
-	return images[index];
 }

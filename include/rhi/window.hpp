@@ -51,6 +51,10 @@ struct Frame {
 	uint32_t image_index;
 };
 
+using MouseButtonHandler = std::function <void (int button, int action, int mods)>;
+using CursorMoveHandler = std::function <void (double xpos, double ypos, double dx, double dy)>;
+using DragHandler = std::function <void (double xpos, double ypos, double dx, double dy)>;
+
 struct Window {
 	GLFWwindow *handle;
 	vk::SurfaceKHR surface;
@@ -59,23 +63,11 @@ struct Window {
 	vk::SwapchainKHR swapchain;
 	std::vector <Image> images;
 
-	using MouseButtonHandler = std::function <void (int button, int action, int mods)>;
-	using CursorMoveHandler = std::function <void (double xpos, double ypos, double dx, double dy)>;
-	using DragHandler = std::function <void (double xpos, double ypos, double dx, double dy)>;
-
 	std::vector <Frame> frames;
-	std::vector <MouseButtonHandler> mouse_button_handlers;
-	std::vector <CursorMoveHandler> cursor_move_handlers;
-	std::unordered_map <int, std::vector <DragHandler>> drag_handlers;
-
 	size_t frames_in_flight;
 	size_t frame_index;
-
-	// Handler states
-	int dragging_button = -1;
-	bool cursor_initialized = false;
-	double last_x = 0.0;
-	double last_y = 0.0;
+	
+	std::intptr_t handler_index;
 
 	void poll() const;
 	void close() const;
@@ -95,5 +87,11 @@ struct Window {
 	Image &image(size_t index);
 	const Image &image(size_t index) const;
 
-	static Window from(const Session &session, const Device &device);
+	struct Options {
+		uint32_t width;
+		uint32_t height;
+		const char *const title;
+	};
+
+	static Window from(const Session &session, const Device &device, const Options &options);
 };
