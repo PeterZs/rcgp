@@ -45,7 +45,5 @@
 #include "rhi/shader_compiler.hpp"
 #include "rhi/window.hpp"
 
-#include "dsl/generators/assembly.hpp"
-#include "dsl/generators/glsl.hpp"
 #include "dsl/jems.hpp"
 #include "dsl/tracer.hpp"

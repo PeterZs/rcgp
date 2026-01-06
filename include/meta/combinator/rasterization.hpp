@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../dsl/instructions.hpp"
-#include "../../dsl/generators/glsl.hpp"
+#include "../../dsl/generators_glsl.hpp"
 #include "../../rhi/shader_compiler.hpp"
 #include "../collect_gvrs.hpp"
 #include "../collect_streams.hpp"

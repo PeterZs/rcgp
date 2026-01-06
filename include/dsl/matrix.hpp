@@ -33,3 +33,13 @@ public:
 		return reinterpret(jems::operation(Operation::eMultiply, scalar <T> (-1), m));
 	}
 };
+
+extern template class matrix <int32_t, 2, 2>;
+extern template class matrix <int32_t, 3, 3>;
+extern template class matrix <int32_t, 4, 4>;
+extern template class matrix <uint32_t, 2, 2>;
+extern template class matrix <uint32_t, 3, 3>;
+extern template class matrix <uint32_t, 4, 4>;
+extern template class matrix <float, 2, 2>;
+extern template class matrix <float, 3, 3>;
+extern template class matrix <float, 4, 4>;

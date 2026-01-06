@@ -23,6 +23,9 @@ include_directories(include)
 
 add_library(rcgp STATIC
 	source/dsl/instructions.cpp
+	source/dsl/generators_assembly.cpp
+	source/dsl/generators_glsl.cpp
+	source/dsl/primitives.cpp
 	source/rhi/buffer.cpp
 	source/rhi/command_pool.cpp
 	source/rhi/shader_compiler.cpp

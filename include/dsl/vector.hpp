@@ -84,3 +84,13 @@ struct vector : public vector_base <T, N> {
 static_assert(sizeof(vector <int32_t, 2>) == sizeof(jems::handle));
 static_assert(sizeof(vector <uint32_t, 3>) == sizeof(jems::handle));
 static_assert(sizeof(vector <float, 4>) == sizeof(jems::handle));
+
+extern template struct vector <int32_t, 2>;
+extern template struct vector <int32_t, 3>;
+extern template struct vector <int32_t, 4>;
+extern template struct vector <uint32_t, 2>;
+extern template struct vector <uint32_t, 3>;
+extern template struct vector <uint32_t, 4>;
+extern template struct vector <float, 2>;
+extern template struct vector <float, 3>;
+extern template struct vector <float, 4>;
