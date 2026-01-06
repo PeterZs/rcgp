@@ -83,6 +83,12 @@ public:
 
 	vector_base() = default;
 	
+	vector_base(const scalar <T> &x, $location)
+		: handle(jems::construct_loc(loc,
+			jems::type_loc(loc, VectorType <T, 4> ()),
+			x, x, x, x
+		)) {}
+	
 	vector_base(const vector_base <T, 3> &xyz, const scalar <T> &w, $location)
 		: handle(jems::construct_loc(loc,
 			jems::type_loc(loc, VectorType <T, 4> ()),

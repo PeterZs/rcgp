@@ -3,7 +3,6 @@
 #include <functional>
 
 #include "../dsl/jems.hpp"
-#include "function_return_injection.hpp"
 #include "injection_state.hpp"
 #include "shader_stage.hpp"
 #include "stage_argument_injector.hpp"
@@ -57,29 +56,55 @@ struct _stage_operator {};
 #define $compute	$stage(Compute)
 
 template <typename ... Args>
-struct simplify_return_list {
+struct compact_returns {
 	using type = std::tuple <Args...>;
 };
 
 template <typename T>
-struct simplify_return_list <T> {
+struct compact_returns <T> {
 	using type = T;
 };
 
 template <>
-struct simplify_return_list <> {
+struct compact_returns <> {
 	using type = void;
 };
 
-#define $returns(...) decltype(fn_return_injection::Writer <decltype(_return_proxy), simplify_return_list <__VA_ARGS__> ::type> {}, void())
-#define $return (_return_operator <fn_return_injection::Read <decltype(_return_proxy)> ::unfoil> ()) << 
-#define $fn (_fn_operator <ShaderStage::Undefined, __COUNTER__ + 1> ()) << [_return_proxy = fn_return_injection::proxy_tag <__COUNTER__> ()] $context_capture
-#define $cafn(...) (_fn_operator <ShaderStage::Undefined, __COUNTER__ + 1> ()) << [__VA_ARGS__ __VA_OPT__(,) _return_proxy = fn_return_injection::proxy_tag <__COUNTER__> ()] $context_capture
+template <typename ... Ts>
+using compact_returns_t = compact_returns <Ts...> ::type;
+
+namespace frenj_ret {
+
+template <size_t v>
+struct Reader {
+	friend auto adl_lever(Reader);
+};
+
+template <size_t v, typename T>
+struct Writer {
+	friend auto adl_lever(Reader <v>) {
+		return T();
+	}
+};
+
+void adl_lever();
+
+template <size_t v>
+using Read = std::remove_pointer_t <decltype(adl_lever(Reader <v> {}))>;
+
+} // namespace frenj_ret
+
+#define $returns(...) decltype(frenj_ret::Writer <__COUNTER__, compact_returns_t <__VA_ARGS__>> {}, void())
+#define $return (_return_operator <frenj_ret::Read <__rpidx.value>> ()) << 
+#define $fn (_fn_operator <ShaderStage::Undefined, __COUNTER__ + 2> ()) \
+	<< [__rpidx = el <__COUNTER__ + 1> ()] $context_capture
+#define $cafn(...) (_fn_operator <ShaderStage::Undefined, __COUNTER__ + 2> ()) \
+	<< [__VA_ARGS__ __VA_OPT__(,) __rpidx = el <__COUNTER__ + 1> ()] $context_capture
 
 template <ShaderStage S, int I>
 auto operator<<(_fn_operator <S, I>, auto lambda)
 {
-	using R = typename fn_return_injection::Read <fn_return_injection::proxy_tag <I>> ::unfoil;
+	using R = frenj_ret::Read <I>;
 	return compile <S, R> (lambda);
 }
 

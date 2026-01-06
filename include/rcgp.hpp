@@ -9,7 +9,6 @@
 #include "meta/descriptor.hpp"
 #include "meta/dynamic.hpp"
 #include "meta/function_construction.hpp"
-#include "meta/function_return_injection.hpp"
 #include "meta/group_allocation.hpp"
 #include "meta/implicit_context.hpp"
 #include "meta/layout/all.hpp"

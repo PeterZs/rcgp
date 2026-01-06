@@ -52,4 +52,4 @@ add_executable(test EXCLUDE_FROM_ALL
 )
 
 target_precompile_headers(test PRIVATE <vulkan/vulkan.hpp>)
-target_link_libraries(test PRIVATE rcgp mrd)
+target_link_libraries(test PRIVATE rcgp)

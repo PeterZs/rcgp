@@ -11,7 +11,14 @@ struct sequence {
 	sequence(std::type_identity <Args> ...) {}
 
 	template <size_t I>
-	using get = Args...[I];
+	using get = decltype([] {
+		// GCC doesn't like indexing empty packs :(
+		if constexpr (I < sizeof...(Args))
+			return (Args...[I]) {};
+		else
+			return int();
+	} ());
+	// using get = Args...[I];
 
 	template <typename T>
 	using push_front_t = sequence <T, Args...>;
