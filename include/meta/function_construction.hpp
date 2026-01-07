@@ -3,9 +3,8 @@
 #include <functional>
 
 #include "../dsl/jems.hpp"
-#include "injection_state.hpp"
+#include "inject_arguments.hpp"
 #include "shader_stage.hpp"
-#include "stage_argument_injector.hpp"
 
 template <ShaderStage S, typename R, typename ... Args>
 struct signature {
@@ -16,6 +15,17 @@ struct signature {
 
 template <ShaderStage S, typename Rt, typename R, typename ... Args>
 constexpr auto new_signature(std::function <R (Args...)>) -> signature <S, Rt, Args...>;
+
+template <ShaderStage S>
+void inject_execution_model()
+{
+	if constexpr (S == ShaderStage::eVertex)
+		$tsb.context.model = ExecutionModel::eVulkanVertex;
+	else if constexpr (S == ShaderStage::eFragment)
+		$tsb.context.model = ExecutionModel::eVulkanFragment;
+	else
+		$tsb.context.model = ExecutionModel::eAgnostic;
+}
 
 template <ShaderStage S, typename R, typename F>
 auto compile(F ftn)
@@ -34,7 +44,8 @@ auto compile(F ftn)
 	if (auto s = jems::scope(result)) {
 		typename signature::args args;
 		inject_execution_model <S> ();
-		inject_arguments <S, 0> (args, InjectionState(0, 0));
+		inject_arguments <S> (args);
+		// inject_arguments <S, 0> (args, InjectionState(0, 0));
 		// TODO: need to concretize returns at the return operator...
 		// (not here or at return value construction)
 		std::apply(ftn, args);

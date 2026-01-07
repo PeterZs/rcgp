@@ -10,6 +10,13 @@
 #include "macro_hell.hpp"
 #include "this_injection.hpp"
 
+// Forward declarations
+namespace jems {
+
+class handle;
+
+} // namespace jems
+
 // Reflection types
 template <typename T>
 struct primitive_reflection {};
@@ -38,20 +45,31 @@ struct function_reflection {};
 template <typename T>
 struct resource_group_reflection {};
 
+// TODO: move resource reflections to another file?
 template <typename T, template <typename> typename L>
-struct push_constant_reflection {};
+struct push_constant_reflection {
+	static jems::handle intrinsic_placeholder();
+};
 
 template <typename T, template <typename> typename L>
-struct uniform_buffer_reflection {};
+struct uniform_buffer_reflection {
+	static jems::handle intrinsic_placeholder();
+};
 
 template <typename T, template <typename> typename L>
-struct storage_buffer_reflection {};
+struct storage_buffer_reflection {
+	static jems::handle intrinsic_placeholder();
+};
 
 template <typename T, size_t D>
-struct sampler_reflection {};
+struct sampler_reflection {
+	static jems::handle intrinsic_placeholder();
+};
 
-template <typename T, vk::VertexInputRate>
-struct attribute_stream_reflection {};
+template <typename T, vk::VertexInputRate R>
+struct attribute_stream_reflection {
+	using value_type = T;
+};
 
 // Specific kinds of reflection
 template <typename T>
