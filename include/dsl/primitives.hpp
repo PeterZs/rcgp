@@ -10,3 +10,4 @@
 #include "arithmetic.hpp"
 #include "intrinsics.hpp"
 #include "aliases.hpp"
+#include "pygen_jems_instantiations.hpp"

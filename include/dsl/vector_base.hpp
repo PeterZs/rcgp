@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <type_traits>
 
-#include "macro_swizzle.hpp"
+#include "pygen_macro_swizzle.hpp"
 #include "scalar.hpp"
 
 template <SwizzleCode S, typename T, typename R>

@@ -1,5 +1,7 @@
 #include "dsl/generators_assembly.hpp"
 
+#include <fmt/format.h>
+
 #include <filesystem>
 
 #include "util/logging.hpp"

@@ -15,3 +15,5 @@ matrix <T, N, M> operator*(const matrix <T, N, K> &a, const matrix <T, K, M> &b)
 {
 	return matrix <T, N, M> ::reinterpret(jems::operation(OperationCode::eMultiply, a, b));
 }
+
+#include "pygen_arithmetic_instantiations.hpp"

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <fmt/printf.h>
-
 #include "../dsl/instructions.hpp"
 #include "stage_intrinsics.hpp"
 

@@ -98,3 +98,5 @@ vector <T, N> dFdyFine(const vector <T, N> &v)
 {
 	return vector <T, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eDFdyFine, v));
 }
+
+#include "pygen_intrinsics_instantiations.hpp"

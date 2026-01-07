@@ -2,9 +2,8 @@
 
 #include <stack>
 
-#include <fmt/printf.h>
-
 #include "instructions.hpp"
+#include "../util/logging.hpp"
 
 // NOTE: this tracer is not limited to just shaders...
 // it also includes game engine stuff/code
@@ -13,8 +12,7 @@ struct Tracer {
 
 	Block &active() {
 		if (records.empty()) {
-			fmt::println(stderr, "no active record");
-			__builtin_trap();
+			fatal("no active record");
 		}
 
 		return records.top();

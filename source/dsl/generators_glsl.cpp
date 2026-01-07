@@ -1,5 +1,7 @@
 #include "dsl/generators_glsl.hpp"
 
+#include <fmt/format.h>
+
 namespace generators {
 
 GLSL::GLSL(const Block &block_)

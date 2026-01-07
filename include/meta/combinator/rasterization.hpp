@@ -3,6 +3,7 @@
 #include "../../dsl/generators_glsl.hpp"
 #include "../../dsl/instructions.hpp"
 #include "../../rhi/shader_compiler.hpp"
+#include "../../util/logging.hpp"
 #include "../attribute_description.hpp"
 #include "../binding_description.hpp"
 #include "../collect_gvrs.hpp"
@@ -254,10 +255,10 @@ struct RasterizationCombinator {
 
 		// Compile the shaders
 		auto vshader = generators::GLSL(vertex).generate();
-		fmt::println("vertex shader:\n{}", vshader);
+		info("vertex shader:\n%s", vshader.c_str());
 
 		auto fshader = generators::GLSL(fragment).generate();
-		fmt::println("fragment shader:\n{}", fshader);
+		info("fragment shader:\n%s", fshader.c_str());
 	
 		auto vspv = compiler.glsl_to_spirv(vshader, EShLangVertex);
 		auto fspv = compiler.glsl_to_spirv(fshader, EShLangFragment);

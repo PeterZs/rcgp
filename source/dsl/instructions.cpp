@@ -92,3 +92,20 @@ void Block::Context::add_thread_output(ThreadOutput tout)
 		thread_outputs[tout.argi] = tout;
 	}
 }
+
+// TODO: use a script to generate instantiations
+template Reference Block::add <Argument> (const Argument &sub, Debug aux);
+template Reference Block::add <Block> (const Block &sub, Debug aux);
+template Reference Block::add <BuiltinIntrinsic> (const BuiltinIntrinsic &sub, Debug aux);
+template Reference Block::add <Constant> (const Constant &sub, Debug aux);
+template Reference Block::add <Construct> (const Construct &sub, Debug aux);
+template Reference Block::add <ArrayAccess> (const ArrayAccess &sub, Debug aux);
+template Reference Block::add <FieldAccess> (const FieldAccess &sub, Debug aux);
+template Reference Block::add <GlobalIntrinsic> (const GlobalIntrinsic &sub, Debug aux);
+template Reference Block::add <GlobalResource> (const GlobalResource &sub, Debug aux);
+template Reference Block::add <Operation> (const Operation &sub, Debug aux);
+template Reference Block::add <Store> (const Store &sub, Debug aux);
+template Reference Block::add <Swizzle> (const Swizzle &sub, Debug aux);
+template Reference Block::add <ThreadInput> (const ThreadInput &sub, Debug aux);
+template Reference Block::add <ThreadOutput> (const ThreadOutput &sub, Debug aux);
+template Reference Block::add <Type> (const Type &sub, Debug aux);

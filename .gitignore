@@ -1,5 +1,7 @@
 .cache/
-build/
-trace.txt
-headers.txt
+__pycache__/
 analysis.txt
+build/
+headers.txt
+pygen_*
+trace.txt
