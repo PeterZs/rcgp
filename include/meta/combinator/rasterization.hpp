@@ -35,7 +35,10 @@ constexpr auto group_allocation_set_for(const std::tuple <group_allocation_recor
 }
 
 template <auto &... refs, size_t ... Is>
-auto sequence_to_group_allocation_impl(const sequence <reference <refs>...> &, const std::index_sequence <Is...> &)
+auto sequence_to_group_allocation_impl(
+	const sequence <reference <refs>...> &,
+	const std::index_sequence <Is...> &
+)
 {
 	return std::make_tuple(group_allocation_record <refs, Is> ()...);
 }
@@ -44,7 +47,7 @@ template <typename ... Ts>
 auto sequence_to_group_allocation(const sequence <Ts...> &)
 {
 	return sequence_to_group_allocation_impl(
-		sequence <typename Ts::type...> ::singleton,
+		sequence <typename Ts::type...> ::reify(),
 		std::make_index_sequence <sizeof...(Ts)> ()
 	);
 }
@@ -227,7 +230,7 @@ struct RasterizationCombinator {
 		using fragment_icontext = find_implicit_context <Bs...> ::type;
 
 		// Collect vertex attribute streams
-		auto streams0 = sequence <> ::singleton;
+		auto streams0 = sequence <> {};
 		auto streams = add_stream_from_implicit_context(streams0, vertex_icontext());
 
 		// Generate vertex input bindings and attributes
@@ -235,12 +238,12 @@ struct RasterizationCombinator {
 		auto vattributes = sequence_to_vertex_attributes(streams);
 
 		// Collect global resources
-		auto gvrs0 = sequence <> ::singleton;
+		auto gvrs0 = sequence <> ::reify();
 		auto gvrs1 = add_gvr_from_implicit_context <ShaderStage::Vertex> (gvrs0, vertex_icontext());
 		auto gvrs = add_gvr_from_implicit_context <ShaderStage::Fragment> (gvrs1, fragment_icontext());
 
-		auto descriptor_gvrs = descriptor_resources_t <decltype(gvrs)> ::singleton;
-		auto push_constant_gvrs = push_constant_resources_t <decltype(gvrs)> ::singleton;
+		auto descriptor_gvrs = descriptor_resources_t <decltype(gvrs)> ::reify();
+		auto push_constant_gvrs = push_constant_resources_t <decltype(gvrs)> ::reify();
 
 		auto alloc = sequence_to_group_allocation(descriptor_gvrs);
 		auto gamap = new_allocation(alloc);

@@ -11,7 +11,7 @@ auto new_aggregate_reflection(sequence <Ts...>)
 	-> aggregate_reflection <Original, Ts...>;
 
 #define GEN_AGGREGATE_FIELD(T, field)	\
-	std::declval <decltype(field)> (),
+	std::type_identity <decltype(field)> {},
 
 #define DEFINE_REFLECTION(...)							\
 	using reflection = decltype(new_aggregate_reflection <This> (		\

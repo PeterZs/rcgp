@@ -7,7 +7,6 @@ template <typename ... Args>
 struct sequence {
 	static constexpr size_t size = sizeof...(Args);
 
-	constexpr sequence(Args...) requires (size > 0) {}
 	constexpr sequence(std::type_identity <Args> ...) {}
 
 	template <size_t I>
@@ -34,9 +33,11 @@ struct sequence {
 		return std::make_index_sequence <size> ();
 	}
 
-	static constexpr sequence singleton {
-		std::type_identity <Args> ()...
-	};
+	static constexpr auto reify() {
+		return sequence {
+			std::type_identity <Args> {}...
+		};
+	}
 };
 
 // Static enumeration

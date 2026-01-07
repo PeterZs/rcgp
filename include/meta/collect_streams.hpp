@@ -14,7 +14,7 @@ auto add_stream(const sequence <Ts...> &in)
 		if constexpr (exists)
 			return in;
 		else
-			return sequence <Ts..., reference <ref>> ::singleton;
+			return sequence <Ts..., reference <ref>> ::reify();
 	}
 }
 

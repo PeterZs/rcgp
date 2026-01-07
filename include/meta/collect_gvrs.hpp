@@ -34,9 +34,9 @@ auto add_gvr(const sequence <Ts...> &in)
 					typename Ts::template append_stage <S>,
 					Ts
 				> ...
-			> ::singleton;
+			> ::reify();
 		} else {
-			return sequence <Ts..., stage_wrapper <reference <ref>, S>> ::singleton;
+			return sequence <Ts..., stage_wrapper <reference <ref>, S>> ::reify();
 		}
 	}
 }
