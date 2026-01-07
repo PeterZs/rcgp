@@ -242,8 +242,6 @@ struct RasterizationCombinator {
 		auto descriptor_gvrs = descriptor_resources_t <decltype(gvrs)> ::singleton;
 		auto push_constant_gvrs = push_constant_resources_t <decltype(gvrs)> ::singleton;
 
-		// static_assert(push_constant_gvrs.size <= 1, "multiple push constant blocks are not supported");
-
 		auto alloc = sequence_to_group_allocation(descriptor_gvrs);
 		auto gamap = new_allocation(alloc);
 		vertex.apply_group_allocation_map(gamap);
@@ -275,6 +273,7 @@ struct RasterizationCombinator {
 			layout_info.setPushConstantRanges(pcrs);
 		auto layout = device.logical.createPipelineLayout(layout_info);
 
+		// TODO: the rest of this should be an RHI method
 		// Building the pipeline
 		auto shader_stages = std::array {
 			vk::PipelineShaderStageCreateInfo()

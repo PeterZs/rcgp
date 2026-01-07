@@ -3,6 +3,11 @@
 #include "reflection.hpp"
 #include <cstddef>
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattributes"
+#endif
+
 // Forward declarations
 template <reflected T, int64_t N>
 struct array;
@@ -151,3 +156,7 @@ struct scaffold_lookup <
 		DEFINE_SCAFFOLD_GET_METHOD(__VA_ARGS__)				\
 		DEFINE_SCAFFOLD_OFFSET_METHOD(__VA_ARGS__)			\
 	};
+
+#if defined(__GNUC__) && !defined(__clang__)
+#define GCC diagnostic pop
+#endif

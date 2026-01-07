@@ -6,7 +6,7 @@
 #include "resources.hpp"
 
 template <reflected T, template <typename> typename L, vk::VertexInputRate R>
-auto binding_description_for_attribute_stream(const AttributeStream <T, L, R> &, size_t binding)
+constexpr auto binding_description_for_attribute_stream(const AttributeStream <T, L, R> &, size_t binding)
 {
 	using M = TypeMirror <T, L>;
 	return vk::VertexInputBindingDescription()
@@ -16,7 +16,7 @@ auto binding_description_for_attribute_stream(const AttributeStream <T, L, R> &,
 }
 
 template <auto &... refs, size_t ... Is>
-auto sequence_to_vertex_bindings_impl(const sequence <reference <refs>...> &, const std::index_sequence <Is...> &)
+constexpr auto sequence_to_vertex_bindings_impl(const sequence <reference <refs>...> &, const std::index_sequence <Is...> &)
 {
 	return std::array {
 		binding_description_for_attribute_stream(refs, Is)...
@@ -24,7 +24,7 @@ auto sequence_to_vertex_bindings_impl(const sequence <reference <refs>...> &, co
 }
 
 template <auto &... refs>
-auto sequence_to_vertex_bindings(const sequence <reference <refs>...> &in)
+constexpr auto sequence_to_vertex_bindings(const sequence <reference <refs>...> &in)
 {
 	if constexpr (sizeof...(refs) == 0)
 		return std::array <vk::VertexInputBindingDescription, 0> ();

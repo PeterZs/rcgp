@@ -155,16 +155,27 @@ inline auto unbind_pipeline()
 	return Commands <> { binder };
 }
 
-template <auto &... refs>
-auto bind_vertex_buffers(const VertexBufferOf <refs> &... buffers)
+// TODO: bind_vertex_buffer only form the pipeline
+template <auto &ref>
+auto bind_vertex_buffer(const VertexBufferOf <ref> &buffer, size_t boffset)
 {
 	auto binder = [=](const vk::CommandBuffer &cmd, CommandsTraceAux &) {
-		std::array <vk::DeviceSize, sizeof...(refs)> offsets {};
-		cmd.bindVertexBuffers(0, { buffers.handle... }, offsets);
+		cmd.bindVertexBuffers(boffset, { buffer.handle }, { 0 });
 	};
 
 	return Commands <> { binder };
 }
+
+// template <auto &... refs>
+// auto bind_vertex_buffers(const VertexBufferOf <refs> &... buffers)
+// {
+// 	auto binder = [=](const vk::CommandBuffer &cmd, CommandsTraceAux &) {
+// 		std::array <vk::DeviceSize, sizeof...(refs)> offsets {};
+// 		cmd.bindVertexBuffers(0, { buffers.handle... }, offsets);
+// 	};
+//
+// 	return Commands <> { binder };
+// }
 
 // and add a state tag that encodes this... ProvidedIndexBuffer <T>
 template <Topology T, typename I>

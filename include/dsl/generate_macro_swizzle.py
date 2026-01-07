@@ -24,9 +24,9 @@ def generate() -> list[str]:
 def main() -> int:
     lines = generate()
     if len(sys.argv) > 1:
-        Path(sys.argv[1]).write_text('\n'.join(lines) + '\n')
+        Path(sys.argv[1]).write_text('\n'.join(lines) + '\n\n')
     else:
-        print('\n'.join(lines))
+        print('\n'.join(lines) + '\n\n')
     return 0
 
 

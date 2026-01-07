@@ -8,7 +8,7 @@
 
 // TODO: handle aggregates and such
 template <reflected T, template <typename> typename L, vk::VertexInputRate R>
-auto attribute_description_for_attribute_stream(const AttributeStream <T, L, R> &, size_t binding, size_t &location)
+constexpr auto attribute_description_for_attribute_stream(const AttributeStream <T, L, R> &, size_t binding, size_t &location)
 {
 	return std::array {
 		vk::VertexInputAttributeDescription()
@@ -20,15 +20,16 @@ auto attribute_description_for_attribute_stream(const AttributeStream <T, L, R> 
 }
 
 template <auto &... refs, size_t ... Is>
-auto sequence_to_vertex_attributes_impl(const sequence <reference <refs>...> &, const std::index_sequence <Is...> &)
+constexpr auto sequence_to_vertex_attributes_impl(const sequence <reference <refs>...> &, const std::index_sequence <Is...> &)
 {
 	size_t location = 0;
 	return concat(attribute_description_for_attribute_stream(refs, Is, location)...);
 }
 
 template <auto &... refs>
-auto sequence_to_vertex_attributes(const sequence <reference <refs>...> &in)
+constexpr auto sequence_to_vertex_attributes(const sequence <reference <refs>...> &in)
 {
+	// TODO: we can do this without concat... just inline here itself...
 	if constexpr (sizeof...(refs) == 0)
 		return std::array <vk::VertexInputAttributeDescription, 0> ();
 	else

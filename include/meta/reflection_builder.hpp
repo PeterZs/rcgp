@@ -76,3 +76,4 @@ auto new_aggregate_reflection(sequence <Ts...>)
 	DEFINE_FIELD_REFERENCE(const, __VA_ARGS__);		\
 								\
 	DEFINE_OVERRIDE_REFERENCE(__VA_ARGS__);			\
+

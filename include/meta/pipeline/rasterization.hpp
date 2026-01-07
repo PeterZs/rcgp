@@ -141,6 +141,7 @@ struct AnnotatedRasterizationPipeline {
 	std::array <vk::DescriptorSetLayout, Sets> dsls;
 
 	using global_resources = GlobalResources;
+	using streams = AttributeStreams;
 
 	template <auto &ref>
 	auto new_descriptor(const DescriptorPool &dpool) const {

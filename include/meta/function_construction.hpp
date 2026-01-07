@@ -75,6 +75,11 @@ using compact_returns_t = compact_returns <Ts...> ::type;
 
 namespace frenj_ret {
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnon-template-friend"
+#endif
+
 template <size_t v>
 struct Reader {
 	friend auto adl_lever(Reader);
@@ -91,6 +96,10 @@ void adl_lever();
 
 template <size_t v>
 using Read = std::remove_pointer_t <decltype(adl_lever(Reader <v> {}))>;
+
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 } // namespace frenj_ret
 

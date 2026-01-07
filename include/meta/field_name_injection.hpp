@@ -2,6 +2,11 @@
 
 #include <cstdlib>
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnon-template-friend"
+#endif
+
 namespace field_name_injection {
 
 template <typename T, size_t I>
@@ -22,6 +27,10 @@ struct Writer {
 void adl_lever();
 
 } // namespace field_name_injection
+
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 #define FIELD_NAME_INJECTION(T, field)					\
 	inline static const field_name_injection::Writer <		\
