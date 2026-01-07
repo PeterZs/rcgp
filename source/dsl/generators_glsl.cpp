@@ -18,7 +18,7 @@ std::string GLSL::layout_string(GlobalResourceLayout layout) const
 	switch (layout) {
 	case GlobalResourceLayout::eScalar: return "scalar, ";
 	case GlobalResourceLayout::eStd430: return "std430, ";
-	case GlobalResourceLayout::eUnknown:
+	case GlobalResourceLayout::eNone:
 	default:
 		return "";
 	}

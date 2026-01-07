@@ -20,47 +20,51 @@ consteval GlobalResourceLayout layout_of()
 		static_assert(false, "unsupported layout for global resource");
 }
 
-// Implementations for intrinsic_placeholder()
+// Implementations for intrinsic()
 template <typename T, template <typename> typename L>
-jems::handle push_constant_reflection <T, L> ::intrinsic_placeholder()
+jems::handle push_constant_reflection <T, L> ::intrinsic(uint32_t binding)
 {
 	return jems::global_resource(
 		reconstruct_type <T> (),
 		GlobalResourceKind::ePushConstant,
 		layout_of <L> (),
-		std::nullopt, 0
+		std::nullopt,
+		binding
 	);
 }
 
 template <typename T, template <typename> typename L>
-jems::handle uniform_buffer_reflection <T, L> ::intrinsic_placeholder()
+jems::handle uniform_buffer_reflection <T, L> ::intrinsic(uint32_t binding)
 {
 	return jems::global_resource(
 		reconstruct_type <T> (),
 		GlobalResourceKind::eUniformBuffer,
 		layout_of <L> (),
-		std::nullopt, 0
+		std::nullopt,
+		binding
 	);
 }
 
 template <typename T, template <typename> typename L>
-jems::handle storage_buffer_reflection <T, L> ::intrinsic_placeholder()
+jems::handle storage_buffer_reflection <T, L> ::intrinsic(uint32_t binding)
 {
 	return jems::global_resource(
 		reconstruct_type <T> (),
 		GlobalResourceKind::eStorageBuffer,
 		layout_of <L> (),
-		std::nullopt, 0
+		std::nullopt,
+		binding
 	);
 }
 
 template <typename T, size_t D>
-jems::handle sampler_reflection <T, D> ::intrinsic_placeholder()
+jems::handle sampler_reflection <T, D> ::intrinsic(uint32_t binding)
 {
 	return jems::global_resource(
 		jems::type(VectorType <T, D> ()),
 		GlobalResourceKind::eSampler,
-		GlobalResourceLayout::eUnknown,
-		std::nullopt, 0
+		GlobalResourceLayout::eNone,
+		std::nullopt,
+		binding
 	);
 }

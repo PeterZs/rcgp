@@ -14,6 +14,7 @@ struct AttributeStream : T {
 	DEFINE_REFLECTION_STAMP();
 };
 
+// Resource groups
 // TODO: should not allow index/vertex buffers here
 template <reflected T>
 struct ResourceGroup : T {
@@ -21,12 +22,40 @@ struct ResourceGroup : T {
 	DEFINE_REFLECTION_STAMP();
 };
 
+// TODO: is_X_reflection goes to reflection.hpp...
+template <typename T>
+struct is_resource_group_reflection : std::false_type {};
+
+template <typename T>
+struct is_resource_group_reflection <resource_group_reflection <T>> : std::true_type {};
+
+template <typename T>
+constexpr bool is_resource_group_v =
+	has_reflection <T> () && is_resource_group_reflection <typename T::reflection> ::value;
+
+// Push constants
 template <reflected T, template <typename> typename L = layouts::std430>
 struct PushConstant : T {
 	using reflection = push_constant_reflection <T, L>;
 	DEFINE_REFLECTION_STAMP();
 };
 
+// TODO: macrofiy concepts/is_X stuff for this
+// DEFINE_TYPE_CLASS(is_push_constant_reflection)
+//
+// template <typename T, template <typename> typename L>
+// APPEND_TO_TYPE_CLASS(is_push_constant_reflection, push_constant_reflection <T, L>)
+template <typename T>
+struct is_push_constant_reflection : std::false_type {};
+
+template <typename T, template <typename> typename L>
+struct is_push_constant_reflection <push_constant_reflection <T, L>> : std::true_type {};
+
+template <typename T>
+constexpr bool is_push_constant_v =
+	has_reflection <T> () && is_push_constant_reflection <typename T::reflection> ::value;
+
+// Uniform buffers
 // TODO: these need layouts...
 template <reflected T, template <typename> typename L = layouts::std430>
 struct UniformBuffer : T {
@@ -79,7 +108,6 @@ template <reflected T>
 struct RayPayload : T {};
 
 // Introspection
-// TODO: we can move this to reflection.hpp
 template <typename T>
 struct is_global_resource_reflection : std::false_type {};
 
@@ -103,16 +131,6 @@ constexpr bool is_global_resource_reflection_v = is_global_resource_reflection <
 
 template <typename T>
 constexpr bool is_global_resource_v = is_global_resource_reflection <typename T::reflection> ::value;
-
-template <typename T>
-struct is_push_constant_reflection : std::false_type {};
-
-template <typename T, template <typename> typename L>
-struct is_push_constant_reflection <push_constant_reflection <T, L>> : std::true_type {};
-
-template <typename T>
-constexpr bool is_push_constant_v =
-	has_reflection <T> () && is_push_constant_reflection <typename T::reflection> ::value;
 
 // Attribute stream detection
 template <typename T>

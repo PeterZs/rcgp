@@ -27,24 +27,52 @@ void inject_one_argument(T &value, InjectionCounters &counters)
 template <ShaderStage S, auto &... refs>
 void inject_one_argument(implicit_context <refs...> &value, InjectionCounters &counters) {}
 
-// Unknown cases
-template <auto &ref>
-void inject_resource_reference(reference <ref> &value)
+// TODO: just take void * input...
+template <aggregate T, size_t I>
+void inject_resource_group_element(void *addr, T &value)
 {
-	using T = std::decay_t <decltype(value)>;
-	static_assert(false, ($ss("resource reference injector not implemented for ") + $ss_type(T)).view());
+	auto &field = value.template _ugp_field_reference <I> ();
+	using R = std::decay_t <decltype(field)> ::reflection;
+
+	auto grsrc = R::intrinsic(I);
+	$tsb.context.add_global_resource(addr, grsrc);
+	inject_reference(field, grsrc);
 }
 
-// Global resources
+template <aggregate T, size_t ... Is>
+void inject_resource_group_carrier(void *addr, T &value, std::index_sequence <Is...>)
+{
+	(inject_resource_group_element <T, Is> (addr, value), ...);
+}
+
 template <typename T, T &ref>
-requires is_global_resource_v <T>
 void inject_resource_reference(reference <ref> &value)
 {
-	using R = typename T::reflection;
-	// auto grsrc = resource_intrinsic <R> ::intrinsic(0);
-	auto grsrc = R::intrinsic_placeholder();
-	$tsb.context.add_global_resource <ref> (grsrc);
-	value.override_reference(grsrc);
+	if constexpr (is_resource_group_v <T>) {
+		// Resource groups
+		using U = T::reflection::value_type;
+		using R = expand_reflection_t <U>;
+
+		// TODO: defer to overloads to handle tuple vs aggregates
+		static_assert(is_aggregate_reflection_v <R>);
+		using V = R::original_type;
+		
+		static constexpr auto N = R::field_count;
+		inject_resource_group_carrier(
+			(void *) &ref,
+			static_cast <V &> (value),
+			std::make_index_sequence <N> ()
+		);
+	} else if constexpr (is_global_resource_v <T>) {
+		// Global resources
+		using R = typename T::reflection;
+		auto grsrc = R::intrinsic(0);
+		$tsb.context.add_global_resource((void *) &ref, grsrc);
+		inject_reference(static_cast <T &> (value), grsrc);
+	} else {
+		// Unknown cases
+		static_assert(false, ($ss("resource reference injector not implemented for ") + $ss_type(T)).view());
+	}
 }
 
 // Broader case with stage information
@@ -63,15 +91,15 @@ void inject_one_argument(reference <ref> &value, InjectionCounters &counters)
 		// TODO: this can be a method; similar for argument, if its used many times
 		auto tin = ThreadInput(type, counters.threadidx++);
 		$tsb.context.add_thread_input(tin);
-		inject_reference <T> (value, jems::thread_input(tin));
+		inject_reference(static_cast <T &> (value), jems::thread_input(tin));
 	} else {
 		// Regular case
 		inject_resource_reference(value);
 	}
 }
 
-// TODO: aggregates should be the same...
-template <ShaderStage S, primitive T>
+template <ShaderStage S, typename T>
+requires (primitive <T> or aggregate <T>)
 void inject_one_argument(T &value, InjectionCounters &counters)
 {
 	auto type = reconstruct_type <T> ();
@@ -79,12 +107,12 @@ void inject_one_argument(T &value, InjectionCounters &counters)
 		// Varying attribute
 		auto tin = ThreadInput(type, counters.threadidx++);
 		$tsb.context.add_thread_input(tin);
-		inject_reference <T> (value, jems::thread_input(tin));
+		inject_reference(value, jems::thread_input(tin));
 	} else if constexpr (S == ShaderStage::eUndefined) {
 		// Function argument
 		auto arg = Argument(type, counters.argidx++);
 		$tsb.context.add_argument(arg);
-		inject_reference <T> (value, jems::argument(arg));
+		inject_reference(value, jems::argument(arg));
 	} else {
 		// Not supported
 		static_assert(false, (

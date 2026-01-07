@@ -190,15 +190,7 @@ struct Block : std::vector <Reference> {
 		void add_argument(Argument arg);
 		void add_thread_input(ThreadInput tin);
 		void add_thread_output(ThreadOutput tout);
-
-		template <auto &rsrc>
-		void add_global_resource(Reference resource) {
-			auto addr = (void *) &rsrc;
-			if (not global_resources.contains(addr))
-				global_resources.emplace(addr, std::set <Reference> ());
-
-			global_resources[addr].insert(resource);
-		}
+		void add_global_resource(void *addr, Reference resource);
 	} context;
 	
 	void apply_group_allocation_map(const group_allocation_map &map);

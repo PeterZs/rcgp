@@ -15,7 +15,7 @@ enum class GlobalResourceKind {
 };
 
 enum class GlobalResourceLayout {
-	eUnknown,
+	eNone,
 	eScalar,
 	eStd430,
 };

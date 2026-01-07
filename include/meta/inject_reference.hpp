@@ -4,14 +4,8 @@
 
 #include "../dsl/jems.hpp"
 #include "reflection.hpp"
+#include "resources.hpp"
 #include "static_string.hpp"
-
-// Fallback with error reported
-template <typename T>
-void inject_reference(T &value, Reference ref)
-{
-	static_assert(false, ($ss("failed to inject reference into item of type ") + $ss_type(T)).view());
-}
 
 // DSL handles
 template <typename T>
@@ -40,4 +34,18 @@ void inject_reference(T &value, Reference ref)
 {
 	static constexpr auto N = T::reflection::field_count;
 	return inject_all_fields_of_reference(value, ref, std::make_index_sequence <N> ());
+}
+
+// TODO: this applies to all buffer handles...
+template <typename T, template <typename> typename L>
+void inject_reference(PushConstant <T, L> &value, Reference ref)
+{
+	return inject_reference(static_cast <T &> (value), ref);
+}
+
+// Fallback with error reported
+template <typename T>
+void inject_reference(T &value, Reference ref)
+{
+	static_assert(false, ($ss("failed to inject reference into item of type ") + $ss_type(T)).view());
 }

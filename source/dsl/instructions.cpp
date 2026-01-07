@@ -93,6 +93,14 @@ void Block::Context::add_thread_output(ThreadOutput tout)
 	}
 }
 
+void Block::Context::add_global_resource(void *addr, Reference resource)
+{
+	if (not global_resources.contains(addr))
+		global_resources.emplace(addr, std::set <Reference> ());
+
+	global_resources[addr].insert(resource);
+}
+
 // TODO: use a script to generate instantiations
 template Reference Block::add <Argument> (const Argument &sub, Debug aux);
 template Reference Block::add <Block> (const Block &sub, Debug aux);

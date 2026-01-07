@@ -123,7 +123,7 @@ std::string Assembly::stringify(GlobalResourceLayout layout)
 	switch (layout) {
 	case GlobalResourceLayout::eScalar: return "scalar";
 	case GlobalResourceLayout::eStd430: return "std430";
-	case GlobalResourceLayout::eUnknown:
+	case GlobalResourceLayout::eNone: return "-";
 	default:
 		return "?";
 	}
