@@ -158,6 +158,7 @@ std::string Assembly::stringify(ThreadInput x, Reference ref)
 std::string Assembly::stringify_rate_properties(RateProperties properties)
 {
 	switch (properties) {
+	case RateProperties::eNone: return "-";
 	case RateProperties::eSmooth: return "smooth";
 	case RateProperties::eFlat: return "flat";
 	case RateProperties::eNoPerspective: return "noperspective";

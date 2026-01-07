@@ -5,11 +5,11 @@
 #include <type_traits>
 
 #include "expand_reflection.hpp"
+#include "inject_reference.hpp"
 #include "injection_state.hpp"
-#include "injector.hpp"
+#include "reference.hpp"
 #include "resource_intrinsic.hpp"
 #include "resources.hpp"
-#include "reference.hpp"
 #include "static_string.hpp"
 
 // Pre-pass for resource group injectors
@@ -32,7 +32,7 @@ struct resource_injector <UniformBuffer <T, L>, rsrc> {
 	static auto main(reference <rsrc> &value, const InjectionState &state) {
 		auto grsrc = resource_intrinsic <uniform_buffer_reflection <T, L>> ::intrinsic(0);
 		$tsb.context.add_global_resource <rsrc> (grsrc);
-		injector <T> ::main(value, grsrc);
+		inject_reference <T> (value, grsrc);
 		return state.next(false, false);
 	}
 };
@@ -42,7 +42,7 @@ struct resource_injector <PushConstant <T, L>, rsrc> {
 	static auto main(reference <rsrc> &value, const InjectionState &state) {
 		auto grsrc = resource_intrinsic <push_constant_reflection <T, L>> ::intrinsic(0);
 		$tsb.context.add_global_resource <rsrc> (grsrc);
-		injector <T> ::main(value, grsrc);
+		inject_reference <T> (value, grsrc);
 		return state.next(false, false);
 	}
 };
@@ -52,7 +52,7 @@ struct resource_injector <StorageBuffer <T, L>, rsrc> {
 	static auto main(reference <rsrc> &value, const InjectionState &state) {
 		auto grsrc = resource_intrinsic <storage_buffer_reflection <T, L>> ::intrinsic(0);
 		$tsb.context.add_global_resource <rsrc> (grsrc);
-		injector <T> ::main(value, grsrc);
+		inject_reference <T> (value, grsrc);
 		return state.next(false, false);
 	}
 };
@@ -84,7 +84,7 @@ struct resource_injector <ResourceGroup <T>, rsrc> {
 			using resource = typename trace::value_type;
 			auto grsrc = resource_intrinsic <resource> ::intrinsic(counter++);
 			$tsb.context.add_global_resource <rsrc> (grsrc);
-			injector <trace> ::main(value, grsrc);
+			inject_reference <T> (value, grsrc);
 			return true;
 		};
 

@@ -51,9 +51,9 @@ struct _stage_operator {};
 
 #define $stage(S) _stage_operator <ShaderStage::S> () *
 
-#define $vertex		$stage(Vertex)
-#define $fragment	$stage(Fragment)
-#define $compute	$stage(Compute)
+#define $vertex		$stage(eVertex)
+#define $fragment	$stage(eFragment)
+#define $compute	$stage(eCompute)
 
 template <typename ... Args>
 struct compact_returns {
@@ -105,9 +105,9 @@ using Read = std::remove_pointer_t <decltype(adl_lever(Reader <v> {}))>;
 
 #define $returns(...) decltype(frenj_ret::Writer <__COUNTER__, compact_returns_t <__VA_ARGS__>> {}, void())
 #define $return (_return_operator <frenj_ret::Read <__rpidx.value>> ()) << 
-#define $fn (_fn_operator <ShaderStage::Undefined, __COUNTER__ + 2> ()) \
+#define $fn (_fn_operator <ShaderStage::eUndefined, __COUNTER__ + 2> ()) \
 	<< [__rpidx = el <__COUNTER__ + 1> ()] $context_capture
-#define $cafn(...) (_fn_operator <ShaderStage::Undefined, __COUNTER__ + 2> ()) \
+#define $cafn(...) (_fn_operator <ShaderStage::eUndefined, __COUNTER__ + 2> ()) \
 	<< [__VA_ARGS__ __VA_OPT__(,) __rpidx = el <__COUNTER__ + 1> ()] $context_capture
 
 template <ShaderStage S, int I>
@@ -118,7 +118,7 @@ auto operator<<(_fn_operator <S, I>, auto lambda)
 }
 
 template <ShaderStage S, int I>
-auto operator*(_stage_operator <S>, _fn_operator <ShaderStage::Undefined, I>)
+auto operator*(_stage_operator <S>, _fn_operator <ShaderStage::eUndefined, I>)
 {
 	return _fn_operator <S, I> ();
 }

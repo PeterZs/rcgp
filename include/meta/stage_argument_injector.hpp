@@ -3,11 +3,11 @@
 #include "../dsl/instructions.hpp"
 #include "../dsl/jems.hpp"
 #include "implicit_context.hpp"
+#include "inject_reference.hpp"
 #include "injection_state.hpp"
-#include "injector.hpp"
+#include "reconstruct_type.hpp"
 #include "reference.hpp"
 #include "reflection.hpp"
-#include "reconstruct_type.hpp"
 #include "resource_injector.hpp"
 #include "shader_stage.hpp"
 #include "stage_intrinsics.hpp"
@@ -16,12 +16,12 @@
 template <ShaderStage S>
 void inject_execution_model()
 {
-	if constexpr (S == ShaderStage::Vertex)
+	if constexpr (S == ShaderStage::eVertex)
 		$tsb.context.model = ExecutionModel::eVulkanVertex;
-	else if constexpr (S == ShaderStage::Fragment)
+	else if constexpr (S == ShaderStage::eFragment)
 		$tsb.context.model = ExecutionModel::eVulkanFragment;
 	else
-		static_assert(false, "no execution model for stage");
+		$tsb.context.model = ExecutionModel::eAgnostic;
 }
 
 template <ShaderStage S, typename T>
@@ -42,12 +42,14 @@ struct stage_argument_injector <S, read_only_intrinsic <G, T>> {
 
 // For subroutines, normal arguments are treated like regular arguments
 template <typename T>
-struct stage_argument_injector <ShaderStage::Undefined, T> {
+requires (not is_implicit_context_v <T>)
+	&& (not is_reference <T> ::value)
+struct stage_argument_injector <ShaderStage::eUndefined, T> {
 	static auto main(T &value, const InjectionState &state) {
 		auto type = reconstruct_type <T> ();
 		auto arg = Argument(type, state.argidx);
 		$tsb.context.add_argument(arg);
-		injector <T> ::main(value, jems::argument(arg));
+		inject_reference <T> (value, jems::argument(arg));
 		return state.next(true, false);
 	}
 };
@@ -67,27 +69,27 @@ struct stage_argument_injector <S, reference <rsrc>> {
 // 	but users will not be allowed to write vertex shaders without
 // 	explicit references to the streams
 template <ShaderStage S, primitive T>
-requires (S == ShaderStage::Vertex || S == ShaderStage::Fragment)
+requires (S == ShaderStage::eVertex || S == ShaderStage::eFragment)
 struct stage_argument_injector <S, T> {
 	static auto main(T &value, const InjectionState &state) {
 		auto type = reconstruct_type <T> ();
 		auto tin = ThreadInput(type, state.threadidx);
 		$tsb.context.add_thread_input(tin);
-		injector <T> ::main(value, jems::thread_input(tin));
+		inject_reference <T> (value, jems::thread_input(tin));
 		return state.next(false, true);
 	}
 };
 
 // For vertex shaders streams are thread inputs
 template <reflected T, template <typename> typename L, vk::VertexInputRate R, AttributeStream <T, L, R> &rsrc>
-struct stage_argument_injector <ShaderStage::Vertex, reference <rsrc>> {
+struct stage_argument_injector <ShaderStage::eVertex, reference <rsrc>> {
 	static auto main(reference <rsrc> &value, const InjectionState &state) {
-		return stage_argument_injector <ShaderStage::Vertex, T> ::main(value, state);
+		return stage_argument_injector <ShaderStage::eVertex, T> ::main(value, state);
 	}
 };
 
 template <ShaderStage S, aggregate T>
-requires (S == ShaderStage::Vertex || S == ShaderStage::Fragment)
+requires (S == ShaderStage::eVertex || S == ShaderStage::eFragment)
 struct stage_argument_injector <S, T> {
 	static auto main(T &value, const InjectionState &state) {
 		constexpr auto field_count = T::reflection::field_count;
@@ -118,9 +120,13 @@ struct stage_argument_injector <S, implicit_context <refs...>> {
 	}
 };
 
+// TODO: try to make these normal functions: group by argument type
+// and then have cases for each stage within
+
 template <ShaderStage S, size_t Index, typename ... Args>
 void inject_arguments(std::tuple <Args...> &args, const InjectionState &state)
 {
+	// TODO: we can inline this?
 	auto &value = std::get <Index> (args);
 	using T = std::decay_t <decltype(value)>;
 

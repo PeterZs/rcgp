@@ -222,8 +222,8 @@ struct RasterizationCombinator {
 	RasterizationOptions options;
 
 	template <typename VRet, typename ... As, typename FRet, typename ... Bs>
-	auto operator()(shader_stage <ShaderStage::Vertex, VRet, As...> &vertex,
-		 	shader_stage <ShaderStage::Fragment, FRet, Bs...> &fragment) const {
+	auto operator()(shader_stage <ShaderStage::eVertex, VRet, As...> &vertex,
+		 	shader_stage <ShaderStage::eFragment, FRet, Bs...> &fragment) const {
 		// TODO: check between vshader output and fshader input
 		// TODO: store # of attachments required from # of fshader outputs
 		using vertex_icontext = find_implicit_context <As...> ::type;
@@ -239,8 +239,8 @@ struct RasterizationCombinator {
 
 		// Collect global resources
 		auto gvrs0 = sequence <> ::reify();
-		auto gvrs1 = add_gvr_from_implicit_context <ShaderStage::Vertex> (gvrs0, vertex_icontext());
-		auto gvrs = add_gvr_from_implicit_context <ShaderStage::Fragment> (gvrs1, fragment_icontext());
+		auto gvrs1 = add_gvr_from_implicit_context <ShaderStage::eVertex> (gvrs0, vertex_icontext());
+		auto gvrs = add_gvr_from_implicit_context <ShaderStage::eFragment> (gvrs1, fragment_icontext());
 
 		auto descriptor_gvrs = descriptor_resources_t <decltype(gvrs)> ::reify();
 		auto push_constant_gvrs = push_constant_resources_t <decltype(gvrs)> ::reify();
