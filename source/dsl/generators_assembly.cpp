@@ -4,38 +4,78 @@
 
 #include <fmt/format.h>
 
+#include "dsl/generators.hpp"
 #include "util/logging.hpp"
-#include "dsl/generators_assembly.hpp"
 
-namespace generators {
+namespace {
 
-std::string Assembly::stringify(Reference ref)
+struct AssemblyContext {
+	const SharedBlockReference &sbr;
+	std::map <intptr_t, uint32_t> ids;
+};
+
+std::string stringify(AssemblyContext &ctx, Reference ref);
+std::string stringify(AssemblyContext &ctx, Constant x, Reference ref);
+std::string stringify_type(AssemblyContext &ctx, PrimitiveType x, Reference ref);
+std::string stringify_type(AssemblyContext &ctx, AggregateType x, Reference ref);
+std::string stringify_type(AssemblyContext &ctx, ArrayType x, Reference ref);
+std::string stringify(AssemblyContext &ctx, Type x, Reference ref);
+std::string stringify(AssemblyContext &ctx, Operation x, Reference ref);
+std::string stringify(AssemblyContext &ctx, Store x, Reference ref);
+std::string stringify(AssemblyContext &ctx, ArrayAccess x, Reference ref);
+std::string stringify(AssemblyContext &ctx, FieldAccess x, Reference ref);
+std::string stringify(AssemblyContext &ctx, Argument x, Reference ref);
+std::string stringify(GlobalResourceLayout layout);
+std::string stringify(AssemblyContext &ctx, GlobalResource x, Reference ref);
+std::string stringify(AssemblyContext &ctx, ThreadInput x, Reference ref);
+std::string stringify_rate_properties(RateProperties properties);
+std::string stringify(AssemblyContext &ctx, ThreadOutput x, Reference ref);
+std::string stringify(AssemblyContext &ctx, Invocation x, Reference ref);
+std::string stringify(AssemblyContext &ctx, GlobalIntrinsic x, Reference ref);
+std::string stringify(AssemblyContext &ctx, Construct x, Reference ref);
+std::string stringify(AssemblyContext &ctx, BuiltinIntrinsic x, Reference ref);
+std::string stringify(AssemblyContext &ctx, Swizzle x, Reference ref);
+std::string stringify(AssemblyContext &ctx, Branch x, Reference ref);
+std::string stringify(AssemblyContext &ctx, Loop x, Reference ref);
+std::string stringify(AssemblyContext &ctx, Local x, Reference ref);
+std::string stringify(AssemblyContext &ctx, Block x, Reference ref);
+std::string stringify(ShaderStage stage);
+std::string generate(AssemblyContext &ctx, size_t tabs = 0, bool emit_branches = true);
+std::string stringify_block_ref(AssemblyContext &ctx, const SharedBlockReference &blk);
+std::string generate_block_body(AssemblyContext &ctx, const SharedBlockReference &blk, const std::string &indent);
+void emit_debug_line(std::string &result, const std::string &text, const std::source_location &origin);
+void emit_branch_block(AssemblyContext &ctx, const Branch &branch, Reference instr,
+	std::string &result);
+void emit_loop_block(AssemblyContext &ctx, const Loop &loop, Reference instr,
+	std::string &result);
+
+std::string stringify(AssemblyContext &ctx, Reference ref)
 {
 	if (!ref)
 		return "nil";
 
 	auto addr = intptr_t(ref.get());
 
-	auto it = ids.find(addr);
-	if (it != ids.end()) {
+	auto it = ctx.ids.find(addr);
+	if (it != ctx.ids.end()) {
 		return fmt::format("${}", it->second);
 	} else {
-		auto id = ids.size();
-		ids[addr] = id;
+		auto id = ctx.ids.size();
+		ctx.ids[addr] = id;
 		return fmt::format("${}", id);
 	}
 }
 
-#define $assign stringify(ref) + " = " +
+#define $assign stringify(ctx, ref) + " = " +
 
-std::string Assembly::stringify(Constant x, Reference ref)
+std::string stringify(AssemblyContext &ctx, Constant x, Reference ref)
 {
 	return $assign std::visit([](auto x) {
 		return fmt::format("{}", x);
 	}, x);
 }
 
-std::string Assembly::stringify_type(PrimitiveType x, Reference ref)
+std::string stringify_type(AssemblyContext &ctx, PrimitiveType x, Reference ref)
 {
 	vswitch(x) {
 	vcase(bool): return "bool";
@@ -48,6 +88,14 @@ std::string Assembly::stringify_type(PrimitiveType x, Reference ref)
 	vcase(VectorType <float, 3>): return "vec3";
 	vcase(VectorType <float, 4>): return "vec4";
 
+	vcase(MatrixType <int32_t, 2, 2>): return "mat2i";
+	vcase(MatrixType <int32_t, 3, 3>): return "mat3i";
+	vcase(MatrixType <int32_t, 4, 4>): return "mat4i";
+	vcase(MatrixType <uint32_t, 2, 2>): return "mat2u";
+	vcase(MatrixType <uint32_t, 3, 3>): return "mat3u";
+	vcase(MatrixType <uint32_t, 4, 4>): return "mat4u";
+	vcase(MatrixType <float, 2, 2>): return "mat2";
+	vcase(MatrixType <float, 3, 3>): return "mat3";
 	vcase(MatrixType <float, 4, 4>): return "mat4";
 	default:
 		break;
@@ -56,11 +104,11 @@ std::string Assembly::stringify_type(PrimitiveType x, Reference ref)
 	return "primitive(?)";
 }
 
-std::string Assembly::stringify_type(AggregateType x, Reference ref)
+std::string stringify_type(AssemblyContext &ctx, AggregateType x, Reference ref)
 {
 	std::string result;
 	for (size_t i = 0; i < x.size(); i++) {
-		result += stringify(x[i]);
+		result += stringify(ctx, x[i]);
 		if (i + 1 < x.size())
 			result += ", ";
 	}
@@ -68,20 +116,20 @@ std::string Assembly::stringify_type(AggregateType x, Reference ref)
 	return "aggregate(" + result + ")";
 }
 
-std::string Assembly::stringify_type(ArrayType x, Reference ref)
+std::string stringify_type(AssemblyContext &ctx, ArrayType x, Reference ref)
 {
 	return fmt::format("array({}, {})",
-		stringify(x.base), x.size);
+		stringify(ctx, x.base), x.size);
 }
 
-std::string Assembly::stringify(Type x, Reference ref)
+std::string stringify(AssemblyContext &ctx, Type x, Reference ref)
 {
 	return $assign std::visit([&](auto x) {
-		return stringify_type(x, ref);
+		return stringify_type(ctx, x, ref);
 	}, x);
 }
 
-std::string Assembly::stringify(Operation x, Reference ref)
+std::string stringify(AssemblyContext &ctx, Operation x, Reference ref)
 {
 	std::string op = "?";
 	switch (x.code) {
@@ -100,34 +148,34 @@ std::string Assembly::stringify(Operation x, Reference ref)
 	}
 
 	return $assign fmt::format("{}({}, {})",
-		op, stringify(x.a), stringify(x.b));
+		op, stringify(ctx, x.a), stringify(ctx, x.b));
 }
 
-std::string Assembly::stringify(Store x, Reference ref)
+std::string stringify(AssemblyContext &ctx, Store x, Reference ref)
 {
 	return fmt::format("store {} {}",
-		stringify(x.destination), stringify(x.source));
+		stringify(ctx, x.destination), stringify(ctx, x.source));
 }
 
-std::string Assembly::stringify(ArrayAccess x, Reference ref)
+std::string stringify(AssemblyContext &ctx, ArrayAccess x, Reference ref)
 {
 	return $assign fmt::format("index({}, {})",
-		stringify(x.value), stringify(x.index));
+		stringify(ctx, x.value), stringify(ctx, x.index));
 }
 
-std::string Assembly::stringify(FieldAccess x, Reference ref)
+std::string stringify(AssemblyContext &ctx, FieldAccess x, Reference ref)
 {
 	return $assign fmt::format("field {}:{}",
-		stringify(x.value), x.fidx);
+		stringify(ctx, x.value), x.fidx);
 }
 
-std::string Assembly::stringify(Argument x, Reference ref)
+std::string stringify(AssemblyContext &ctx, Argument x, Reference ref)
 {
 	return $assign fmt::format("argument {}:{}",
-		stringify(x.type), x.argi);
+		stringify(ctx, x.type), x.argi);
 }
 
-std::string Assembly::stringify(GlobalResourceLayout layout)
+std::string stringify(GlobalResourceLayout layout)
 {
 	switch (layout) {
 	case GlobalResourceLayout::eScalar: return "scalar";
@@ -138,7 +186,7 @@ std::string Assembly::stringify(GlobalResourceLayout layout)
 	}
 }
 
-std::string Assembly::stringify(GlobalResource x, Reference ref)
+std::string stringify(AssemblyContext &ctx, GlobalResource x, Reference ref)
 {
 	std::string kind = "?";
 	switch (x.kind) {
@@ -155,16 +203,16 @@ std::string Assembly::stringify(GlobalResource x, Reference ref)
 	};
 
 	return $assign fmt::format("{}({}, {}:{}, {})", kind,
-		stringify(x.type), opint(x.group), opint(x.index), stringify(x.layout));
+		stringify(ctx, x.type), opint(x.group), opint(x.index), stringify(x.layout));
 }
 
-std::string Assembly::stringify(ThreadInput x, Reference ref)
+std::string stringify(AssemblyContext &ctx, ThreadInput x, Reference ref)
 {
 	return $assign fmt::format("thread in({}, {})",
-		stringify(x.type), x.argi);
+		stringify(ctx, x.type), x.argi);
 }
 
-std::string Assembly::stringify_rate_properties(RateProperties properties)
+std::string stringify_rate_properties(RateProperties properties)
 {
 	switch (properties) {
 	case RateProperties::eNone: return "-";
@@ -178,14 +226,14 @@ std::string Assembly::stringify_rate_properties(RateProperties properties)
 	return "?";
 }
 
-std::string Assembly::stringify(ThreadOutput x, Reference ref)
+std::string stringify(AssemblyContext &ctx, ThreadOutput x, Reference ref)
 {
 	return $assign fmt::format("thread out({}, {}, {})",
-		stringify(x.type), x.argi,
+		stringify(ctx, x.type), x.argi,
 		stringify_rate_properties(x.properties));
 }
 
-std::string Assembly::stringify(GlobalIntrinsic x, Reference ref)
+std::string stringify(AssemblyContext &ctx, GlobalIntrinsic x, Reference ref)
 {
 	switch (x) {
 	case GlobalIntrinsic::eScreenPosition:
@@ -197,13 +245,13 @@ std::string Assembly::stringify(GlobalIntrinsic x, Reference ref)
 	return "?";
 }
 
-std::string Assembly::stringify(Construct x, Reference ref)
+std::string stringify(AssemblyContext &ctx, Construct x, Reference ref)
 {
-	std::string result = fmt::format("new {}(", stringify(x.type));
+	std::string result = fmt::format("new {}(", stringify(ctx, x.type));
 
 	// TODO: method for args:
 	for (size_t i = 0; i < x.args.size(); i++) {
-		result += stringify(x.args[i]);
+		result += stringify(ctx, x.args[i]);
 		if (i + 1 < x.args.size())
 			result += ", ";
 	}
@@ -212,7 +260,7 @@ std::string Assembly::stringify(Construct x, Reference ref)
 	return $assign result;
 }
 
-std::string Assembly::stringify(BuiltinIntrinsic x, Reference ref)
+std::string stringify(AssemblyContext &ctx, BuiltinIntrinsic x, Reference ref)
 {
 	std::string ftn = "?";
 	switch (x.code) {
@@ -231,7 +279,7 @@ std::string Assembly::stringify(BuiltinIntrinsic x, Reference ref)
 
 	std::string args;
 	for (size_t i = 0; i < x.args.size(); i++) {
-		args += stringify(x.args[i]);
+		args += stringify(ctx, x.args[i]);
 		if (i + 1 < x.args.size())
 			args += ", ";
 	}
@@ -239,19 +287,19 @@ std::string Assembly::stringify(BuiltinIntrinsic x, Reference ref)
 	return $assign ftn + "(" + args + ")";
 }
 
-std::string Assembly::stringify(Swizzle x, Reference ref)
+std::string stringify(AssemblyContext &ctx, Swizzle x, Reference ref)
 {
 	return $assign fmt::format("swizzle({}, {})",
-		stringify(x.value), swizzle_string(x.code));
+		stringify(ctx, x.value), swizzle_string(x.code));
 }
 
-std::string Assembly::stringify(Branch x, Reference ref)
+std::string stringify(AssemblyContext &ctx, Branch x, Reference ref)
 {
 	std::string result = "branch(";
 	for (size_t i = 0; i < x.segments.size(); i++) {
 		auto &segment = x.segments[i];
-		result += fmt::format("{}: {}", stringify(segment.cond),
-			stringify_block_ref(segment.body));
+		result += fmt::format("{}: {}", stringify(ctx, segment.cond),
+			stringify_block_ref(ctx, segment.body));
 		if (i + 1 < x.segments.size())
 			result += ", ";
 	}
@@ -259,14 +307,14 @@ std::string Assembly::stringify(Branch x, Reference ref)
 	if (x.fallback.has_value()) {
 		if (!x.segments.empty())
 			result += ", ";
-		result += fmt::format("else: {}", stringify_block_ref(x.fallback.value()));
+		result += fmt::format("else: {}", stringify_block_ref(ctx, x.fallback.value()));
 	}
 	result += ")";
 
 	return $assign result;
 }
 
-std::string Assembly::stringify(Loop x, Reference ref)
+std::string stringify(AssemblyContext &ctx, Loop x, Reference ref)
 {
 	std::string result = "loop(";
 	switch (x.kind) {
@@ -278,29 +326,29 @@ std::string Assembly::stringify(Loop x, Reference ref)
 	}
 
 	if (x.init.has_value())
-		result += fmt::format(", init: {}", stringify_block_ref(x.init.value()));
+		result += fmt::format(", init: {}", stringify_block_ref(ctx, x.init.value()));
 
-	result += fmt::format(", cond: {}", stringify_block_ref(x.cond));
+	result += fmt::format(", cond: {}", stringify_block_ref(ctx, x.cond));
 
 	if (x.step.has_value())
-		result += fmt::format(", step: {}", stringify_block_ref(x.step.value()));
+		result += fmt::format(", step: {}", stringify_block_ref(ctx, x.step.value()));
 
-	result += fmt::format(", body: {}", stringify_block_ref(x.body));
+	result += fmt::format(", body: {}", stringify_block_ref(ctx, x.body));
 	result += ")";
 
 	return $assign result;
 }
 
-std::string Assembly::stringify(Local x, Reference ref)
+std::string stringify(AssemblyContext &ctx, Local x, Reference ref)
 {
-	return $assign fmt::format("local {}", stringify(x.type));
+	return $assign fmt::format("local {}", stringify(ctx, x.type));
 }
 
-std::string Assembly::stringify(Invocation x, Reference ref)
+std::string stringify(AssemblyContext &ctx, Invocation x, Reference ref)
 {
 	std::string result = fmt::format("@{}(", (void *) x.sbr.get());
 	for (size_t i = 0; i < x.args.size(); i++) {
-		result += stringify(x.args[i]);
+		result += stringify(ctx, x.args[i]);
 		if (i + 1 < x.args.size())
 			result += ", ";
 	}
@@ -311,12 +359,12 @@ std::string Assembly::stringify(Invocation x, Reference ref)
 
 #undef $assign
 
-std::string Assembly::stringify(Block x, Reference ref)
+std::string stringify(AssemblyContext &ctx, Block x, Reference ref)
 {
 	fatal("cannot generate assembly for block");
 }
 
-std::string Assembly::stringify(ShaderStage stage)
+std::string stringify(ShaderStage stage)
 {
 	switch (stage) {
 	case ShaderStage::eSubroutine: return "subroutine";
@@ -330,36 +378,112 @@ std::string Assembly::stringify(ShaderStage stage)
 	return "?";
 }
 
-std::string Assembly::generate(size_t tabs, bool emit_branches)
+void emit_debug_line(std::string &result, const std::string &text, const std::source_location &origin)
+{
+	auto rel = std::filesystem::relative(origin.file_name());
+	result += fmt::format("  {:<40} ; from {}:{}\n",
+		text, rel.string(), origin.line());
+}
+
+void emit_branch_block(AssemblyContext &ctx, const Branch &branch, Reference instr,
+	std::string &result)
+{
+	for (auto &segment : branch.segments) {
+		auto ref = stringify_block_ref(ctx, segment.body);
+		result += fmt::format("  {} = {}\n",
+			ref, generate_block_body(ctx, segment.body, "  "));
+	}
+	if (branch.fallback.has_value()) {
+		auto ref = stringify_block_ref(ctx, branch.fallback.value());
+		result += fmt::format("  {} = {}\n",
+			ref, generate_block_body(ctx, branch.fallback.value(), "  "));
+	}
+
+	std::string line = fmt::format("{} = branch(", stringify(ctx, instr));
+	emit_debug_line(result, line, instr->debug_info.origin);
+	std::vector <std::string> entries;
+	entries.reserve(branch.segments.size() + (branch.fallback ? 1 : 0));
+	for (auto &segment : branch.segments) {
+		entries.push_back(fmt::format("    {}: {}",
+			stringify(ctx, segment.cond), stringify_block_ref(ctx, segment.body)));
+	}
+	if (branch.fallback.has_value()) {
+		entries.push_back(fmt::format("    else: {}",
+			stringify_block_ref(ctx, branch.fallback.value())));
+	}
+	for (size_t i = 0; i < entries.size(); i++) {
+		result += entries[i];
+		result += (i + 1 < entries.size()) ? ",\n" : "\n";
+	}
+	result += "  )\n";
+}
+
+void emit_loop_block(AssemblyContext &ctx, const Loop &loop, Reference instr,
+	std::string &result)
+{
+	if (loop.init.has_value()) {
+		auto ref = stringify_block_ref(ctx, loop.init.value());
+		result += fmt::format("  {} = {}\n",
+			ref, generate_block_body(ctx, loop.init.value(), "  "));
+	}
+
+	auto cond_ref = stringify_block_ref(ctx, loop.cond);
+	result += fmt::format("  {} = {}\n",
+		cond_ref, generate_block_body(ctx, loop.cond, "  "));
+
+	if (loop.step.has_value()) {
+		auto ref = stringify_block_ref(ctx, loop.step.value());
+		result += fmt::format("  {} = {}\n",
+			ref, generate_block_body(ctx, loop.step.value(), "  "));
+	}
+
+	auto body_ref = stringify_block_ref(ctx, loop.body);
+	result += fmt::format("  {} = {}\n",
+		body_ref, generate_block_body(ctx, loop.body, "  "));
+
+	auto line = fmt::format("{} = loop(", stringify(ctx, instr));
+	emit_debug_line(result, line, instr->debug_info.origin);
+	result += fmt::format("    kind: {}\n",
+		(loop.kind == LoopKind::eWhile) ? "while" : "for");
+	if (loop.init.has_value())
+		result += fmt::format("    init: {},\n", stringify_block_ref(ctx, loop.init.value()));
+	result += fmt::format("    cond: {},\n", stringify_block_ref(ctx, loop.cond));
+	if (loop.step.has_value())
+		result += fmt::format("    step: {},\n", stringify_block_ref(ctx, loop.step.value()));
+	result += fmt::format("    body: {}\n", stringify_block_ref(ctx, loop.body));
+	result += "  )\n";
+}
+
+std::string generate(AssemblyContext &ctx, size_t tabs, bool emit_branches)
 {
 	std::string result = "block {\n";
 
 	result += "  context {\n";
-	result += fmt::format("    blkid: {},\n", (void *) sbr.get());
-	result += "    model: " + stringify(sbr->context.model) + ",\n";
+	result += fmt::format("    blkid: {},\n", (void *) ctx.sbr.get());
+	result += "    model: " + stringify(ctx.sbr->context.model) + ",\n";
 
-	for (auto arg : sbr->context.arguments) {
+	for (auto arg : ctx.sbr->context.arguments) {
 		result += fmt::format("    argument {}: {},\n",
-			arg.argi, stringify(arg.type));
+			arg.argi, stringify(ctx, arg.type));
 	}
 
-	for (auto tin : sbr->context.thread_inputs) {
+	for (auto tin : ctx.sbr->context.thread_inputs) {
 		result += fmt::format("    thread in {}: {},\n",
-			tin.argi, stringify(tin.type));
+			tin.argi, stringify(ctx, tin.type));
 	}
 
-	for (auto tout : sbr->context.thread_outputs) {
+	for (auto tout : ctx.sbr->context.thread_outputs) {
 		result += fmt::format("    thread out {}: {} ({}),\n",
-			tout.argi, stringify(tout.type),
+			tout.argi, stringify(ctx, tout.type),
 			stringify_rate_properties(tout.properties));
 	}
 
-	for (auto [k, v] : sbr->context.global_resources) {
+	for (auto [k, v] : ctx.sbr->context.global_resources) {
 		std::string set;
 
 		size_t count = 0;
 		for (auto &vv : v) {
-			set += stringify(vv);
+			set += stringify(ctx, vv);
 			if (++count < v.size())
 				set += ", ";
 		}
@@ -369,86 +493,18 @@ std::string Assembly::generate(size_t tabs, bool emit_branches)
 
 	result += "  }\n";
 
-	// TODO: split this!
-	for (auto &instr : *sbr) {
-		auto loc = instr->debug_info.origin;
-		auto rel = std::filesystem::relative(loc.file_name());
-		auto emit_line = [&](const std::string &text) {
-			result += fmt::format("  {:<40} ; from {}:{}\n",
-				text, rel.string(), loc.line());
-		};
-		if (emit_branches && instr->is <Branch> ()) {
-			auto &branch = instr->as <Branch> ();
-			for (auto &segment : branch.segments) {
-				auto ref = stringify_block_ref(segment.body);
-				result += fmt::format("  {} = {}\n",
-					ref, generate_block_body(segment.body, "  "));
-			}
-			if (branch.fallback.has_value()) {
-				auto ref = stringify_block_ref(branch.fallback.value());
-				result += fmt::format("  {} = {}\n",
-					ref, generate_block_body(branch.fallback.value(), "  "));
-			}
-
-			std::string line = fmt::format("{} = branch(", stringify(instr));
-			emit_line(line);
-			std::vector <std::string> entries;
-			entries.reserve(branch.segments.size() + (branch.fallback ? 1 : 0));
-			for (auto &segment : branch.segments) {
-				entries.push_back(fmt::format("    {}: {}",
-					stringify(segment.cond), stringify_block_ref(segment.body)));
-			}
-			if (branch.fallback.has_value()) {
-				entries.push_back(fmt::format("    else: {}",
-					stringify_block_ref(branch.fallback.value())));
-			}
-			for (size_t i = 0; i < entries.size(); i++) {
-				result += entries[i];
-				result += (i + 1 < entries.size()) ? ",\n" : "\n";
-			}
-			result += "  )\n";
-			continue;
+	for (auto &instr : *ctx.sbr) {
+		if (emit_branches) {
+			if (instr->is <Branch> ())
+				emit_branch_block(ctx, instr->as <Branch> (), instr, result);
+			if (instr->is <Loop> ())
+				emit_loop_block(ctx, instr->as <Loop> (), instr, result);
+		} else {
+			auto str = std::visit([&](auto x) {
+				return stringify(ctx, x, instr);
+			}, *instr);
+			emit_debug_line(result, str, instr->debug_info.origin);
 		}
-		if (emit_branches && instr->is <Loop> ()) {
-			auto &loop = instr->as <Loop> ();
-			if (loop.init.has_value()) {
-				auto ref = stringify_block_ref(loop.init.value());
-				result += fmt::format("  {} = {}\n",
-					ref, generate_block_body(loop.init.value(), "  "));
-			}
-
-			auto cond_ref = stringify_block_ref(loop.cond);
-			result += fmt::format("  {} = {}\n",
-				cond_ref, generate_block_body(loop.cond, "  "));
-
-			if (loop.step.has_value()) {
-				auto ref = stringify_block_ref(loop.step.value());
-				result += fmt::format("  {} = {}\n",
-					ref, generate_block_body(loop.step.value(), "  "));
-			}
-
-			auto body_ref = stringify_block_ref(loop.body);
-			result += fmt::format("  {} = {}\n",
-				body_ref, generate_block_body(loop.body, "  "));
-
-			auto line = fmt::format("{} = loop(", stringify(instr));
-			emit_line(line);
-			result += fmt::format("    kind: {}\n",
-				(loop.kind == LoopKind::eWhile) ? "while" : "for");
-			if (loop.init.has_value())
-				result += fmt::format("    init: {},\n", stringify_block_ref(loop.init.value()));
-			result += fmt::format("    cond: {},\n", stringify_block_ref(loop.cond));
-			if (loop.step.has_value())
-				result += fmt::format("    step: {},\n", stringify_block_ref(loop.step.value()));
-			result += fmt::format("    body: {}\n", stringify_block_ref(loop.body));
-			result += "  )\n";
-			continue;
-		}
-
-		auto str = std::visit([&](auto x) {
-			return stringify(x, instr);
-		}, *instr);
-		emit_line(str);
 	}
 	result += "}";
 
@@ -477,29 +533,29 @@ std::string Assembly::generate(size_t tabs, bool emit_branches)
 		}
 	};
 
-	scan_block(sbr);
+	scan_block(ctx.sbr);
 	for (size_t i = 0; i < blocks.size(); i++)
 		scan_block(blocks[i]);
 
 	return result;
 }
 
-std::string Assembly::stringify_block_ref(const SharedBlockReference &blk)
+std::string stringify_block_ref(AssemblyContext &ctx, const SharedBlockReference &blk)
 {
 	if (!blk)
 		return "nil";
 
 	auto addr = intptr_t(blk.get());
-	auto it = ids.find(addr);
-	if (it != ids.end())
+	auto it = ctx.ids.find(addr);
+	if (it != ctx.ids.end())
 		return fmt::format("${}", it->second);
 
-	auto id = ids.size();
-	ids[addr] = id;
+	auto id = ctx.ids.size();
+	ctx.ids[addr] = id;
 	return fmt::format("${}", id);
 }
 
-std::string Assembly::generate_block_body(const SharedBlockReference &blk, const std::string &indent)
+std::string generate_block_body(AssemblyContext &ctx, const SharedBlockReference &blk, const std::string &indent)
 {
 	std::string result = "block {\n";
 
@@ -510,7 +566,7 @@ std::string Assembly::generate_block_body(const SharedBlockReference &blk, const
 
 	for (auto &instr : *blk) {
 		auto str = std::visit([&](auto x) {
-			return stringify(x, instr);
+			return stringify(ctx, x, instr);
 		}, *instr);
 		auto loc = instr->debug_info.origin;
 		auto rel = std::filesystem::relative(loc.file_name());
@@ -523,4 +579,10 @@ std::string Assembly::generate_block_body(const SharedBlockReference &blk, const
 	return result;
 }
 
-} // namespace generators
+} // namespace
+
+std::string generate_assembly(const SharedBlockReference &sbr, size_t tabs)
+{
+	AssemblyContext ctx { sbr, {} };
+	return generate(ctx, tabs);
+}

@@ -62,6 +62,13 @@ struct PrimitiveType : variant <
 	VectorType <float, 3>,
 	VectorType <float, 4>,
 	// Matrix types
+	MatrixType <int32_t, 2, 2>,
+	MatrixType <int32_t, 3, 3>,
+	MatrixType <int32_t, 4, 4>,
+	MatrixType <uint32_t, 2, 2>,
+	MatrixType <uint32_t, 3, 3>,
+	MatrixType <uint32_t, 4, 4>,
+	MatrixType <float, 2, 2>,
 	MatrixType <float, 3, 3>,
 	MatrixType <float, 4, 4>
 > {

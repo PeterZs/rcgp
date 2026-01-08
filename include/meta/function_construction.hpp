@@ -3,6 +3,7 @@
 #include <functional>
 
 #include "../dsl/jems.hpp"
+#include "../dsl/optimizer.hpp"
 #include "inject_arguments.hpp"
 #include "shader_stage.hpp"
 
@@ -31,6 +32,8 @@ auto compile(F ftn)
 		inject_arguments <S> (args);
 		std::apply(ftn, args);
 	}
+
+	optimize_block(result);
 
 	return result;
 }

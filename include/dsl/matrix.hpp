@@ -13,13 +13,10 @@ public:
 	DEFINE_REFLECTION_STAMP();
 
 	matrix() {
-		if constexpr (std::is_same_v <T, float>
-			&& ((N == 3 && M == 3) || (N == 4 && M == 4))) {
-			if (Tracer::singleton.records.empty())
-				return;
-			auto type = jems::type_loc(std::source_location::current(), MatrixType <T, N, M> ());
-			init_local_if_tracing(*this, type);
-		}
+		if (Tracer::singleton.records.empty())
+			return;
+		auto type = jems::type_loc(std::source_location::current(), MatrixType <T, N, M> ());
+		init_local_if_tracing(*this, type);
 	}
 
 	template <size_t A, size_t B>
@@ -41,16 +38,8 @@ public:
 			return *this;
 		}
 
-		// TODO: this is wierd, fix later
-		if constexpr (std::is_same_v <T, float>
-			&& ((N == 3 && M == 3) || (N == 4 && M == 4))) {
-			auto type = jems::type_loc(std::source_location::current(), MatrixType <T, N, M> ());
-			assign_or_store(*this, rhs, type);
-		} else {
-			Reference &self_ref = *this;
-			const Reference &rhs_ref = rhs;
-			self_ref = rhs_ref;
-		}
+		auto type = jems::type_loc(std::source_location::current(), MatrixType <T, N, M> ());
+		assign_or_store(*this, rhs, type);
 		return *this;
 	}
 	

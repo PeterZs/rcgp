@@ -1,10 +1,31 @@
-#include "dsl/generators_glsl.hpp"
+#include "dsl/generators.hpp"
+#include "meta/static_string.hpp"
+#include "util/logging.hpp"
 
 #include <fmt/format.h>
 
-namespace generators {
+#include <type_traits>
 
 namespace {
+
+struct GLSLContext {
+	const Block &block;
+
+	std::vector <std::string> thread_inputs;
+	std::vector <std::string> argument_names;
+	std::map <uint32_t, std::string> local_thread_outputs;
+	std::map <const Instruction *, std::string> local_names;
+	uint32_t local_count = 0;
+
+	std::map <const AggregateType *, std::string> aggregate_names;
+	std::map <const Block *, std::string> subroutine_names;
+	std::set <const Block *> emitted_subroutines;
+
+	const Block *active_block = nullptr;
+
+	std::string result;
+	std::string indent = "    ";
+};
 
 bool is_same_type(const Reference &a, const Reference &b)
 {
@@ -62,16 +83,7 @@ std::string rate_qualifier(RateProperties properties)
 	return "? ";
 }
 
-} // namespace
-
-GLSL::GLSL(const SharedBlockReference &sbr)
-	: block(*sbr.get()),
-	reference(*this),
-	expression(*this),
-	statement(*this),
-	type(*this) {}
-
-std::string GLSL::layout_string(GlobalResourceLayout layout) const
+std::string layout_string(GlobalResourceLayout layout)
 {
 	switch (layout) {
 	case GlobalResourceLayout::eScalar: return "scalar, ";
@@ -82,7 +94,88 @@ std::string GLSL::layout_string(GlobalResourceLayout layout) const
 	}
 }
 
-std::string GLSL::generate_reference::impl(GlobalIntrinsic gi)
+std::string type_name(GLSLContext &ctx, const PrimitiveType &primitive)
+{
+	vswitch (primitive) {
+	vcase(int32_t): return "int";
+	vcase(uint32_t): return "uint";
+	vcase(float): return "float";
+	vcase(bool): return "bool";
+	vcase(VectorType <float, 2>): return "vec2";
+	vcase(VectorType <float, 3>): return "vec3";
+	vcase(VectorType <float, 4>): return "vec4";
+	vcase(MatrixType <int32_t, 2, 2>): return "imat2";
+	vcase(MatrixType <int32_t, 3, 3>): return "imat3";
+	vcase(MatrixType <int32_t, 4, 4>): return "imat4";
+	vcase(MatrixType <uint32_t, 2, 2>): return "umat2";
+	vcase(MatrixType <uint32_t, 3, 3>): return "umat3";
+	vcase(MatrixType <uint32_t, 4, 4>): return "umat4";
+	vcase(MatrixType <float, 2, 2>): return "mat2";
+	vcase(MatrixType <float, 3, 3>): return "mat3";
+	vcase(MatrixType <float, 4, 4>): return "mat4";
+	default:
+		break;
+	}
+
+	return "?";
+}
+
+std::string type_name(GLSLContext &ctx, const Type &type)
+{
+	return std::visit([&](const auto &x) { return type_name(ctx, x); }, type);
+}
+
+std::string type_name(GLSLContext &ctx, const ArrayType &array)
+{
+	auto size = (array.size > 0)
+		? fmt::format("[{}]", array.size)
+		: "[]";
+
+	if (!array.base || !array.base->is <Type> ())
+		fatal("invalid array base type");
+
+	return type_name(ctx, array.base->as <Type> ()) + size;
+}
+
+std::string type_name(GLSLContext &ctx, const AggregateType &aggregate)
+{
+	auto addr = &aggregate;
+	if (ctx.aggregate_names.contains(addr))
+		return ctx.aggregate_names[addr];
+	return "?";
+}
+
+std::string type_name(GLSLContext &ctx, Reference type)
+{
+	return std::visit([&](const auto &x) -> std::string {
+		using T = std::decay_t <decltype(x)>;
+		if constexpr (std::is_same_v <T, Type>)
+			return type_name(ctx, x);
+		if constexpr (std::is_same_v <T, PrimitiveType>)
+			return type_name(ctx, x);
+		if constexpr (std::is_same_v <T, ArrayType>)
+			return type_name(ctx, x);
+		if constexpr (std::is_same_v <T, AggregateType>)
+			return type_name(ctx, x);
+		auto type_name = std::string($ss_type(T).view());
+		fatal("type not implemented for %s", type_name.c_str());
+		return "?";
+	}, *type);
+}
+
+std::string reference_local(GLSLContext &ctx, Reference ref)
+{
+	auto ptr = ref.get();
+	auto it = ctx.local_names.find(ptr);
+	if (it != ctx.local_names.end())
+		return it->second;
+
+	auto name = fmt::format("lvar{}", ctx.local_count++);
+	ctx.local_names.emplace(ptr, name);
+	return name;
+}
+
+std::string reference(GLSLContext &ctx, GlobalIntrinsic gi)
 {
 	switch (gi) {
 	case GlobalIntrinsic::eScreenPosition: return "gl_Position";
@@ -92,7 +185,7 @@ std::string GLSL::generate_reference::impl(GlobalIntrinsic gi)
 	}
 }
 
-std::string GLSL::generate_reference::impl(GlobalResource grsrc)
+std::string reference(GLSLContext &ctx, GlobalResource grsrc)
 {
 	if (grsrc.kind == GlobalResourceKind::ePushConstant) {
 		auto idx = grsrc.push_constant_index.value_or(0);
@@ -104,362 +197,280 @@ std::string GLSL::generate_reference::impl(GlobalResource grsrc)
 		grsrc.index.value_or(-1));
 }
 
-std::string GLSL::generate_reference::impl(ThreadOutput tout)
+std::string reference(GLSLContext &ctx, ThreadOutput tout)
 {
-	if (parent.active_block
-		&& parent.active_block->context.model == ShaderStage::eSubroutine
-		&& parent.local_thread_outputs.contains(tout.argi)) {
-		return parent.local_thread_outputs[tout.argi];
+	if (ctx.active_block
+		&& ctx.active_block->context.model == ShaderStage::eSubroutine
+		&& ctx.local_thread_outputs.contains(tout.argi)) {
+		return ctx.local_thread_outputs[tout.argi];
 	}
 
 	return fmt::format("lout{}", tout.argi);
 }
 
-std::string GLSL::generate_reference::impl(Argument arg)
+std::string reference(GLSLContext &ctx, Argument arg)
 {
-	if (arg.argi < parent.argument_names.size())
-		return parent.argument_names[arg.argi];
+	if (arg.argi < ctx.argument_names.size())
+		return ctx.argument_names[arg.argi];
 	return fmt::format("arg{}", arg.argi);
 }
 
-std::string GLSL::generate_reference::impl(Local local, Reference ref)
+std::string reference(GLSLContext &ctx, Reference ref)
 {
-	auto ptr = ref.get();
-	auto it = parent.local_names.find(ptr);
-	if (it != parent.local_names.end())
-		return it->second;
-
-	auto name = fmt::format("lvar{}", parent.local_count++);
-	parent.local_names.emplace(ptr, name);
-	return name;
-}
-
-std::string GLSL::generate_reference::main(Reference reference)
-{
-	if (reference->is <Local> ())
-		return impl(reference->as <Local> (), reference);
-
-	auto ftn = [&](auto x) { return impl(x); };
-	return std::visit(ftn, *reference);
-}
-
-std::string GLSL::generate_reference::operator()(Reference r)
-{
-	return main(r);
-}
-
-std::string GLSL::generate_expression::impl(Constant value)
-{
-	vswitch (value) {
-	vcase(int32_t): return fmt::format("{}", value.as <int32_t> ());
-	vcase(uint32_t): return fmt::format("{}", value.as <uint32_t> ());
-	vcase(bool): return fmt::format("{}", value.as <bool> ());
-	vcase(float): return fmt::format("{}", value.as <float> ());
-	default:
+	return std::visit([&](auto x) -> std::string {
+		using T = std::decay_t <decltype(x)>;
+		if constexpr (std::is_same_v <T, Local>)
+			return reference_local(ctx, ref);
+		if constexpr (std::is_same_v <T, GlobalIntrinsic>)
+			return reference(ctx, x);
+		if constexpr (std::is_same_v <T, GlobalResource>)
+			return reference(ctx, x);
+		if constexpr (std::is_same_v <T, ThreadOutput>)
+			return reference(ctx, x);
+		if constexpr (std::is_same_v <T, Argument>)
+			return reference(ctx, x);
+		auto type_name = std::string($ss_type(T).view());
+		fatal("reference not implemented for %s", type_name.c_str());
 		return "?";
+	}, *ref);
+}
+
+std::string expression(GLSLContext &ctx, Reference expr)
+{
+	return std::visit([&](auto x) -> std::string {
+		using T = std::decay_t <decltype(x)>;
+		if constexpr (std::is_same_v <T, Local>)
+			return reference(ctx, expr);
+		if constexpr (std::is_same_v <T, Constant>) {
+			if (x.template is <int32_t> ())
+				return fmt::format("{}", x.template as <int32_t> ());
+			if (x.template is <uint32_t> ())
+				return fmt::format("{}", x.template as <uint32_t> ());
+			if (x.template is <bool> ())
+				return fmt::format("{}", x.template as <bool> ());
+			if (x.template is <float> ())
+				return fmt::format("{}", x.template as <float> ());
+			return "?";
+		}
+		if constexpr (std::is_same_v <T, Operation>) {
+			std::string op = "?";
+			switch (x.code) {
+			case OperationCode::eAdd: op = "+"; break;
+			case OperationCode::eSubtract: op = "-"; break;
+			case OperationCode::eMultiply: op = "*"; break;
+			case OperationCode::eDivide: op = "/"; break;
+			case OperationCode::eEqual: op = "=="; break;
+			case OperationCode::eNotEqual: op = "!="; break;
+			case OperationCode::eLess: op = "<"; break;
+			case OperationCode::eLessEqual: op = "<="; break;
+			case OperationCode::eGreater: op = ">"; break;
+			case OperationCode::eGreaterEqual: op = ">="; break;
+			default:
+				break;
+			}
+
+			return fmt::format("({} {} {})",
+				expression(ctx, x.a), op, expression(ctx, x.b));
+		}
+		if constexpr (std::is_same_v <T, ThreadInput>)
+			return ctx.thread_inputs[x.argi];
+		if constexpr (std::is_same_v <T, Construct>) {
+			std::string out = type_name(ctx, x.type) + "(";
+
+			auto nargs = x.args.size();
+			for (size_t i = 0; i < nargs; i++) {
+				out += expression(ctx, x.args[i]);
+				if (i + 1 < nargs)
+					out += ", ";
+			}
+
+			return out + ")";
+		}
+		if constexpr (std::is_same_v <T, FieldAccess>)
+			return fmt::format("{}.f{}", expression(ctx, x.value), x.fidx);
+		if constexpr (std::is_same_v <T, ArrayAccess>)
+			return fmt::format("{}[{}]", expression(ctx, x.value), expression(ctx, x.index));
+		if constexpr (std::is_same_v <T, Swizzle>)
+			return fmt::format("{}.{}", expression(ctx, x.value), swizzle_string(x.code));
+		if constexpr (std::is_same_v <T, GlobalResource>)
+			return reference(ctx, x);
+		if constexpr (std::is_same_v <T, GlobalIntrinsic>)
+			return reference(ctx, x);
+		if constexpr (std::is_same_v <T, Argument>)
+			return reference(ctx, x);
+		if constexpr (std::is_same_v <T, Invocation>) {
+			const Block *callee = x.sbr.get();
+			auto it = ctx.subroutine_names.find(callee);
+			std::string name = (it != ctx.subroutine_names.end())
+				? it->second
+				: fmt::format("fn_{}", (void *) callee);
+
+			std::string out = name + "(";
+			auto nargs = x.args.size();
+			for (size_t i = 0; i < nargs; i++) {
+				out += expression(ctx, x.args[i]);
+				if (i + 1 < nargs)
+					out += ", ";
+			}
+
+			return out + ")";
+		}
+		if constexpr (std::is_same_v <T, BuiltinIntrinsic>) {
+			std::string out = "?";
+
+			switch (x.code) {
+			case BuiltinIntrinsicCode::eCross: out = "cross"; break;
+			case BuiltinIntrinsicCode::eDFdx: out = "dFdx"; break;
+			case BuiltinIntrinsicCode::eDFdxFine: out = "dFdxFine"; break;
+			case BuiltinIntrinsicCode::eDFdy: out = "dFdy"; break;
+			case BuiltinIntrinsicCode::eDFdyFine: out = "dFdyFine"; break;
+			case BuiltinIntrinsicCode::eDot: out = "dot"; break;
+			case BuiltinIntrinsicCode::eInverse: out = "inverse"; break;
+			case BuiltinIntrinsicCode::eMax: out = "max"; break;
+			case BuiltinIntrinsicCode::eNormalize: out = "normalize"; break;
+			case BuiltinIntrinsicCode::eSample: out = "texture"; break;
+			case BuiltinIntrinsicCode::eTranspose: out = "transpose"; break;
+			default:
+				break;
+			}
+
+			out += "(";
+
+			auto nargs = x.args.size();
+			for (size_t i = 0; i < nargs; i++) {
+				out += expression(ctx, x.args[i]);
+				if (i + 1 < nargs)
+					out += ", ";
+			}
+
+			return out + ")";
+		}
+
+		auto type_name = std::string($ss_type(T).view());
+		fatal("expression not implemented for %s", type_name.c_str());
+		return "?";
+	}, *expr);
+}
+
+void statement(GLSLContext &ctx, Reference instruction)
+{
+	std::visit([&](auto x) {
+		using T = std::decay_t <decltype(x)>;
+		if constexpr (std::is_same_v <T, Local>) {
+			auto name = reference(ctx, instruction);
+			ctx.result += fmt::format("{}{} {};\n",
+				ctx.indent, type_name(ctx, x.type), name);
+			return;
+		}
+		if constexpr (std::is_same_v <T, Store>) {
+			ctx.result += fmt::format("{}{} = {};\n",
+				ctx.indent,
+				reference(ctx, x.destination),
+				expression(ctx, x.source));
+			return;
+		}
+		if constexpr (std::is_same_v <T, Invocation>) {
+			ctx.result += fmt::format("{}{};\n",
+				ctx.indent,
+				expression(ctx, instruction));
+			return;
+		}
+		if constexpr (std::is_same_v <T, Branch>) {
+			auto emit_body = [&](const SharedBlockReference &blk) {
+				auto prev = ctx.indent;
+				ctx.indent += "    ";
+				for (auto &nested : *blk) {
+					if (nested->is <Store> () || nested->is <Invocation> ()
+						|| nested->is <Branch> () || nested->is <Loop> ()
+						|| nested->is <Local> ())
+						statement(ctx, nested);
+				}
+				ctx.indent = prev;
+			};
+
+			for (size_t i = 0; i < x.segments.size(); i++) {
+				auto &segment = x.segments[i];
+				auto kw = (i == 0) ? "if" : "else if";
+				ctx.result += fmt::format("{}{} ({})\n",
+					ctx.indent, kw, expression(ctx, segment.cond));
+				ctx.result += fmt::format("{}{{\n", ctx.indent);
+				emit_body(segment.body);
+				ctx.result += fmt::format("{}}}\n", ctx.indent);
+			}
+
+			if (x.fallback.has_value()) {
+				ctx.result += fmt::format("{}else\n", ctx.indent);
+				ctx.result += fmt::format("{}{{\n", ctx.indent);
+				emit_body(x.fallback.value());
+				ctx.result += fmt::format("{}}}\n", ctx.indent);
+			}
+			return;
+		}
+		if constexpr (std::is_same_v <T, Loop>) {
+			auto emit_body = [&](const SharedBlockReference &blk) {
+				auto prev = ctx.indent;
+				ctx.indent += "    ";
+				for (auto &nested : *blk) {
+					if (nested->is <Store> () || nested->is <Invocation> ()
+						|| nested->is <Branch> () || nested->is <Loop> ()
+						|| nested->is <Local> ())
+						statement(ctx, nested);
+				}
+				ctx.indent = prev;
+			};
+
+			auto cond_expr = expression(ctx, x.cond_value);
+
+			if (x.kind == LoopKind::eFor && x.init.has_value())
+				emit_body(x.init.value());
+
+			auto loop_kw = (x.kind == LoopKind::eFor) ? "for (;;)" : "while (true)";
+			ctx.result += fmt::format("{}{}\n", ctx.indent, loop_kw);
+			ctx.result += fmt::format("{}{{\n", ctx.indent);
+			emit_body(x.cond);
+			ctx.result += fmt::format("{}    if (!({}))\n", ctx.indent, cond_expr);
+			ctx.result += fmt::format("{}        break;\n", ctx.indent);
+			emit_body(x.body);
+			if (x.kind == LoopKind::eFor && x.step.has_value())
+				emit_body(x.step.value());
+			ctx.result += fmt::format("{}}}\n", ctx.indent);
+			return;
+		}
+
+		ctx.result += fmt::format("{}?\n", ctx.indent);
+	}, *instruction);
+}
+
+void emit_block_statements(GLSLContext &ctx, const Block &blk)
+{
+	for (auto &instr : blk) {
+		if (instr->is <Store> () || instr->is <Invocation> ()
+			|| instr->is <Branch> () || instr->is <Loop> ()
+			|| instr->is <Local> ())
+			statement(ctx, instr);
 	}
 }
 
-std::string GLSL::generate_expression::impl(Operation operation)
+void set_active_block(GLSLContext &ctx, const Block &blk)
 {
-	std::string op = "?";
-	switch (operation.code) {
-	case OperationCode::eAdd: op = "+"; break;
-	case OperationCode::eSubtract: op = "-"; break;
-	case OperationCode::eMultiply: op = "*"; break;
-	case OperationCode::eDivide: op = "/"; break;
-	case OperationCode::eEqual: op = "=="; break;
-	case OperationCode::eNotEqual: op = "!="; break;
-	case OperationCode::eLess: op = "<"; break;
-	case OperationCode::eLessEqual: op = "<="; break;
-	case OperationCode::eGreater: op = ">"; break;
-	case OperationCode::eGreaterEqual: op = ">="; break;
-	default:
-		break;
-	}
-
-	return fmt::format("({} {} {})",
-		main(operation.a), op, main(operation.b));
+	ctx.active_block = &blk;
 }
 
-std::string GLSL::generate_expression::impl(ThreadInput tin)
+void reset_state(GLSLContext &ctx)
 {
-	return parent.thread_inputs[tin.argi];
+	ctx.result.clear();
+	ctx.aggregate_names.clear();
+	ctx.subroutine_names.clear();
+	ctx.emitted_subroutines.clear();
+	ctx.thread_inputs.clear();
+	ctx.argument_names.clear();
+	ctx.local_thread_outputs.clear();
+	ctx.local_names.clear();
+	ctx.local_count = 0;
+	set_active_block(ctx, ctx.block);
 }
 
-std::string GLSL::generate_expression::impl(Construct construct)
-{
-	std::string out = parent.type.main(construct.type) + "(";
-
-	auto nargs = construct.args.size();
-	for (size_t i = 0; i < nargs; i++) {
-		out += main(construct.args[i]);
-		if (i + 1 < nargs)
-			out += ", ";
-	}
-
-	return out + ")";
-}
-
-std::string GLSL::generate_expression::impl(FieldAccess access)
-{
-	return fmt::format("{}.f{}", main(access.value), access.fidx);
-}
-
-std::string GLSL::generate_expression::impl(ArrayAccess access)
-{
-	return fmt::format("{}[{}]", main(access.value), main(access.index));
-}
-
-std::string GLSL::generate_expression::impl(Swizzle swizzle)
-{
-	return fmt::format("{}.{}",
-		main(swizzle.value), swizzle_string(swizzle.code));
-}
-
-std::string GLSL::generate_expression::impl(GlobalResource grsrc)
-{
-	return parent.reference.impl(grsrc);
-}
-
-std::string GLSL::generate_expression::impl(GlobalIntrinsic intrinsic)
-{
-	return parent.reference.impl(intrinsic);
-}
-
-std::string GLSL::generate_expression::impl(Argument arg)
-{
-	if (arg.argi < parent.argument_names.size())
-		return parent.argument_names[arg.argi];
-	return fmt::format("arg{}", arg.argi);
-}
-
-std::string GLSL::generate_expression::impl(Invocation invocation)
-{
-	const Block *callee = invocation.sbr.get();
-	auto it = parent.subroutine_names.find(callee);
-	std::string name = (it != parent.subroutine_names.end())
-		? it->second
-		: fmt::format("fn_{}", (void *) callee);
-
-	std::string out = name + "(";
-	auto nargs = invocation.args.size();
-	for (size_t i = 0; i < nargs; i++) {
-		out += main(invocation.args[i]);
-		if (i + 1 < nargs)
-			out += ", ";
-	}
-
-	return out + ")";
-}
-
-std::string GLSL::generate_expression::impl(const BuiltinIntrinsic &builtin)
-{
-	std::string out = "?";
-
-	switch (builtin.code) {
-	case BuiltinIntrinsicCode::eCross: out = "cross"; break;
-	case BuiltinIntrinsicCode::eDFdx: out = "dFdx"; break;
-	case BuiltinIntrinsicCode::eDFdxFine: out = "dFdxFine"; break;
-	case BuiltinIntrinsicCode::eDFdy: out = "dFdy"; break;
-	case BuiltinIntrinsicCode::eDFdyFine: out = "dFdyFine"; break;
-	case BuiltinIntrinsicCode::eDot: out = "dot"; break;
-	case BuiltinIntrinsicCode::eInverse: out = "inverse"; break;
-	case BuiltinIntrinsicCode::eMax: out = "max"; break;
-	case BuiltinIntrinsicCode::eNormalize: out = "normalize"; break;
-	case BuiltinIntrinsicCode::eSample: out = "texture"; break;
-	case BuiltinIntrinsicCode::eTranspose: out = "transpose"; break;
-	default:
-		break;
-	}
-
-	out += "(";
-
-	auto nargs = builtin.args.size();
-	for (size_t i = 0; i < nargs; i++) {
-		out += main(builtin.args[i]);
-		if (i + 1 < nargs)
-			out += ", ";
-	}
-
-	return out + ")";
-}
-
-std::string GLSL::generate_expression::main(Reference expression)
-{
-	if (expression->is <Local> ())
-		return parent.reference(expression);
-
-	auto ftn = [&](auto x) { return impl(x); };
-	return std::visit(ftn, *expression);
-}
-
-std::string GLSL::generate_expression::operator()(Reference r)
-{
-	return main(r);
-}
-
-void GLSL::generate_statement::impl(Store store)
-{
-	parent.result += fmt::format("{}{} = {};\n",
-		parent.indent,
-		parent.reference(store.destination),
-		parent.expression(store.source));
-}
-
-void GLSL::generate_statement::impl(Invocation invocation)
-{
-	parent.result += fmt::format("{}{};\n",
-		parent.indent,
-		parent.expression.impl(invocation));
-}
-
-void GLSL::generate_statement::impl(Branch branch)
-{
-	auto emit_body = [&](const SharedBlockReference &blk) {
-		auto prev = parent.indent;
-		parent.indent += "    ";
-		parent.emit_block_statements(*blk);
-		parent.indent = prev;
-	};
-
-	for (size_t i = 0; i < branch.segments.size(); i++) {
-		auto &segment = branch.segments[i];
-		auto kw = (i == 0) ? "if" : "else if";
-		parent.result += fmt::format("{}{} ({})\n",
-			parent.indent, kw, parent.expression(segment.cond));
-		parent.result += fmt::format("{}{{\n", parent.indent);
-		emit_body(segment.body);
-		parent.result += fmt::format("{}}}\n", parent.indent);
-	}
-
-	if (branch.fallback.has_value()) {
-		parent.result += fmt::format("{}else\n", parent.indent);
-		parent.result += fmt::format("{}{{\n", parent.indent);
-		emit_body(branch.fallback.value());
-		parent.result += fmt::format("{}}}\n", parent.indent);
-	}
-}
-
-void GLSL::generate_statement::impl(Loop loop)
-{
-	auto emit_body = [&](const SharedBlockReference &blk) {
-		auto prev = parent.indent;
-		parent.indent += "    ";
-		parent.emit_block_statements(*blk);
-		parent.indent = prev;
-	};
-
-	auto cond_expr = parent.expression(loop.cond_value);
-
-	if (loop.kind == LoopKind::eFor && loop.init.has_value())
-		parent.emit_block_statements(*loop.init.value());
-
-	auto loop_kw = (loop.kind == LoopKind::eFor) ? "for (;;)" : "while (true)";
-	parent.result += fmt::format("{}{}\n", parent.indent, loop_kw);
-	parent.result += fmt::format("{}{{\n", parent.indent);
-	emit_body(loop.cond);
-	parent.result += fmt::format("{}    if (!({}))\n", parent.indent, cond_expr);
-	parent.result += fmt::format("{}        break;\n", parent.indent);
-	emit_body(loop.body);
-	if (loop.kind == LoopKind::eFor && loop.step.has_value())
-		emit_body(loop.step.value());
-	parent.result += fmt::format("{}}}\n", parent.indent);
-}
-
-void GLSL::generate_statement::impl(Local local, Reference ref)
-{
-	auto name = parent.reference(ref);
-	parent.result += fmt::format("{}{} {};\n",
-		parent.indent, parent.type.main(local.type), name);
-}
-
-void GLSL::generate_statement::main(Reference instruction)
-{
-	if (instruction->is <Local> ()) {
-		impl(instruction->as <Local> (), instruction);
-		return;
-	}
-	auto ftn = [&](auto x) { return impl(x); };
-	return std::visit(ftn, *instruction);
-}
-
-void GLSL::generate_statement::operator()(Reference r)
-{
-	main(r);
-}
-
-std::string GLSL::generate_type::impl(const PrimitiveType &primitive)
-{
-	vswitch (primitive) {
-	vcase(int32_t): return "int";
-	vcase(uint32_t): return "uint";
-	vcase(float): return "float";
-	vcase(bool): return "bool";
-	vcase(VectorType <float, 2>): return "vec2";
-	vcase(VectorType <float, 3>): return "vec3";
-	vcase(VectorType <float, 4>): return "vec4";
-	vcase(MatrixType <float, 3, 3>): return "mat3";
-	vcase(MatrixType <float, 4, 4>): return "mat4";
-	default:
-		break;
-	}
-
-	return "?";
-}
-
-std::string GLSL::generate_type::impl(const Type &type)
-{
-	return std::visit([&](const auto &x) { return impl(x); }, type);
-}
-
-std::string GLSL::generate_type::impl(const ArrayType &array)
-{
-	auto size = (array.size > 0)
-		? fmt::format("[{}]", array.size)
-		: "[]";
-
-	return main(array.base) + size;
-}
-
-std::string GLSL::generate_type::impl(const AggregateType &aggregate)
-{
-	auto addr = &aggregate;
-	if (parent.aggregate_names.contains(addr))
-		return parent.aggregate_names[addr];
-	return "?";
-}
-
-std::string GLSL::generate_type::main(Reference type)
-{
-	return std::visit([&](const auto &x) { return impl(x); }, *type);
-}
-
-std::string GLSL::generate_type::operator()(Reference r)
-{
-	return main(r);
-}
-
-void GLSL::set_active_block(const Block &blk)
-{
-	active_block = &blk;
-}
-
-void GLSL::reset_state()
-{
-	result.clear();
-	aggregate_names.clear();
-	subroutine_names.clear();
-	emitted_subroutines.clear();
-	thread_inputs.clear();
-	argument_names.clear();
-	local_thread_outputs.clear();
-	local_names.clear();
-	local_count = 0;
-	set_active_block(block);
-}
-
-void GLSL::collect_blocks(std::vector <const Block *> &blocks) const
+void collect_blocks(const GLSLContext &ctx, std::vector <const Block *> &blocks)
 {
 	std::set <const Block *> visited;
 
@@ -491,22 +502,22 @@ void GLSL::collect_blocks(std::vector <const Block *> &blocks) const
 		}
 	};
 
-	visit(visit, block);
+	visit(visit, ctx.block);
 }
 
-void GLSL::emit_preamble()
+void emit_preamble(GLSLContext &ctx)
 {
-	result = "// Preamble\n";
-	result += "#version 460\n\n";
-	result += "#extension GL_EXT_scalar_block_layout : require\n\n";
+	ctx.result = "// Preamble\n";
+	ctx.result += "#version 460\n\n";
+	ctx.result += "#extension GL_EXT_scalar_block_layout : require\n\n";
 }
 
-void GLSL::emit_aggregate_decls()
+void emit_aggregate_decls(GLSLContext &ctx)
 {
-	result += "// Types\n";
+	ctx.result += "// Types\n";
 
 	std::vector <const Block *> blocks;
-	collect_blocks(blocks);
+	collect_blocks(ctx, blocks);
 
 	size_t aggregate_counter = 0;
 	for (auto *blk : blocks) {
@@ -520,47 +531,47 @@ void GLSL::emit_aggregate_decls()
 
 			auto &agg = type.as <AggregateType> ();
 
-			result += fmt::format("struct AGG{} {{\n", aggregate_counter++);
+			ctx.result += fmt::format("struct AGG{} {{\n", aggregate_counter++);
 
 			size_t field_counter = 0;
 			for (auto &field : agg) {
-				result += fmt::format("    {} f{};\n",
-					this->type.main(field), field_counter++);
+				ctx.result += fmt::format("    {} f{};\n",
+					type_name(ctx, field), field_counter++);
 			}
 
-			result += "};\n\n";
+			ctx.result += "};\n\n";
 
-			aggregate_names.emplace(&agg, fmt::format("AGG{}", aggregate_counter - 1));
+			ctx.aggregate_names.emplace(&agg, fmt::format("AGG{}", aggregate_counter - 1));
 		}
 	}
 
-	result += "\n";
+	ctx.result += "\n";
 }
 
-void GLSL::emit_thread_inputs()
+void emit_thread_inputs(GLSLContext &ctx)
 {
-	result += "// Inputs\n";
+	ctx.result += "// Inputs\n";
 
-	thread_inputs.reserve(block.context.thread_inputs.size());
-	for (auto &tin : block.context.thread_inputs) {
-		thread_inputs.push_back(fmt::format("lin{}", tin.argi));
-		result += fmt::format("layout (location = {}) in {} lin{};\n",
-			tin.argi, type.main(tin.type), tin.argi);
+	ctx.thread_inputs.reserve(ctx.block.context.thread_inputs.size());
+	for (auto &tin : ctx.block.context.thread_inputs) {
+		ctx.thread_inputs.push_back(fmt::format("lin{}", tin.argi));
+		ctx.result += fmt::format("layout (location = {}) in {} lin{};\n",
+			tin.argi, type_name(ctx, tin.type), tin.argi);
 	}
 
-	if (block.context.thread_inputs.size())
-		result += "\n";
+	if (ctx.block.context.thread_inputs.size())
+		ctx.result += "\n";
 	else
-		result += "\n";
+		ctx.result += "\n";
 }
 
-void GLSL::emit_thread_outputs()
+void emit_thread_outputs(GLSLContext &ctx)
 {
-	result += "// Outputs\n";
+	ctx.result += "// Outputs\n";
 
 	std::map <uint32_t, ThreadOutput> outputs;
 	std::vector <const Block *> blocks;
-	collect_blocks(blocks);
+	collect_blocks(ctx, blocks);
 
 	for (auto *blk : blocks) {
 		for (auto &tout : blk->context.thread_outputs) {
@@ -578,44 +589,17 @@ void GLSL::emit_thread_outputs()
 
 	for (auto &[_, tout] : outputs) {
 		auto qualifier = rate_qualifier(tout.properties);
-		result += fmt::format("layout (location = {}) {}out {} lout{};\n",
-			tout.argi, qualifier, type.main(tout.type), tout.argi);
+		ctx.result += fmt::format("layout (location = {}) {}out {} lout{};\n",
+			tout.argi, qualifier, type_name(ctx, tout.type), tout.argi);
 	}
 
 	if (outputs.size())
-		result += "\n";
+		ctx.result += "\n";
 	else
-		result += "\n";
+		ctx.result += "\n";
 }
 
-void GLSL::emit_global_resources()
-{
-	std::vector <const Block *> blocks;
-	collect_blocks(blocks);
-
-	std::map <void *, uint32_t> pc_indices;
-	collect_push_constant_indices(blocks, pc_indices);
-
-	result += "// Resources\n";
-
-	std::set <std::string> emitted;
-	for (auto *blk : blocks) {
-		for (auto &[_, refs] : blk->context.global_resources) {
-			for (auto &ref : refs) {
-				auto &grsrc = ref->as <GlobalResource> ();
-				auto key = resource_key(grsrc);
-				if (emitted.contains(key))
-					continue;
-				emitted.emplace(key);
-				emit_resource_decl(grsrc);
-			}
-		}
-	}
-
-	result += "\n";
-}
-
-void GLSL::collect_push_constant_indices(const std::vector <const Block *> &blocks,
+void collect_push_constant_indices(const std::vector <const Block *> &blocks,
 	std::map <void *, uint32_t> &pc_indices)
 {
 	uint32_t pcounter = 0;
@@ -635,7 +619,7 @@ void GLSL::collect_push_constant_indices(const std::vector <const Block *> &bloc
 	}
 }
 
-std::string GLSL::resource_key(const GlobalResource &grsrc) const
+std::string resource_key(const GlobalResource &grsrc)
 {
 	if (grsrc.kind == GlobalResourceKind::eSampler) {
 		auto group = grsrc.group.value_or(-1);
@@ -656,12 +640,12 @@ std::string GLSL::resource_key(const GlobalResource &grsrc) const
 		(int) grsrc.kind, group, index, (int) grsrc.layout);
 }
 
-void GLSL::emit_resource_decl(GlobalResource &grsrc)
+void emit_resource_decl(GLSLContext &ctx, GlobalResource &grsrc)
 {
 	if (grsrc.kind == GlobalResourceKind::eSampler) {
 		auto group = grsrc.group.value_or(-1);
 		auto index = grsrc.index.value_or(-1);
-		result += fmt::format("layout (set = {}, binding = {}) uniform sampler2D r{}_i{};\n\n",
+		ctx.result += fmt::format("layout (set = {}, binding = {}) uniform sampler2D r{}_i{};\n\n",
 			group, index, group, index);
 		return;
 	}
@@ -671,10 +655,10 @@ void GLSL::emit_resource_decl(GlobalResource &grsrc)
 		grsrc.push_constant_index = idx;
 		auto offset = grsrc.push_constant_offset.value_or(0);
 
-		result += fmt::format("layout ({}push_constant) uniform PC{} {{\n",
+		ctx.result += fmt::format("layout ({}push_constant) uniform PC{} {{\n",
 			layout_string(grsrc.layout), idx);
-		result += fmt::format("    layout (offset = {}) {} pc{};\n", offset, type.main(grsrc.type), idx);
-		result += "};\n\n";
+		ctx.result += fmt::format("    layout (offset = {}) {} pc{};\n", offset, type_name(ctx, grsrc.type), idx);
+		ctx.result += "};\n\n";
 		return;
 	}
 
@@ -688,23 +672,40 @@ void GLSL::emit_resource_decl(GlobalResource &grsrc)
 
 	auto group = grsrc.group.value_or(-1);
 	auto index = grsrc.index.value_or(-1);
-	result += fmt::format("layout ({}set = {}, binding = {}) {} R{}{} {{\n",
+	ctx.result += fmt::format("layout ({}set = {}, binding = {}) {} R{}{} {{\n",
 		layout_string(grsrc.layout), group, index, modifier, group, index);
-	result += fmt::format("    {} r{}_i{};\n", type.main(grsrc.type), group, index);
-	result += "};\n\n";
+	ctx.result += fmt::format("    {} r{}_i{};\n", type_name(ctx, grsrc.type), group, index);
+	ctx.result += "};\n\n";
 }
 
-void GLSL::emit_block_statements(const Block &blk)
+void emit_global_resources(GLSLContext &ctx)
 {
-	for (auto &instr : blk) {
-		if (instr->is <Store> () || instr->is <Invocation> ()
-			|| instr->is <Branch> () || instr->is <Loop> ()
-			|| instr->is <Local> ())
-			statement(instr);
+	std::vector <const Block *> blocks;
+	collect_blocks(ctx, blocks);
+
+	std::map <void *, uint32_t> pc_indices;
+	collect_push_constant_indices(blocks, pc_indices);
+
+	ctx.result += "// Resources\n";
+
+	std::set <std::string> emitted;
+	for (auto *blk : blocks) {
+		for (auto &[_, refs] : blk->context.global_resources) {
+			for (auto &ref : refs) {
+				auto &grsrc = ref->as <GlobalResource> ();
+				auto key = resource_key(grsrc);
+				if (emitted.contains(key))
+					continue;
+				emitted.emplace(key);
+				emit_resource_decl(ctx, grsrc);
+			}
+		}
 	}
+
+	ctx.result += "\n";
 }
 
-std::string GLSL::subroutine_return_type(const Block &blk, uint32_t &out_argi)
+std::string subroutine_return_type(GLSLContext &ctx, const Block &blk, uint32_t &out_argi)
 {
 	out_argi = 0;
 	if (blk.context.thread_outputs.empty())
@@ -714,58 +715,58 @@ std::string GLSL::subroutine_return_type(const Block &blk, uint32_t &out_argi)
 
 	auto &tout = blk.context.thread_outputs.front();
 	out_argi = tout.argi;
-	return type.main(tout.type);
+	return type_name(ctx, tout.type);
 }
 
-void GLSL::emit_subroutine_function(const Block &blk, const std::string &name)
+void emit_subroutine_function(GLSLContext &ctx, const Block &blk, const std::string &name)
 {
-	set_active_block(blk);
-	argument_names.clear();
-	local_thread_outputs.clear();
+	set_active_block(ctx, blk);
+	ctx.argument_names.clear();
+	ctx.local_thread_outputs.clear();
 
 	for (auto &arg : blk.context.arguments)
-		argument_names.push_back(fmt::format("arg{}", arg.argi));
+		ctx.argument_names.push_back(fmt::format("arg{}", arg.argi));
 
 	uint32_t ret_argi = 0;
-	auto return_type = subroutine_return_type(blk, ret_argi);
+	auto return_type = subroutine_return_type(ctx, blk, ret_argi);
 
-	result += fmt::format("{} {}(", return_type, name);
+	ctx.result += fmt::format("{} {}(", return_type, name);
 	for (size_t i = 0; i < blk.context.arguments.size(); i++) {
 		auto &arg = blk.context.arguments[i];
-		result += fmt::format("{} {}", type.main(arg.type), argument_names[arg.argi]);
+		ctx.result += fmt::format("{} {}", type_name(ctx, arg.type), ctx.argument_names[arg.argi]);
 		if (i + 1 < blk.context.arguments.size())
-			result += ", ";
+			ctx.result += ", ";
 	}
-	result += ")\n{\n";
+	ctx.result += ")\n{\n";
 
 	// TODO: should just be one set of returns...
 	// for perf maybe even prefer out parameters for tuples
 	for (auto &tout : blk.context.thread_outputs) {
 		auto name = fmt::format("lout{}", tout.argi);
-		local_thread_outputs.emplace(tout.argi, name);
-		result += fmt::format("    {} {};\n", type.main(tout.type), name);
+		ctx.local_thread_outputs.emplace(tout.argi, name);
+		ctx.result += fmt::format("    {} {};\n", type_name(ctx, tout.type), name);
 	}
 
 	if (blk.context.thread_outputs.size())
-		result += "\n";
+		ctx.result += "\n";
 
-	emit_block_statements(blk);
+	emit_block_statements(ctx, blk);
 
 	if (return_type != "void") {
-		auto name_it = local_thread_outputs.find(ret_argi);
-		auto local_name = (name_it != local_thread_outputs.end())
+		auto name_it = ctx.local_thread_outputs.find(ret_argi);
+		auto local_name = (name_it != ctx.local_thread_outputs.end())
 			? name_it->second
 			: fmt::format("lout{}", ret_argi);
-		result += fmt::format("    return {};\n", local_name);
+		ctx.result += fmt::format("    return {};\n", local_name);
 	}
 
-	result += "}\n\n";
-	set_active_block(block);
+	ctx.result += "}\n\n";
+	set_active_block(ctx, ctx.block);
 }
 
-void GLSL::emit_subroutine_functions()
+void emit_subroutine_functions(GLSLContext &ctx)
 {
-	result += "// Subroutines\n";
+	ctx.result += "// Subroutines\n";
 
 	std::vector <const Block *> order;
 	std::set <const Block *> visited;
@@ -784,58 +785,64 @@ void GLSL::emit_subroutine_functions()
 		}
 	};
 
-	visit(visit, block);
+	visit(visit, ctx.block);
 
 	for (auto *callee : order) {
 		if (callee->context.model != ShaderStage::eSubroutine)
 			continue;
 
-		auto it = subroutine_names.find(callee);
-		if (it == subroutine_names.end()) {
+		auto it = ctx.subroutine_names.find(callee);
+		if (it == ctx.subroutine_names.end()) {
 			auto name = fmt::format("fn_{}", (void *) callee);
-			it = subroutine_names.emplace(callee, name).first;
+			it = ctx.subroutine_names.emplace(callee, name).first;
 		}
 
-		if (emitted_subroutines.contains(callee))
+		if (ctx.emitted_subroutines.contains(callee))
 			continue;
 
-		emitted_subroutines.emplace(callee);
-		emit_subroutine_function(*callee, it->second);
+		ctx.emitted_subroutines.emplace(callee);
+		emit_subroutine_function(ctx, *callee, it->second);
 	}
 }
 
-void GLSL::emit_main_function()
+void emit_main_function(GLSLContext &ctx)
 {
-	result += "// Main\n";
-	result += "void main()\n";
-	result += "{\n";
+	ctx.result += "// Main\n";
+	ctx.result += "void main()\n";
+	ctx.result += "{\n";
 
-	emit_block_statements(block);
+	emit_block_statements(ctx, ctx.block);
 
-	result += "}";
+	ctx.result += "}";
 }
 
-std::string GLSL::generate(size_t tabs)
+std::string generate(GLSLContext &ctx, size_t tabs)
 {
-	reset_state();
+	reset_state(ctx);
 
-	if (block.context.model == ShaderStage::eSubroutine) {
-		emit_aggregate_decls();
-		auto name = fmt::format("fn_{}", (void *) &block);
-		subroutine_names.emplace(&block, name);
-		emit_subroutine_function(block, name);
-		return result;
+	if (ctx.block.context.model == ShaderStage::eSubroutine) {
+		emit_aggregate_decls(ctx);
+		auto name = fmt::format("fn_{}", (void *) &ctx.block);
+		ctx.subroutine_names.emplace(&ctx.block, name);
+		emit_subroutine_function(ctx, ctx.block, name);
+		return ctx.result;
 	}
 
-	emit_preamble();
-	emit_aggregate_decls();
-	emit_thread_inputs();
-	emit_thread_outputs();
-	emit_global_resources();
-	emit_subroutine_functions();
-	emit_main_function();
+	emit_preamble(ctx);
+	emit_aggregate_decls(ctx);
+	emit_thread_inputs(ctx);
+	emit_thread_outputs(ctx);
+	emit_global_resources(ctx);
+	emit_subroutine_functions(ctx);
+	emit_main_function(ctx);
 
-	return result;
+	return ctx.result;
 }
 
-} // namespace generators
+} // namespace
+
+std::string generate_glsl(const SharedBlockReference &sbr, size_t tabs)
+{
+	GLSLContext ctx { *sbr.get() };
+	return generate(ctx, tabs);
+}

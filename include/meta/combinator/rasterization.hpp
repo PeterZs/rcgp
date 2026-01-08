@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../dsl/generators_glsl.hpp"
+#include "../../dsl/generators.hpp"
 #include "../../dsl/instructions.hpp"
 #include "../../rhi/shader_compiler.hpp"
 #include "../../util/logging.hpp"
@@ -255,10 +255,10 @@ struct RasterizationCombinator {
 		fragment->apply_push_constant_allocation_map(pcmap);
 
 		// Compile the shaders
-		auto vshader = generators::GLSL(vertex).generate();
+		auto vshader = generate_glsl(vertex);
 		info("vertex shader:\n%s", vshader.c_str());
 
-		auto fshader = generators::GLSL(fragment).generate();
+		auto fshader = generate_glsl(fragment);
 		info("fragment shader:\n%s", fshader.c_str());
 	
 		auto vspv = compiler.glsl_to_spirv(vshader, EShLangVertex);
