@@ -37,6 +37,14 @@ std::string swizzle_string(SwizzleCode code)
 	return result;
 }
 
+template <typename T>
+Reference Block::add(const T &sub, const Debug aux)
+{
+	auto result = std::make_shared <Instruction> (sub, aux);
+	emplace_back(result);
+	return result;
+}
+
 void Block::apply_group_allocation_map(const group_allocation_map &map)
 {
 	for (auto &[addr, group] : map) {
@@ -107,6 +115,7 @@ template Reference Block::add <Block> (const Block &sub, Debug aux);
 template Reference Block::add <BuiltinIntrinsic> (const BuiltinIntrinsic &sub, Debug aux);
 template Reference Block::add <Constant> (const Constant &sub, Debug aux);
 template Reference Block::add <Construct> (const Construct &sub, Debug aux);
+template Reference Block::add <Invocation> (const Invocation &sub, Debug aux);
 template Reference Block::add <ArrayAccess> (const ArrayAccess &sub, Debug aux);
 template Reference Block::add <FieldAccess> (const FieldAccess &sub, Debug aux);
 template Reference Block::add <GlobalIntrinsic> (const GlobalIntrinsic &sub, Debug aux);

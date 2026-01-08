@@ -137,11 +137,88 @@ std::string type_name(GLSLContext &ctx, const ArrayType &array)
 	return type_name(ctx, array.base->as <Type> ()) + size;
 }
 
+struct TypeDecl {
+	std::string base;
+	std::string suffix;
+};
+
+bool contains_unsized_array(Reference type)
+{
+	if (!type || !type->is <Type> ())
+		return false;
+
+	auto &t = type->as <Type> ();
+	if (t.is <ArrayType> ()) {
+		auto &arr = t.as <ArrayType> ();
+		if (arr.size <= 0)
+			return true;
+		return contains_unsized_array(arr.base);
+	}
+
+	if (t.is <AggregateType> ()) {
+		auto &agg = t.as <AggregateType> ();
+		for (auto &field : agg) {
+			if (contains_unsized_array(field))
+				return true;
+		}
+	}
+
+	return false;
+}
+
+bool contains_unsized_array(const AggregateType &agg)
+{
+	for (auto &field : agg) {
+		if (contains_unsized_array(field))
+			return true;
+	}
+	return false;
+}
+
+TypeDecl type_decl(GLSLContext &ctx, const Type &type)
+{
+	if (type.is <ArrayType> ()) {
+		auto &array = type.as <ArrayType> ();
+		if (!array.base || !array.base->is <Type> ())
+			fatal("invalid array base type");
+		auto decl = type_decl(ctx, array.base->as <Type> ());
+		auto size = (array.size > 0)
+			? fmt::format("[{}]", array.size)
+			: "[]";
+		decl.suffix += size;
+		return decl;
+	}
+
+	return TypeDecl { type_name(ctx, type), "" };
+}
+
+TypeDecl type_decl(GLSLContext &ctx, Reference type)
+{
+	return std::visit([&](const auto &x) -> TypeDecl {
+		using T = std::decay_t <decltype(x)>;
+		if constexpr (std::is_same_v <T, Type>)
+			return type_decl(ctx, x);
+		if constexpr (std::is_same_v <T, PrimitiveType>)
+			return TypeDecl { type_name(ctx, x), "" };
+		if constexpr (std::is_same_v <T, ArrayType>) {
+			auto tmp = Type { x };
+			return type_decl(ctx, tmp);
+		}
+		if constexpr (std::is_same_v <T, AggregateType>)
+			return TypeDecl { type_name(ctx, x), "" };
+		auto type_name = std::string($ss_type(T).view());
+		fatal("type decl not implemented for %s", type_name.c_str());
+		return TypeDecl { "?", "" };
+	}, *type);
+}
+
 std::string type_name(GLSLContext &ctx, const AggregateType &aggregate)
 {
 	auto addr = &aggregate;
 	if (ctx.aggregate_names.contains(addr))
 		return ctx.aggregate_names[addr];
+	if (contains_unsized_array(aggregate))
+		fatal("aggregate type with unsized array is not supported outside buffer blocks");
 	return "?";
 }
 
@@ -175,6 +252,15 @@ std::string reference_local(GLSLContext &ctx, Reference ref)
 	return name;
 }
 
+std::string resource_base_name(const GlobalResource &grsrc)
+{
+	auto group = grsrc.group.value_or(0);
+	auto index = grsrc.index.value_or(0);
+	if (grsrc.kind == GlobalResourceKind::eSampler)
+		return fmt::format("s{}_i{}", group, index);
+	return fmt::format("r{}_i{}", group, index);
+}
+
 std::string reference(GLSLContext &ctx, GlobalIntrinsic gi)
 {
 	switch (gi) {
@@ -192,9 +278,16 @@ std::string reference(GLSLContext &ctx, GlobalResource grsrc)
 		return fmt::format("pc{}", idx);
 	}
 
-	return fmt::format("r{}_i{}",
-		grsrc.group.value_or(-1),
-		grsrc.index.value_or(-1));
+	auto base = resource_base_name(grsrc);
+
+	if (!grsrc.type || !grsrc.type->is <Type> ())
+		return base;
+
+	auto &type = grsrc.type->as <Type> ();
+	if (type.is <AggregateType> ())
+		return base;
+
+	return base + ".value";
 }
 
 std::string reference(GLSLContext &ctx, ThreadOutput tout)
@@ -358,8 +451,9 @@ void statement(GLSLContext &ctx, Reference instruction)
 		using T = std::decay_t <decltype(x)>;
 		if constexpr (std::is_same_v <T, Local>) {
 			auto name = reference(ctx, instruction);
-			ctx.result += fmt::format("{}{} {};\n",
-				ctx.indent, type_name(ctx, x.type), name);
+			auto decl = type_decl(ctx, x.type);
+			ctx.result += fmt::format("{}{} {}{};\n",
+				ctx.indent, decl.base, name, decl.suffix);
 			return;
 		}
 		if constexpr (std::is_same_v <T, Store>) {
@@ -530,13 +624,16 @@ void emit_aggregate_decls(GLSLContext &ctx)
 				continue;
 
 			auto &agg = type.as <AggregateType> ();
+			if (contains_unsized_array(agg))
+				continue;
 
 			ctx.result += fmt::format("struct AGG{} {{\n", aggregate_counter++);
 
 			size_t field_counter = 0;
 			for (auto &field : agg) {
-				ctx.result += fmt::format("    {} f{};\n",
-					type_name(ctx, field), field_counter++);
+				auto decl = type_decl(ctx, field);
+				ctx.result += fmt::format("    {} f{}{};\n",
+					decl.base, field_counter++, decl.suffix);
 			}
 
 			ctx.result += "};\n\n";
@@ -555,8 +652,9 @@ void emit_thread_inputs(GLSLContext &ctx)
 	ctx.thread_inputs.reserve(ctx.block.context.thread_inputs.size());
 	for (auto &tin : ctx.block.context.thread_inputs) {
 		ctx.thread_inputs.push_back(fmt::format("lin{}", tin.argi));
-		ctx.result += fmt::format("layout (location = {}) in {} lin{};\n",
-			tin.argi, type_name(ctx, tin.type), tin.argi);
+		auto decl = type_decl(ctx, tin.type);
+		ctx.result += fmt::format("layout (location = {}) in {} lin{}{};\n",
+			tin.argi, decl.base, tin.argi, decl.suffix);
 	}
 
 	if (ctx.block.context.thread_inputs.size())
@@ -589,8 +687,9 @@ void emit_thread_outputs(GLSLContext &ctx)
 
 	for (auto &[_, tout] : outputs) {
 		auto qualifier = rate_qualifier(tout.properties);
-		ctx.result += fmt::format("layout (location = {}) {}out {} lout{};\n",
-			tout.argi, qualifier, type_name(ctx, tout.type), tout.argi);
+		auto decl = type_decl(ctx, tout.type);
+		ctx.result += fmt::format("layout (location = {}) {}out {} lout{}{};\n",
+			tout.argi, qualifier, decl.base, tout.argi, decl.suffix);
 	}
 
 	if (outputs.size())
@@ -622,8 +721,8 @@ void collect_push_constant_indices(const std::vector <const Block *> &blocks,
 std::string resource_key(const GlobalResource &grsrc)
 {
 	if (grsrc.kind == GlobalResourceKind::eSampler) {
-		auto group = grsrc.group.value_or(-1);
-		auto index = grsrc.index.value_or(-1);
+		auto group = grsrc.group.value_or(0);
+		auto index = grsrc.index.value_or(0);
 		return fmt::format("sampler:{}:{}", group, index);
 	}
 
@@ -634,19 +733,34 @@ std::string resource_key(const GlobalResource &grsrc)
 			idx, offset, (int) grsrc.layout, (void *) grsrc.type.get());
 	}
 
-	auto group = grsrc.group.value_or(-1);
-	auto index = grsrc.index.value_or(-1);
+	auto group = grsrc.group.value_or(0);
+	auto index = grsrc.index.value_or(0);
 	return fmt::format("buf:{}:{}:{}:{}",
 		(int) grsrc.kind, group, index, (int) grsrc.layout);
+}
+
+std::string resource_instance_name(const GlobalResource &grsrc)
+{
+	return resource_base_name(grsrc);
+}
+
+void emit_buffer_fields(GLSLContext &ctx, const AggregateType &agg)
+{
+	for (size_t i = 0; i < agg.size(); i++) {
+		if (contains_unsized_array(agg[i]) && (i + 1 < agg.size()))
+			fatal("unsized array must be the last field in a buffer block");
+		auto decl = type_decl(ctx, agg[i]);
+		ctx.result += fmt::format("    {} f{}{};\n", decl.base, i, decl.suffix);
+	}
 }
 
 void emit_resource_decl(GLSLContext &ctx, GlobalResource &grsrc)
 {
 	if (grsrc.kind == GlobalResourceKind::eSampler) {
-		auto group = grsrc.group.value_or(-1);
-		auto index = grsrc.index.value_or(-1);
-		ctx.result += fmt::format("layout (set = {}, binding = {}) uniform sampler2D r{}_i{};\n\n",
-			group, index, group, index);
+		auto group = grsrc.group.value_or(0);
+		auto index = grsrc.index.value_or(0);
+		ctx.result += fmt::format("layout (set = {}, binding = {}) uniform sampler2D {};\n\n",
+			group, index, resource_base_name(grsrc));
 		return;
 	}
 
@@ -654,10 +768,12 @@ void emit_resource_decl(GLSLContext &ctx, GlobalResource &grsrc)
 		auto idx = grsrc.push_constant_index.value_or(0);
 		grsrc.push_constant_index = idx;
 		auto offset = grsrc.push_constant_offset.value_or(0);
+		auto decl = type_decl(ctx, grsrc.type);
 
 		ctx.result += fmt::format("layout ({}push_constant) uniform PC{} {{\n",
 			layout_string(grsrc.layout), idx);
-		ctx.result += fmt::format("    layout (offset = {}) {} pc{};\n", offset, type_name(ctx, grsrc.type), idx);
+		ctx.result += fmt::format("    layout (offset = {}) {} pc{}{};\n",
+			offset, decl.base, idx, decl.suffix);
 		ctx.result += "};\n\n";
 		return;
 	}
@@ -670,12 +786,22 @@ void emit_resource_decl(GLSLContext &ctx, GlobalResource &grsrc)
 		fatal("unsupported global resource kind");
 	}
 
-	auto group = grsrc.group.value_or(-1);
-	auto index = grsrc.index.value_or(-1);
+	auto group = grsrc.group.value_or(0);
+	auto index = grsrc.index.value_or(0);
+	auto instance = resource_instance_name(grsrc);
 	ctx.result += fmt::format("layout ({}set = {}, binding = {}) {} R{}{} {{\n",
 		layout_string(grsrc.layout), group, index, modifier, group, index);
-	ctx.result += fmt::format("    {} r{}_i{};\n", type_name(ctx, grsrc.type), group, index);
-	ctx.result += "};\n\n";
+	if (!grsrc.type || !grsrc.type->is <Type> ())
+		fatal("invalid resource type");
+
+	auto &type = grsrc.type->as <Type> ();
+	if (type.is <AggregateType> ()) {
+		emit_buffer_fields(ctx, type.as <AggregateType> ());
+	} else {
+		auto decl = type_decl(ctx, grsrc.type);
+		ctx.result += fmt::format("    {} value{};\n", decl.base, decl.suffix);
+	}
+	ctx.result += fmt::format("}} {};\n\n", instance);
 }
 
 void emit_global_resources(GLSLContext &ctx)
@@ -733,7 +859,8 @@ void emit_subroutine_function(GLSLContext &ctx, const Block &blk, const std::str
 	ctx.result += fmt::format("{} {}(", return_type, name);
 	for (size_t i = 0; i < blk.context.arguments.size(); i++) {
 		auto &arg = blk.context.arguments[i];
-		ctx.result += fmt::format("{} {}", type_name(ctx, arg.type), ctx.argument_names[arg.argi]);
+		auto decl = type_decl(ctx, arg.type);
+		ctx.result += fmt::format("{} {}{}", decl.base, ctx.argument_names[arg.argi], decl.suffix);
 		if (i + 1 < blk.context.arguments.size())
 			ctx.result += ", ";
 	}
@@ -744,7 +871,8 @@ void emit_subroutine_function(GLSLContext &ctx, const Block &blk, const std::str
 	for (auto &tout : blk.context.thread_outputs) {
 		auto name = fmt::format("lout{}", tout.argi);
 		ctx.local_thread_outputs.emplace(tout.argi, name);
-		ctx.result += fmt::format("    {} {};\n", type_name(ctx, tout.type), name);
+		auto decl = type_decl(ctx, tout.type);
+		ctx.result += fmt::format("    {} {}{};\n", decl.base, name, decl.suffix);
 	}
 
 	if (blk.context.thread_outputs.size())
