@@ -101,6 +101,16 @@ struct Invocation {
 		: sbr(sbr_), args { args_ ... } {}
 };
 
+struct Branch {
+	struct Segment {
+		Reference cond;
+		SharedBlockReference body;
+	};
+
+	std::vector <Segment> segments;
+	std::optional <SharedBlockReference> fallback;
+};
+
 struct Argument {
 	Reference type;
 	uint32_t argi;
@@ -221,6 +231,7 @@ struct Instruction : variant <
 	FieldAccess,
 	GlobalIntrinsic,
 	GlobalResource,
+	Branch,
 	Invocation,
 	Operation,
 	Store,
@@ -252,6 +263,7 @@ extern template Reference Block::add <ArrayAccess> (const ArrayAccess &sub, Debu
 extern template Reference Block::add <FieldAccess> (const FieldAccess &sub, Debug aux);
 extern template Reference Block::add <GlobalIntrinsic> (const GlobalIntrinsic &sub, Debug aux);
 extern template Reference Block::add <GlobalResource> (const GlobalResource &sub, Debug aux);
+extern template Reference Block::add <Branch> (const Branch &sub, Debug aux);
 extern template Reference Block::add <Operation> (const Operation &sub, Debug aux);
 extern template Reference Block::add <Store> (const Store &sub, Debug aux);
 extern template Reference Block::add <Swizzle> (const Swizzle &sub, Debug aux);

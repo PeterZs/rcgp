@@ -84,7 +84,7 @@ bool Window::alive() const
 
 bool Window::is_pressed(Key key) const
 {
-	return glfwGetKey(handle, static_cast<int>(key)) == GLFW_PRESS;
+	return glfwGetKey(handle, static_cast <int> (key)) == GLFW_PRESS;
 }
 
 void Window::set_input_mode(int mode, int value) const

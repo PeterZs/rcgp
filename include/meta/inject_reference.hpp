@@ -43,6 +43,12 @@ void inject_reference(PushConstant <T, L> &value, Reference ref)
 	return inject_reference(static_cast <T &> (value), ref);
 }
 
+template <typename T, template <typename> typename L>
+void inject_reference(StorageBuffer <T, L> &value, Reference ref)
+{
+	return inject_reference(static_cast <T &> (value), ref);
+}
+
 // Fallback with error reported
 template <typename T>
 void inject_reference(T &value, Reference ref)

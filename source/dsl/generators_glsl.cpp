@@ -76,7 +76,9 @@ std::string GLSL::generate_reference::operator()(Reference r)
 std::string GLSL::generate_expression::impl(Constant value)
 {
 	vswitch (value) {
-	vcase(int): return fmt::format("{}", value.as <int32_t> ());
+	vcase(int32_t): return fmt::format("{}", value.as <int32_t> ());
+	vcase(uint32_t): return fmt::format("{}", value.as <uint32_t> ());
+	vcase(bool): return fmt::format("{}", value.as <bool> ());
 	vcase(float): return fmt::format("{}", value.as <float> ());
 	default:
 		return "?";
@@ -91,6 +93,12 @@ std::string GLSL::generate_expression::impl(Operation operation)
 	case OperationCode::eSubtract: op = "-"; break;
 	case OperationCode::eMultiply: op = "*"; break;
 	case OperationCode::eDivide: op = "/"; break;
+	case OperationCode::eEqual: op = "=="; break;
+	case OperationCode::eNotEqual: op = "!="; break;
+	case OperationCode::eLess: op = "<"; break;
+	case OperationCode::eLessEqual: op = "<="; break;
+	case OperationCode::eGreater: op = ">"; break;
+	case OperationCode::eGreaterEqual: op = ">="; break;
 	default:
 		break;
 	}
@@ -215,15 +223,44 @@ std::string GLSL::generate_expression::operator()(Reference r)
 
 void GLSL::generate_statement::impl(Store store)
 {
-	parent.result += fmt::format("    {} = {};\n",
+	parent.result += fmt::format("{}{} = {};\n",
+		parent.indent,
 		parent.reference(store.destination),
 		parent.expression(store.source));
 }
 
 void GLSL::generate_statement::impl(Invocation invocation)
 {
-	parent.result += fmt::format("    {};\n",
+	parent.result += fmt::format("{}{};\n",
+		parent.indent,
 		parent.expression.impl(invocation));
+}
+
+void GLSL::generate_statement::impl(Branch branch)
+{
+	auto emit_body = [&](const SharedBlockReference &blk) {
+		auto prev = parent.indent;
+		parent.indent += "    ";
+		parent.emit_block_statements(*blk);
+		parent.indent = prev;
+	};
+
+	for (size_t i = 0; i < branch.segments.size(); i++) {
+		auto &segment = branch.segments[i];
+		auto kw = (i == 0) ? "if" : "else if";
+		parent.result += fmt::format("{}{} ({})\n",
+			parent.indent, kw, parent.expression(segment.cond));
+		parent.result += fmt::format("{}{{\n", parent.indent);
+		emit_body(segment.body);
+		parent.result += fmt::format("{}}}\n", parent.indent);
+	}
+
+	if (branch.fallback.has_value()) {
+		parent.result += fmt::format("{}else\n", parent.indent);
+		parent.result += fmt::format("{}{{\n", parent.indent);
+		emit_body(branch.fallback.value());
+		parent.result += fmt::format("{}}}\n", parent.indent);
+	}
 }
 
 void GLSL::generate_statement::main(Reference instruction)
@@ -240,8 +277,10 @@ void GLSL::generate_statement::operator()(Reference r)
 std::string GLSL::generate_type::impl(const PrimitiveType &primitive)
 {
 	vswitch (primitive) {
-	vcase(int): return "int";
+	vcase(int32_t): return "int";
+	vcase(uint32_t): return "uint";
 	vcase(float): return "float";
+	vcase(bool): return "bool";
 	vcase(VectorType <float, 2>): return "vec2";
 	vcase(VectorType <float, 3>): return "vec3";
 	vcase(VectorType <float, 4>): return "vec4";
@@ -518,7 +557,7 @@ void GLSL::emit_resource_decl(GlobalResource &grsrc)
 void GLSL::emit_block_statements(const Block &blk)
 {
 	for (auto &instr : blk) {
-		if (instr->is <Store> () || instr->is <Invocation> ())
+		if (instr->is <Store> () || instr->is <Invocation> () || instr->is <Branch> ())
 			statement(instr);
 	}
 }

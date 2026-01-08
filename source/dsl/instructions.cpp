@@ -111,6 +111,7 @@ template Reference Block::add <ArrayAccess> (const ArrayAccess &sub, Debug aux);
 template Reference Block::add <FieldAccess> (const FieldAccess &sub, Debug aux);
 template Reference Block::add <GlobalIntrinsic> (const GlobalIntrinsic &sub, Debug aux);
 template Reference Block::add <GlobalResource> (const GlobalResource &sub, Debug aux);
+template Reference Block::add <Branch> (const Branch &sub, Debug aux);
 template Reference Block::add <Operation> (const Operation &sub, Debug aux);
 template Reference Block::add <Store> (const Store &sub, Debug aux);
 template Reference Block::add <Swizzle> (const Swizzle &sub, Debug aux);

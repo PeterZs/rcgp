@@ -5,13 +5,80 @@
 #include "mirror_buffer.hpp"
 #include "resources.hpp"
 
-// TODO: specialization for aggregate
+namespace resource_layout {
+
+template <typename T>
+struct layout_engine {
+	static_assert(false, ($ss("resource_layout::layout_engine not implemented for type ") + $ss_type(T)).view());
+};
+
+template <typename Original, typename ... Ts>
+struct layout_engine <aggregate_reflection <Original, Ts...>> {
+	using hint = scaffold_hint <
+		sequence <typename layout_engine <Ts> ::hint...>,
+		0
+	>;
+};
+
+template <typename T, int64_t N>
+requires (N > 0)
+struct layout_engine <array_reflection <T, N>> {
+	using hint = scaffold_hint <
+		std::array <typename layout_engine <T> ::hint, N>,
+		0
+	>;
+};
+
+template <typename T>
+struct layout_engine <array_reflection <T, -1>> {
+	using hint = scaffold_hint <
+		unsized_array <typename layout_engine <T> ::hint>,
+		0
+	>;
+};
+
+template <typename T, template <typename> typename L>
+struct layout_engine <uniform_buffer_reflection <T, L>> {
+	using hint = scaffold_hint <ResourceType <UniformBuffer <T, L>>, 0>;
+};
+
+template <typename T, template <typename> typename L>
+struct layout_engine <storage_buffer_reflection <T, L>> {
+	using hint = scaffold_hint <ResourceType <StorageBuffer <T, L>>, 0>;
+};
+
+template <typename T, size_t D>
+struct layout_engine <sampler_reflection <T, D>> {
+	using hint = scaffold_hint <ResourceType <Sampler <T, D>>, 0>;
+};
+
+template <typename T>
+struct layout_engine <resource_group_reflection <T>> {
+	using hint = typename layout_engine <expand_reflection_t <T>> ::hint;
+};
+
+} // namespace resource_layout
+
+template <reflected T>
+using ResourceMirror = decltype([] {
+	using reflection = expand_reflection_t <T>;
+	using hint = resource_layout::layout_engine <reflection> ::hint;
+	using type = scaffold_lookup <hint, T, true> ::type;
+	return type();
+} ());
+
+template <aggregate T>
+struct resource_translator <T> {
+	using type = ResourceMirror <T>;
+	using value_type = type;
+	using element_type = std::nullptr_t;
+};
+
 template <reflected T>
 struct resource_translator <ResourceGroup <T>> {
-	using defer = resource_translator <T>;
-	using type = defer::type;
-	using value_type = defer::value_type;
-	using element_type = defer::element_type;
+	using type = ResourceMirror <T>;
+	using value_type = type;
+	using element_type = std::nullptr_t;
 };
 
 // TODO: needs to be changed

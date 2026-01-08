@@ -77,7 +77,7 @@ Device Device::from(
 	info("queue families:");
 	for (const auto &[i, family] : std::views::enumerate(queue_families)) {
 		info("%zu: %u of %s",
-			static_cast<size_t>(i),
+			static_cast <size_t> (i),
 			family.queueCount,
 			vk::to_string(family.queueFlags).c_str());
 	}

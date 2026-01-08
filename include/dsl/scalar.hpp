@@ -31,6 +31,7 @@ public:
 	}
 };
 
+using boolean = scalar <bool>;
 using i32 = scalar <int32_t>;
 using u32 = scalar <uint32_t>;
 using f32 = scalar <float>;

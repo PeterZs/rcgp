@@ -25,6 +25,7 @@ struct GLSL {
 
 	// TODO: prelude section for types, etc.
 	std::string result; // TODO: refactor to 'code'
+	std::string indent = "    ";
 
 	// TODO: indentation as well
 	
@@ -78,6 +79,7 @@ struct GLSL {
 
 		void impl(Store store);
 		void impl(Invocation invocation);
+		void impl(Branch branch);
 
 		void impl(auto x) {
 			parent.result += "    ?\n";
@@ -116,8 +118,10 @@ private:
 	void emit_thread_inputs();
 	void emit_thread_outputs();
 	void emit_global_resources();
-	void collect_push_constant_indices(const std::vector <const Block *> &blocks,
-		std::map <void *, uint32_t> &pc_indices);
+	void collect_push_constant_indices(
+		const std::vector <const Block *> &blocks,
+		std::map <void *, uint32_t> &pc_indices
+	);
 	std::string resource_key(const GlobalResource &grsrc) const;
 	void emit_resource_decl(GlobalResource &grsrc);
 	void emit_subroutine_functions();

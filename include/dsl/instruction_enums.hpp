@@ -5,6 +5,12 @@ enum class OperationCode {
 	eSubtract,
 	eMultiply,
 	eDivide,
+	eEqual,
+	eNotEqual,
+	eLess,
+	eLessEqual,
+	eGreater,
+	eGreaterEqual,
 };
 
 enum class GlobalResourceKind {

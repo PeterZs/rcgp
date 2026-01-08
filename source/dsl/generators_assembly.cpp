@@ -1,4 +1,6 @@
 #include <filesystem>
+#include <set>
+#include <vector>
 
 #include <fmt/format.h>
 
@@ -84,7 +86,15 @@ std::string Assembly::stringify(Operation x, Reference ref)
 	std::string op = "?";
 	switch (x.code) {
 	case OperationCode::eAdd: op = "add"; break;
+	case OperationCode::eSubtract: op = "sub"; break;
 	case OperationCode::eMultiply: op = "mul"; break;
+	case OperationCode::eDivide: op = "div"; break;
+	case OperationCode::eEqual: op = "eq"; break;
+	case OperationCode::eNotEqual: op = "neq"; break;
+	case OperationCode::eLess: op = "lt"; break;
+	case OperationCode::eLessEqual: op = "lte"; break;
+	case OperationCode::eGreater: op = "gt"; break;
+	case OperationCode::eGreaterEqual: op = "gte"; break;
 	default:
 		break;
 	}
@@ -113,7 +123,7 @@ std::string Assembly::stringify(FieldAccess x, Reference ref)
 
 std::string Assembly::stringify(Argument x, Reference ref)
 {
-	return fmt::format("argument {}:{}",
+	return $assign fmt::format("argument {}:{}",
 		stringify(x.type), x.argi);
 }
 
@@ -235,6 +245,27 @@ std::string Assembly::stringify(Swizzle x, Reference ref)
 		stringify(x.value), swizzle_string(x.code));
 }
 
+std::string Assembly::stringify(Branch x, Reference ref)
+{
+	std::string result = "branch(";
+	for (size_t i = 0; i < x.segments.size(); i++) {
+		auto &segment = x.segments[i];
+		result += fmt::format("{}: {}", stringify(segment.cond),
+			stringify_block_ref(segment.body));
+		if (i + 1 < x.segments.size())
+			result += ", ";
+	}
+
+	if (x.fallback.has_value()) {
+		if (!x.segments.empty())
+			result += ", ";
+		result += fmt::format("else: {}", stringify_block_ref(x.fallback.value()));
+	}
+	result += ")";
+
+	return $assign result;
+}
+
 std::string Assembly::stringify(Invocation x, Reference ref)
 {
 	std::string result = fmt::format("@{}(", (void *) x.sbr.get());
@@ -269,13 +300,18 @@ std::string Assembly::stringify(ShaderStage stage)
 	return "?";
 }
 
-std::string Assembly::generate(size_t tabs)
+std::string Assembly::generate(size_t tabs, bool emit_branches)
 {
 	std::string result = "block {\n";
 
 	result += "  context {\n";
 	result += fmt::format("    blkid: {},\n", (void *) sbr.get());
 	result += "    model: " + stringify(sbr->context.model) + ",\n";
+
+	for (auto arg : sbr->context.arguments) {
+		result += fmt::format("    argument {}: {},\n",
+			arg.argi, stringify(arg.type));
+	}
 
 	for (auto tin : sbr->context.thread_inputs) {
 		result += fmt::format("    thread in {}: {},\n",
@@ -303,17 +339,122 @@ std::string Assembly::generate(size_t tabs)
 
 	result += "  }\n";
 
+	// TODO: split this!
 	for (auto &instr : *sbr) {
+		auto loc = instr->debug_info.origin;
+		auto rel = std::filesystem::relative(loc.file_name());
+		auto emit_line = [&](const std::string &text) {
+			result += fmt::format("  {:<40} ; from {}:{}\n",
+				text, rel.string(), loc.line());
+		};
+		if (emit_branches && instr->is <Branch> ()) {
+			auto &branch = instr->as <Branch> ();
+			for (auto &segment : branch.segments) {
+				auto ref = stringify_block_ref(segment.body);
+				result += fmt::format("  {} = {}\n",
+					ref, generate_block_body(segment.body, "  "));
+			}
+			if (branch.fallback.has_value()) {
+				auto ref = stringify_block_ref(branch.fallback.value());
+				result += fmt::format("  {} = {}\n",
+					ref, generate_block_body(branch.fallback.value(), "  "));
+			}
+
+			std::string line = fmt::format("{} = branch(", stringify(instr));
+			emit_line(line);
+			std::vector <std::string> entries;
+			entries.reserve(branch.segments.size() + (branch.fallback ? 1 : 0));
+			for (auto &segment : branch.segments) {
+				entries.push_back(fmt::format("    {}: {}",
+					stringify(segment.cond), stringify_block_ref(segment.body)));
+			}
+			if (branch.fallback.has_value()) {
+				entries.push_back(fmt::format("    else: {}",
+					stringify_block_ref(branch.fallback.value())));
+			}
+			for (size_t i = 0; i < entries.size(); i++) {
+				result += entries[i];
+				result += (i + 1 < entries.size()) ? ",\n" : "\n";
+			}
+			result += "  )\n";
+			continue;
+		}
+
+		auto str = std::visit([&](auto x) {
+			return stringify(x, instr);
+		}, *instr);
+		emit_line(str);
+	}
+	result += "}";
+
+	if (!emit_branches)
+		return result;
+
+	std::vector <SharedBlockReference> blocks;
+	std::set <const Block *> visited;
+
+	auto enqueue = [&](const SharedBlockReference &blk) {
+		if (!blk)
+			return;
+		if (visited.insert(blk.get()).second)
+			blocks.push_back(blk);
+	};
+
+	auto scan_block = [&](const SharedBlockReference &blk) {
+		for (auto &instr : *blk) {
+			if (!instr->is <Branch> ())
+				continue;
+			auto &branch = instr->as <Branch> ();
+			for (auto &segment : branch.segments)
+				enqueue(segment.body);
+			if (branch.fallback.has_value())
+				enqueue(branch.fallback.value());
+		}
+	};
+
+	scan_block(sbr);
+	for (size_t i = 0; i < blocks.size(); i++)
+		scan_block(blocks[i]);
+
+	return result;
+}
+
+std::string Assembly::stringify_block_ref(const SharedBlockReference &blk)
+{
+	if (!blk)
+		return "nil";
+
+	auto addr = intptr_t(blk.get());
+	auto it = ids.find(addr);
+	if (it != ids.end())
+		return fmt::format("${}", it->second);
+
+	auto id = ids.size();
+	ids[addr] = id;
+	return fmt::format("${}", id);
+}
+
+std::string Assembly::generate_block_body(const SharedBlockReference &blk, const std::string &indent)
+{
+	std::string result = "block {\n";
+
+	auto prefix = indent + "  ";
+	auto pad_width = 40;
+	if (indent.size() < static_cast <size_t> (pad_width))
+		pad_width -= static_cast <int> (indent.size());
+
+	for (auto &instr : *blk) {
 		auto str = std::visit([&](auto x) {
 			return stringify(x, instr);
 		}, *instr);
 		auto loc = instr->debug_info.origin;
 		auto rel = std::filesystem::relative(loc.file_name());
-		result += fmt::format("  {:<40} ; from {}:{}\n",
-			str, rel.string(), loc.line());
+		result += fmt::format("{}{} ; from {}:{}\n",
+			prefix, fmt::format("{:<{}}", str, pad_width),
+			rel.string(), loc.line());
 	}
-	result += "}";
 
+	result += indent + "}";
 	return result;
 }
 

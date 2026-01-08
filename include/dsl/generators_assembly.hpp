@@ -36,9 +36,14 @@ struct Assembly {
 	std::string stringify(Construct x, Reference ref);
 	std::string stringify(BuiltinIntrinsic x, Reference ref);
 	std::string stringify(Swizzle x, Reference ref);
+	std::string stringify(Branch x, Reference ref);
 	std::string stringify(Block x, Reference ref);
 	std::string stringify(ShaderStage stage);
-	std::string generate(size_t tabs = 0);
+	std::string generate(size_t tabs = 0, bool emit_branches = true);
+
+private:
+	std::string stringify_block_ref(const SharedBlockReference &blk);
+	std::string generate_block_body(const SharedBlockReference &blk, const std::string &indent);
 };
 
 } // namespace generators
