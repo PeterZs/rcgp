@@ -58,7 +58,7 @@ struct Device {
 	}
 
 	template <auto &...refs, bool ... rs>
-	[[nodiscard]] auto update_descriptors(DescriptorWritePair <refs, rs> ... dwpairs);
+	[[nodiscard]] auto update_descriptors(DescriptorWritePair <refs, rs> &&... dwpairs);
 
 	void wait_for_frame(const Frame &frame, uint64_t timeout = UINT64_MAX) const;
 	bool acquire_image_for_frame(Frame &frame, uint64_t timeout = UINT64_MAX) const;
