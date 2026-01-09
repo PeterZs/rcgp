@@ -9,6 +9,6 @@
 #include "meta/resource_intrinsic.hpp"
 #include "meta/resource_translations.hpp"
 #include "meta/return_handler.hpp"
-#include "meta/vertex_buffer_of.hpp"
+#include "meta/vertex_buffer_for.hpp"
 #include "rcgp-rhi.hpp"
 #include "util/span.hpp"

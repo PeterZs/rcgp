@@ -104,6 +104,34 @@ struct is_sampler <Sampler <T, D>> : std::true_type {};
 template <typename T>
 constexpr bool is_sampler_v = is_sampler <T> ::value;
 
+// Reflection helpers (resource types)
+template <typename T>
+struct is_sampler_reflection : std::false_type {};
+
+template <typename T, size_t D>
+struct is_sampler_reflection <sampler_reflection <T, D>> : std::true_type {};
+
+template <typename T>
+constexpr bool is_sampler_reflection_v = is_sampler_reflection <T> ::value;
+
+template <typename T>
+struct is_uniform_buffer_reflection : std::false_type {};
+
+template <typename T, template <typename> typename L>
+struct is_uniform_buffer_reflection <uniform_buffer_reflection <T, L>> : std::true_type {};
+
+template <typename T>
+constexpr bool is_uniform_buffer_reflection_v = is_uniform_buffer_reflection <T> ::value;
+
+template <typename T>
+struct is_storage_buffer_reflection : std::false_type {};
+
+template <typename T, template <typename> typename L>
+struct is_storage_buffer_reflection <storage_buffer_reflection <T, L>> : std::true_type {};
+
+template <typename T>
+constexpr bool is_storage_buffer_reflection_v = is_storage_buffer_reflection <T> ::value;
+
 template <reflected T>
 struct RayPayload : T {};
 

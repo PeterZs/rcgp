@@ -97,47 +97,87 @@ struct push_constant_filter <sequence <stage_wrapper <reference <ref>, Ss...>, R
 template <typename Seq>
 using push_constant_resources_t = typename push_constant_filter <Seq> ::type;
 
-// TODO: flesh out with an impl method with handles things recursively...
-// TODO: fallback...
+// TODO: need to manage names...
+// TODO: also need to clean this stuff up...
 template <auto &ref, ShaderStage ... Ss>
-auto reference_to_dsl(const Device &device, const stage_wrapper <reference <ref>, Ss...> &)
+auto reference_to_descriptor_set_layout(const Device &device, const stage_wrapper <reference <ref>, Ss...> &)
 {
 	using base = typename reference <ref> ::base;
-	using R = expand_reflection_t <base>;
+	using ref_reflection = typename base::reflection;
+	auto stage_flags = (stage_to_flag(Ss) | ...);
 
-	vk::DescriptorType dtype = vk::DescriptorType::eUniformBuffer;
-	if constexpr (is_sampler_v <base>)
-		dtype = vk::DescriptorType::eCombinedImageSampler;
+	if constexpr (is_resource_group_v <base>) {
+		using group_value = typename ref_reflection::value_type;
+		using group_reflection = expand_reflection_t <group_value>;
+		static_assert(is_aggregate_reflection_v <group_reflection>,
+			"resource group must wrap an aggregate type");
 
-	auto dslbs = std::array {
-		vk::DescriptorSetLayoutBinding()
-			.setBinding(0)
-			.setDescriptorCount(1)
-			.setDescriptorType(dtype)
-			.setStageFlags((stage_to_flag(Ss) | ...))
-	};
+		constexpr size_t bindings = group_reflection::field_count;
+		std::array <vk::DescriptorSetLayoutBinding, bindings> dslbs {};
 
-	auto dsl_info = vk::DescriptorSetLayoutCreateInfo()
-		.setBindings(dslbs);
+		auto fill_one = [&] <size_t I> () {
+			using field_t = typename group_reflection::template field_type <I>;
+			vk::DescriptorType dtype = vk::DescriptorType::eUniformBuffer;
+			if constexpr (is_sampler_reflection_v <field_t>) {
+				dtype = vk::DescriptorType::eCombinedImageSampler;
+			} else if constexpr (is_storage_buffer_reflection_v <field_t>) {
+				dtype = vk::DescriptorType::eStorageBuffer;
+			}
 
-	return device.logical.createDescriptorSetLayout(dsl_info);
+			dslbs[I] = vk::DescriptorSetLayoutBinding()
+				.setBinding(static_cast <uint32_t> (I))
+				.setDescriptorCount(1)
+				.setDescriptorType(dtype)
+				.setStageFlags(stage_flags);
+		};
+
+		[&] <size_t ... Is> (std::index_sequence <Is...>) {
+			(fill_one.template operator() <Is> (), ...);
+		} (std::make_index_sequence <bindings> ());
+
+		auto dsl_info = vk::DescriptorSetLayoutCreateInfo()
+			.setBindings(dslbs);
+
+		return device.logical.createDescriptorSetLayout(dsl_info);
+	} else {
+		// TODO: method for generating DescriptorType for global resources
+		vk::DescriptorType dtype = vk::DescriptorType::eUniformBuffer;
+		if constexpr (is_sampler_v <base>) {
+			dtype = vk::DescriptorType::eCombinedImageSampler;
+		} else if constexpr (is_storage_buffer_reflection_v <ref_reflection>) {
+			dtype = vk::DescriptorType::eStorageBuffer;
+		}
+
+		auto dslbs = std::array {
+			vk::DescriptorSetLayoutBinding()
+				.setBinding(0)
+				.setDescriptorCount(1)
+				.setDescriptorType(dtype)
+				.setStageFlags(stage_flags)
+		};
+
+		auto dsl_info = vk::DescriptorSetLayoutCreateInfo()
+			.setBindings(dslbs);
+
+		return device.logical.createDescriptorSetLayout(dsl_info);
+	}
 }
 
 template <typename ... Ts>
-auto reference_sequence_to_dsl(const Device &device, const sequence <Ts...> &)
+auto reference_sequence_to_descriptor_set_layouts(const Device &device, const sequence <Ts...> &)
 {
 	// TODO: separate arrays for dsl and pc ranges
 	if constexpr (sizeof...(Ts) == 0) {
 		return std::array <vk::DescriptorSetLayout, 0> ();
 	} else {
 		return std::array {
-			reference_to_dsl(device, Ts())...
+			reference_to_descriptor_set_layout(device, Ts())...
 		};
 	}
 }
 
 template <auto &ref, ShaderStage ... Ss>
-auto reference_to_pcr(const stage_wrapper <reference <ref>, Ss...> &, uint32_t offset)
+auto reference_to_push_constant_range(const stage_wrapper <reference <ref>, Ss...> &, uint32_t offset)
 {
 	using info = push_constant_info <stage_wrapper <reference <ref>, Ss...>>;
 
@@ -150,7 +190,7 @@ auto reference_to_pcr(const stage_wrapper <reference <ref>, Ss...> &, uint32_t o
 }
 
 template <typename ... Ts>
-auto reference_sequence_to_pcrs(const sequence <Ts...> &)
+auto reference_sequence_to_push_constant_ranges(const sequence <Ts...> &)
 {
 	if constexpr (sizeof...(Ts) == 0) {
 		return std::array <vk::PushConstantRange, 0> ();
@@ -162,7 +202,7 @@ auto reference_sequence_to_pcrs(const sequence <Ts...> &)
 		auto add = [&](auto tag) {
 			using info = push_constant_info <decltype(tag)>;
 			offset = align_up_u32(offset, info::alignment);
-			ranges[index++] = reference_to_pcr(tag, offset);
+			ranges[index++] = reference_to_push_constant_range(tag, offset);
 			offset += info::size;
 		};
 
@@ -172,7 +212,7 @@ auto reference_sequence_to_pcrs(const sequence <Ts...> &)
 }
 
 template <typename ... Ts>
-auto reference_sequence_to_pclm(const sequence <Ts...> &)
+auto reference_sequence_to_push_constant_allocation_map(const sequence <Ts...> &)
 {
 	push_constant_allocation_map map;
 	if constexpr (sizeof...(Ts) > 0) {
@@ -250,7 +290,7 @@ struct RasterizationCombinator {
 		vertex->apply_group_allocation_map(gamap);
 		fragment->apply_group_allocation_map(gamap);
 
-		auto pcmap = reference_sequence_to_pclm(push_constant_gvrs);
+		auto pcmap = reference_sequence_to_push_constant_allocation_map(push_constant_gvrs);
 		vertex->apply_push_constant_allocation_map(pcmap);
 		fragment->apply_push_constant_allocation_map(pcmap);
 
@@ -268,8 +308,8 @@ struct RasterizationCombinator {
 		auto fmodule = compiler.spirv_to_shader_module(fspv);
 
 		// Generate the pipeline and descriptor set layouts
-		auto dsls = reference_sequence_to_dsl(device, descriptor_gvrs);
-		auto pcrs = reference_sequence_to_pcrs(push_constant_gvrs);
+		auto dsls = reference_sequence_to_descriptor_set_layouts(device, descriptor_gvrs);
+		auto pcrs = reference_sequence_to_push_constant_ranges(push_constant_gvrs);
 
 		auto layout_info = vk::PipelineLayoutCreateInfo().setSetLayouts(dsls);
 		if constexpr (push_constant_gvrs.size > 0)

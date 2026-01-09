@@ -39,7 +39,9 @@ template <typename T, int64_t N>
 struct array_reflection {};
 
 template <auto &ref, typename T>
-struct reference_reflection {};
+struct reference_reflection {
+	using value_type = T;
+};
 
 template <typename R, typename ... Args>
 struct function_reflection {};

@@ -4,16 +4,16 @@
 
 // Reference to vertex buffer
 template <auto &ref>
-struct VertexBufferOf {
+struct VertexBufferFor {
 	static_assert(false, "not a stream");
 };
 
 template <reflected T, template <typename> typename L, vk::VertexInputRate R, AttributeStream <T, L, R> &ref>
-struct VertexBufferOf  <ref> : VertexMirrorBuffer <array <T>, L> {
+struct VertexBufferFor <ref> : VertexMirrorBuffer <array <T>, L> {
 	using typename VertexMirrorBuffer <array <T>, L> ::MirrorBuffer;
 
-	VertexBufferOf() = default;
-	VertexBufferOf(const VertexMirrorBuffer <array <T>, L> &other)
+	VertexBufferFor() = default;
+	VertexBufferFor(const VertexMirrorBuffer <array <T>, L> &other)
 		: VertexMirrorBuffer <array <T>, L> (other) {}
 
 	auto &write(const typename VertexMirrorBuffer <array <T>, L> ::value_type &data) const {
@@ -27,7 +27,7 @@ struct VertexBufferOf  <ref> : VertexMirrorBuffer <array <T>, L> {
 		return *this;
 	}
 
-	static VertexBufferOf from(const Device &device,
+	static VertexBufferFor from(const Device &device,
 			  	 size_t max_elements,
 			  	 vk::MemoryPropertyFlags properties,
 			  	 vk::BufferUsageFlags extra_usage = vk::BufferUsageFlagBits(0)) {

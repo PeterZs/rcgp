@@ -7,6 +7,8 @@
 #include "static_string.hpp"
 
 // TODO: get rid of the mains!
+// TODO: use type cache to avoid redefining things...
+// also need a DCE pass...
 template <typename T>
 struct reconstructor_t {
 	static jems::handle main($location) {
@@ -45,20 +47,13 @@ struct reconstructor_t <array_reflection <T, N>> {
 
 template <typename Original, typename ... Args>
 struct reconstructor_t <aggregate_reflection <Original, Args...>> {
-		static bool collect(AggregateType &aggregate, jems::handle handle) {
-		aggregate.push_back(Reference(handle));
-		return true;
+	static void collect(AggregateType &aggregate, jems::handle handle) {
+		aggregate.emplace_back(handle);
 	}
 
 	static jems::handle main($location) {
 		AggregateType aggregate;
-		std::apply([&](auto ... xs) {
-			std::make_tuple(collect(
-				aggregate,
-				reconstructor_t <decltype(xs)> ::main(loc)
-			)...);
-		}, std::tuple <Args...> ());
-
+		(collect(aggregate, reconstructor_t <Args> ::main(loc)), ...);
 		return jems::type_loc(loc, aggregate);
 	}
 };
@@ -73,6 +68,7 @@ struct reconstructor_t <field_trace <T, Is...>> {
 template <typename T>
 jems::handle reconstruct_type($location)
 {
+	// TODO: check if it already exists...
 	using R = expand_reflection <T> ::type;
 	return reconstructor_t <R> ::main(loc);
 }

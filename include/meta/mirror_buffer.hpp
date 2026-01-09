@@ -94,6 +94,13 @@ struct MirrorBuffer <T, L, F> : Buffer {
 		static_cast <Buffer &> (result) = base;
 		return result;
 	}
+
+	vk::DescriptorBufferInfo descriptor_info() const {
+		return vk::DescriptorBufferInfo()
+			.setBuffer(handle)
+			.setOffset(offset)
+			.setRange(size);
+	}
 };
 
 // Aliases for specific kinds of buffers

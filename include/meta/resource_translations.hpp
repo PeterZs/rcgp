@@ -103,7 +103,9 @@ struct SamplerMirror {
 		SamplerMirror sm;
 		sm.sampler = device.logical.createSampler(sinfo);
 		sm.view = image.view;
-		sm.layout = layout;
+		sm.layout = (image.layout != vk::ImageLayout::eUndefined)
+			? image.layout
+			: layout;
 		return sm;
 	}
 };

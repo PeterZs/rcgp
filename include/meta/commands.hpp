@@ -3,7 +3,7 @@
 #include <functional>
 
 #include "pipeline/rasterization.hpp"
-#include "vertex_buffer_of.hpp"
+#include "vertex_buffer_for.hpp"
 
 // Auxiliary command buffer state as dependency information
 // TODO: concept for command state
@@ -108,7 +108,7 @@ auto bind_pipeline(const AnnotatedRasterizationPipeline <T, AttributeStreams, Gr
 }
 
 template <auto &... refs>
-auto bind_descriptors(const DescriptorOf <refs, true> &... descriptors)
+auto bind_descriptors(const DescriptorFor <refs, true> &... descriptors)
 {
 	auto binder = [=](const vk::CommandBuffer &cmd, CommandsTraceAux &aux) {
 		// TODO: store set index in the descriptor as well; populate when allocated
@@ -128,7 +128,7 @@ auto bind_descriptors(const DescriptorOf <refs, true> &... descriptors)
 
 template <auto &ref, Topology T, typename AttributeStreams, typename GroupAllocation, typename GlobalResources, size_t Sets>
 auto bind_push_constants(const AnnotatedRasterizationPipeline <T, AttributeStreams, GroupAllocation, GlobalResources, Sets> &,
-		    const ResourceTypeOf <ref> &constants)
+		    const ResourceTypeFor <ref> &constants)
 {
 	static_assert(is_push_constant_v <reference_base_t <ref>>);
 
@@ -136,12 +136,12 @@ auto bind_push_constants(const AnnotatedRasterizationPipeline <T, AttributeStrea
 	static_assert(stage_flags != vk::ShaderStageFlags(), "push constant not used by any stage");
 	static_assert(push_constant_offset_found_v <ref, GlobalResources>,
 		"push constant not found in pipeline layout");
-	static_assert(sizeof(ResourceTypeOf <ref>) % 4u == 0u,
+	static_assert(sizeof(ResourceTypeFor <ref>) % 4u == 0u,
 		"push constant size must be a multiple of 4 bytes");
 
 	auto binder = [stage_flags, constants](const vk::CommandBuffer &cmd, CommandsTraceAux &aux) {
 		constexpr auto offset = push_constant_offset_for_v <ref, GlobalResources>;
-		cmd.pushConstants <ResourceTypeOf <ref>> (aux.layout, stage_flags, offset, constants);
+		cmd.pushConstants <ResourceTypeFor <ref>> (aux.layout, stage_flags, offset, constants);
 	};
 
 	return Commands <> { binder };
@@ -157,7 +157,7 @@ inline auto unbind_pipeline()
 
 // TODO: bind_vertex_buffer only form the pipeline
 template <auto &ref>
-auto bind_vertex_buffer(const VertexBufferOf <ref> &buffer, size_t boffset)
+auto bind_vertex_buffer(const VertexBufferFor <ref> &buffer, size_t boffset)
 {
 	auto binder = [=](const vk::CommandBuffer &cmd, CommandsTraceAux &) {
 		cmd.bindVertexBuffers(boffset, { buffer.handle }, { 0 });

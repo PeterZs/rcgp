@@ -95,7 +95,7 @@ struct push_constant_info;
 
 template <auto &ref, ShaderStage ...Ss>
 struct push_constant_info <stage_wrapper <reference <ref>, Ss...>> {
-	using data_t = ResourceTypeOf <ref>;
+	using data_t = ResourceTypeFor <ref>;
 	static constexpr uint32_t size = sizeof(data_t);
 	static constexpr uint32_t alignment = std::max<uint32_t>(4u, alignof(data_t));
 	static constexpr vk::ShaderStageFlags stage_flags = stage_flags_of <Ss...> ();
@@ -152,6 +152,6 @@ struct AnnotatedRasterizationPipeline {
 				.setSetLayouts(dsls[set])
 		).front();
 		// TODO: pass set as well...
-		return DescriptorOf <ref, false> (dset);
+		return DescriptorFor <ref, false> (dset);
 	}
 };
