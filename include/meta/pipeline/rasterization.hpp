@@ -8,6 +8,7 @@
 #include "../descriptor.hpp"
 #include "../layout/all.hpp"
 #include "../mirror_buffer.hpp"
+#include "../group_allocation.hpp"
 
 enum class Topology {
 	eTriangleList,
@@ -130,11 +131,31 @@ constexpr bool push_constant_offset_found_v = push_constant_offset_accum <ref, 0
 template <auto &ref, typename Seq>
 constexpr uint32_t push_constant_offset_for_v = push_constant_offset_accum <ref, 0, Seq> ::value;
 
+template <auto &ref, auto &... refs, size_t ... Is>
+constexpr auto set_index_for(const Tlist <group_allocation_record <refs, Is>...> &)
+{
+	constexpr auto matches = std::array {
+		std::same_as <
+			reference <ref>,
+			reference <refs>
+		>...
+	};
+
+	constexpr auto index = first_on(matches);
+	if constexpr (index < 0) {
+		static_assert(false, "reference not in group allocation");
+		return 0;
+	} else {
+		return Is...[index];
+	}
+}
+
 // AttributeStreams := sequence <reference <Stream>...>
 // GroupAllocation := sequence <reference <GRV>...>
-// TODO: Sets should be inferred from GroupAllocation::size... or something
-template <Topology T, typename AttributeStreams, typename GroupAllocation, typename GlobalResources, size_t Sets>
+template <Topology T, typename AttributeStreams, typename GroupAllocation, typename GlobalResources>
 struct AnnotatedRasterizationPipeline {
+	static constexpr size_t Sets = GroupAllocation::size;
+
 	vk::Device device;
 	vk::Pipeline handle;
 	vk::PipelineLayout layout;
@@ -144,11 +165,11 @@ struct AnnotatedRasterizationPipeline {
 	using streams = AttributeStreams;
 
 	template <auto &ref>
-	auto new_descriptor(const DescriptorPool &dpool) const {
-		constexpr auto set = group_allocation_set_for <ref> (GroupAllocation());
+	auto new_descriptor(const DescriptorPool &pool) const {
+		constexpr auto set = set_index_for <ref> (GroupAllocation());
 		auto dset = device.allocateDescriptorSets(
 			vk::DescriptorSetAllocateInfo()
-				.setDescriptorPool(dpool)
+				.setDescriptorPool(pool)
 				.setSetLayouts(dsls[set])
 		).front();
 		// TODO: pass set as well...

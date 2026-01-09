@@ -23,12 +23,22 @@ struct Tlist {
 	using invoke = F <Args...>;
 };
 
-// Static enumeration
-template <size_t I>
-using el = std::integral_constant <size_t, I>;
-
-template <size_t ... Is>
-auto el_series(std::index_sequence <Is...>)
+// Tlist filtering with arbitrary conditions
+template <template <typename> typename Filter, typename ... Ts>
+auto tlist_filter(Tlist <Ts...> ongoing, Tlist <> processing)
 {
-	return std::tuple(el <Is> ()...);
+	return ongoing;
 }
+
+template <template <typename> typename Filter, typename ... Ts, typename C, typename ... Rest>
+auto tlist_filter(Tlist <Ts...> ongoing, Tlist <C, Rest...> processing)
+{
+	constexpr auto rest = Tlist <Rest...> {};
+	if constexpr (Filter <C> ::value)
+		return tlist_filter <Filter> (Tlist <Ts..., C> {}, rest);
+	else
+		return tlist_filter <Filter> (ongoing, rest);
+}
+
+template <template <typename> typename Filter, typename List>
+using tlist_filter_t = decltype(tlist_filter <Filter> (Tlist <> {}, List {}));

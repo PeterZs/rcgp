@@ -13,90 +13,32 @@
 #include "../pipeline/rasterization.hpp"
 #include "../shader_stage.hpp"
 
-// TODO: group allocation record should be a proper type...
-// template <...> struct group_allocation { get_set_for <ref> = ... };
-template <auto &ref, auto &... refs, size_t ... Is>
-constexpr auto group_allocation_set_for(const std::tuple <group_allocation_record <refs, Is>...> &)
-{
-	constexpr auto matches = std::array {
-		std::same_as <
-			reference <ref>,
-			reference <refs>
-		>...
-	};
-
-	constexpr auto index = first_on(matches);
-	if constexpr (index < 0) {
-		static_assert(false, "reference not in group allocation");
-		return 0;
-	} else {
-		return Is...[index];
-	}
-}
-
-template <auto &... refs, size_t ... Is>
-auto sequence_to_group_allocation_impl(
-	const Tlist <reference <refs>...> &,
-	const std::index_sequence <Is...> &
-)
-{
-	return std::make_tuple(group_allocation_record <refs, Is> ()...);
-}
-
 template <typename ... Ts>
 auto sequence_to_group_allocation(const Tlist <Ts...> &)
 {
-	return sequence_to_group_allocation_impl(
-		Tlist <typename Ts::type...> {},
-		std::make_index_sequence <sizeof...(Ts)> ()
+	return cti_constexpr_for(Is, sizeof...(Ts),
+		return Tlist <group_allocation_record <Ts::type::handle, Is>...> {}
 	);
 }
 
-// Filter helpers for separating descriptor-backed resources from push constants
-// TODO: use a function to try and eliminate the insert 'method'
-template <typename Seq>
-struct descriptor_resource_filter;
+#define TYPE_TRAIT(name) template <typename T> struct name : std::false_type {}
+#define TYPE_TRAIT_INCLUDES(name, ...) struct name <__VA_ARGS__> : std::true_type {}
 
-template <>
-struct descriptor_resource_filter <Tlist <>> {
-	using type = Tlist <>;
-};
+TYPE_TRAIT(is_push_constant_wrapper);
+	template <auto &ref, ShaderStage ... Ss>
+	requires (is_push_constant_v <reference_base_t <ref>>)
+	TYPE_TRAIT_INCLUDES(is_push_constant_wrapper, stage_wrapper <reference <ref>, Ss...>);
 
-template <auto &ref, ShaderStage ...Ss, typename ...Rest>
-struct descriptor_resource_filter <Tlist <stage_wrapper <reference <ref>, Ss...>, Rest...>> {
-	using base = typename reference <ref> ::base;
-	using tail = typename descriptor_resource_filter <Tlist <Rest...>> ::type;
-	using type = std::conditional_t <
-		is_push_constant_v <base>,
-		tail,
-		typename tail::template insert <stage_wrapper <reference <ref>, Ss...>>
-	>;
-};
+TYPE_TRAIT(is_descriptable_wrapper);
+	template <auto &ref, ShaderStage ... Ss>
+	requires (not is_push_constant_v <reference_base_t <ref>>)
+	TYPE_TRAIT_INCLUDES(is_descriptable_wrapper, stage_wrapper <reference <ref>, Ss...>);
 
-template <typename Seq>
-using descriptor_resources_t = typename descriptor_resource_filter <Seq> ::type;
+template <typename List>
+using push_constant_resources_t = tlist_filter_t <is_push_constant_wrapper, List>;
 
-template <typename Seq>
-struct push_constant_filter;
-
-template <>
-struct push_constant_filter <Tlist <>> {
-	using type = Tlist <>;
-};
-
-template <auto &ref, ShaderStage ...Ss, typename ...Rest>
-struct push_constant_filter <Tlist <stage_wrapper <reference <ref>, Ss...>, Rest...>> {
-	using base = typename reference <ref> ::base;
-	using tail = typename push_constant_filter <Tlist <Rest...>> ::type;
-	using type = std::conditional_t <
-		is_push_constant_v <base>,
-		typename tail::template insert <stage_wrapper <reference <ref>, Ss...>>,
-		tail
-	>;
-};
-
-template <typename Seq>
-using push_constant_resources_t = typename push_constant_filter <Seq> ::type;
+template <typename List>
+using descriptable_resources_t = tlist_filter_t <is_descriptable_wrapper, List>;
 
 // TODO: need to manage names...
 // TODO: also need to clean this stuff up...
@@ -132,9 +74,9 @@ auto reference_to_descriptor_set_layout(const Device &device, const stage_wrappe
 				.setStageFlags(stage_flags);
 		};
 
-		[&] <size_t ... Is> (std::index_sequence <Is...>) {
-			(fill_one.template operator() <Is> (), ...);
-		} (std::make_index_sequence <bindings> ());
+		cti_constexpr_for(Is, bindings,
+			(fill_one.template operator() <Is> (), ...)
+		);
 
 		auto dsl_info = vk::DescriptorSetLayoutCreateInfo()
 			.setBindings(dslbs);
@@ -277,11 +219,11 @@ struct RasterizationCombinator {
 		auto gvrs1 = add_gvr_from_implicit_context <ShaderStage::eVertex> (gvrs0, vertex_icontext());
 		auto gvrs = add_gvr_from_implicit_context <ShaderStage::eFragment> (gvrs1, fragment_icontext());
 
-		auto descriptor_gvrs = descriptor_resources_t <decltype(gvrs)> {};
+		auto descriptor_gvrs = descriptable_resources_t <decltype(gvrs)> {};
 		auto push_constant_gvrs = push_constant_resources_t <decltype(gvrs)> {};
 
 		auto alloc = sequence_to_group_allocation(descriptor_gvrs);
-		auto gamap = new_allocation(alloc);
+		auto gamap = new_group_allocation_map(alloc);
 		vertex->apply_group_allocation_map(gamap);
 		fragment->apply_group_allocation_map(gamap);
 
@@ -327,8 +269,7 @@ struct RasterizationCombinator {
 			T,
 			decltype(streams),
 			decltype(alloc),
-			decltype(gvrs),
-			dsls.size()
+			decltype(gvrs)
 		> {
 			.device = device.logical,
 			.handle = pipeline,

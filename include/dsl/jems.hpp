@@ -6,22 +6,21 @@
 // JIT Emitters
 namespace jems {
 
-class handle {
-protected:
-	Reference ref;
-public:
-	handle(const Reference &ref_ = nullptr) : ref(ref_) {}
+struct handle {
+	Reference _ref;
+
+	handle(const Reference &ref_ = nullptr) : _ref(ref_) {}
 
 	void override_reference(const Reference &ref_) {
-		ref = ref_;
+		_ref = ref_;
 	}
 
 	operator Reference &() {
-		return ref;
+		return _ref;
 	}
 	
 	operator const Reference &() const {
-		return ref;
+		return _ref;
 	}
 };
 

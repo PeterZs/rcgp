@@ -40,7 +40,7 @@ void inject_resource_group_element(void *addr, T &value)
 }
 
 template <aggregate T, size_t ... Is>
-void inject_resource_group_carrier(void *addr, T &value, std::index_sequence <Is...>)
+void inject_resource_group_carrier(void *addr, T &value, cti_list <Is...>)
 {
 	(inject_resource_group_element <T, Is> (addr, value), ...);
 }
@@ -58,17 +58,13 @@ void inject_resource_reference(reference <ref> &value)
 		using V = R::original_type;
 		
 		static constexpr auto N = R::field_count;
-		inject_resource_group_carrier(
-			(void *) &ref,
-			static_cast <V &> (value),
-			std::make_index_sequence <N> ()
-		);
+		inject_resource_group_carrier(&ref, Tas <V &> (value), cti_seq <N>);
 	} else if constexpr (is_global_resource_v <T>) {
 		// Global resources
 		using R = typename T::reflection;
 		auto grsrc = R::intrinsic(0);
-		$tsb.context.add_global_resource((void *) &ref, grsrc);
-		inject_reference(static_cast <T &> (value), grsrc);
+		$tsb.context.add_global_resource(&ref, grsrc);
+		inject_reference(Tas <T &> (value), grsrc);
 	} else {
 		// Unknown cases
 		static_assert(false, ($ss("resource reference injector not implemented for ") + $ss_type(T)).view());
@@ -123,17 +119,12 @@ void inject_one_argument(T &value, InjectionCounters &counters)
 	}
 }
 
-// Top-level processors
-template <ShaderStage S, typename ... Args, size_t ... Is>
-void inject_all_arguments(std::tuple <Args...> &args, std::index_sequence <Is...>)
-{
-	auto counters = InjectionCounters(0, 0);
-	(inject_one_argument <S> (std::get <Is> (args), counters), ...);
-}
-
+// Top-level processor
 template <ShaderStage S, typename ... Args>
 void inject_arguments(std::tuple <Args...> &args)
 {
-	static constexpr size_t N = sizeof...(Args);
-	return inject_all_arguments <S> (args, std::make_index_sequence <N> ());
+	auto counters = InjectionCounters(0, 0);
+	cti_constexpr_for(Is, sizeof...(Args),
+		(inject_one_argument <S> (std::get <Is> (args), counters), ...)
+	);
 }

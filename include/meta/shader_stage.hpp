@@ -50,25 +50,16 @@ auto coerce_to_handle(const T &value)
 	return value;
 }
 
-template <aggregate T, size_t ... Is>
-auto coerce_fields_to_handle(const T &value, std::index_sequence <Is...>)
-{
-	auto type = reconstruct_type <T> ();
-	return jems::construct(
-		type,
-		coerce_to_handle(value.template
-			_ugp_field_reference <Is> ()
-		)...
-	);
-}
-
 template <aggregate T>
 auto coerce_to_handle(const T &value)
 {
-	static constexpr auto N = T::reflection::field_count;
-	return coerce_fields_to_handle(
-		value,
-		std::make_index_sequence <N> ()
+	cti_constexpr_for(Is, T::reflection::field_count,
+		jems::construct(
+			reconstruct_type <T> (),
+			coerce_to_handle(value.template
+				_ugp_field_reference <Is> ()
+			)...
+		)
 	);
 }
 

@@ -1,8 +1,6 @@
 #pragma once
 
 #include "../rhi/device.hpp"
-#include <type_traits>
-#include <utility>
 #include "reference_introspection.hpp"
 #include "resources.hpp"
 #include "expand_reflection.hpp"
@@ -99,9 +97,9 @@ struct DescriptorWritePair {
 				}
 			};
 
-			[&]<size_t ... Is>(std::index_sequence <Is...>) {
-				(bind_one.template operator() <Is> (), ...);
-			} (std::make_index_sequence <bindings> ());
+			cti_constexpr_for(Is, bindings,
+				(bind_one.template operator() <Is> (), ...)
+			);
 		} else {
 			static constexpr bool is_sampler = is_sampler_v <ref_base>;
 			if constexpr (is_sampler) {

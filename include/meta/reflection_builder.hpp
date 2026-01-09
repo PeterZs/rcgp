@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../util/cti.hpp"
 #include "reflection.hpp"
 #include "scaffold.hpp"
 
@@ -19,7 +20,7 @@ auto new_aggregate_reflection(std::nullopt_t, std::type_identity <Ts> ...)
 
 // Mapping each field to a unique (local) index
 #define GEN_AGGREGATE_FIELD_COUNTER(T, field)	\
-	el <__COUNTER__ - counter_base - 1> field;
+	cti <__COUNTER__ - counter_base - 1> field;
 	
 #define DEFINE_FIELDS(...)							\
 	struct field_counter {							\

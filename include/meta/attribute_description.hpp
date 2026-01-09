@@ -1,37 +1,29 @@
 #pragma once
 
-#include "../util/array.hpp"
 #include "reference.hpp"
-#include "reflection.hpp"
 #include "resources.hpp"
 #include "symbolic_format.hpp"
-
-// TODO: handle aggregates and such
-template <reflected T, template <typename> typename L, vk::VertexInputRate R>
-constexpr auto attribute_description_for_attribute_stream(const AttributeStream <T, L, R> &, size_t binding, size_t &location)
-{
-	return std::array {
-		vk::VertexInputAttributeDescription()
-			.setLocation(location++)
-			.setBinding(binding)
-			.setFormat(symbolic_format <T> ::value)
-			.setOffset(0)
-	};
-}
-
-template <auto &... refs, size_t ... Is>
-constexpr auto sequence_to_vertex_attributes_impl(const Tlist <reference <refs>...> &, const std::index_sequence <Is...> &)
-{
-	size_t location = 0;
-	return concat(attribute_description_for_attribute_stream(refs, Is, location)...);
-}
 
 template <auto &... refs>
 constexpr auto sequence_to_vertex_attributes(const Tlist <reference <refs>...> &in)
 {
-	// TODO: we can do this without concat... just inline here itself...
-	if constexpr (sizeof...(refs) == 0)
+	auto desc = [] <typename T, template <typename> typename L, vk::VertexInputRate R>
+	(const AttributeStream <T, L, R> &) {
+		return vk::VertexInputAttributeDescription()
+			.setFormat(symbolic_format <T> ::value)
+			.setOffset(0);
+	};
+
+	if constexpr (sizeof...(refs) == 0) {
 		return std::array <vk::VertexInputAttributeDescription, 0> ();
-	else
-		return sequence_to_vertex_attributes_impl(in, std::make_index_sequence <sizeof...(refs)> ());
+	} else {
+		size_t location = 0;
+		return cti_constexpr_for(Is, sizeof...(refs),
+			return std::array {
+				desc(refs)
+					.setBinding(Is)
+					.setLocation(location++)...
+			}
+		);
+	}
 }

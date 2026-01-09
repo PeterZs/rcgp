@@ -30,18 +30,18 @@ public:
 	scalar(const T &value, $location)
 		: handle() {
 		if (Tracer::singleton.records.empty()) {
-			ref = jems::constant_loc(loc, value);
+			_ref = jems::constant_loc(loc, value);
 			return;
 		}
 
 		auto local = jems::local(jems::type_loc(loc, T()));
-		ref = local;
+		_ref = local;
 		jems::store(local, jems::constant_loc(loc, value));
 	}
 
 	scalar &operator=(const scalar &rhs) {
 		if (Tracer::singleton.records.empty()) {
-			ref = rhs.ref;
+			_ref = rhs._ref;
 			return *this;
 		}
 

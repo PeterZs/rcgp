@@ -12,7 +12,7 @@ struct array : public jems::handle {
 	template <projectively_int_scalar U>
 	T operator[](const U &idx) const {
 		T result;
-		auto access = jems::array_access(ref, project(idx));
+		auto access = jems::array_access(_ref, project(idx));
 		inject_reference(result, access);
 		return result;
 	}

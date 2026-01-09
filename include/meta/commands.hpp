@@ -94,8 +94,8 @@ inline auto begin_render_pass(const vk::RenderPass &render_pass,
 	return Commands <> { binder };
 }
 
-template <Topology T, typename AttributeStreams, typename GroupAllocation, typename GlobalResources, size_t Sets>
-auto bind_pipeline(const AnnotatedRasterizationPipeline <T, AttributeStreams, GroupAllocation, GlobalResources, Sets> &pipeline)
+template <Topology T, typename AttributeStreams, typename GroupAllocation, typename GlobalResources>
+auto bind_pipeline(const AnnotatedRasterizationPipeline <T, AttributeStreams, GroupAllocation, GlobalResources> &pipeline)
 {
 	// TODO: write bind point and layout in an interm state (CommandBufferAux &)?
 	auto binder = [=](const vk::CommandBuffer &cmd, CommandsTraceAux &aux) {
@@ -126,8 +126,8 @@ auto bind_descriptors(const DescriptorFor <refs, true> &... descriptors)
 	return Commands <> { binder };
 }
 
-template <auto &ref, Topology T, typename AttributeStreams, typename GroupAllocation, typename GlobalResources, size_t Sets>
-auto bind_push_constants(const AnnotatedRasterizationPipeline <T, AttributeStreams, GroupAllocation, GlobalResources, Sets> &,
+template <auto &ref, Topology T, typename AttributeStreams, typename GroupAllocation, typename GlobalResources>
+auto bind_push_constants(const AnnotatedRasterizationPipeline <T, AttributeStreams, GroupAllocation, GlobalResources> &,
 		    const ResourceTypeFor <ref> &constants)
 {
 	static_assert(is_push_constant_v <reference_base_t <ref>>);

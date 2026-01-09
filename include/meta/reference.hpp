@@ -12,6 +12,8 @@ using reference_base_t = std::decay_t <decltype(rsrc)>;
 // TODO: should enforce that raw_base is a resource type
 template <auto &rsrc>
 struct reference : reference_base_t <rsrc> {
+	static constexpr auto &handle = rsrc;
+
 	using base = reference_base_t <rsrc>;
 	static_assert(has_reflection <base> ());
 	using reflection = reference_reflection <rsrc, typename base::reflection>;
