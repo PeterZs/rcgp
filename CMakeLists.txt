@@ -61,25 +61,26 @@ add_custom_target(rcgp_generate_swizzle
 
 add_library(rcgp STATIC
 	${RCGP_GENERATED_SOURCES}
-	source/dsl/instructions.cpp
 	source/dsl/branching.cpp
-	source/dsl/looping.cpp
-	source/dsl/optimizer.cpp
 	source/dsl/generators_assembly.cpp
 	source/dsl/generators_glsl.cpp
+	source/dsl/instructions.cpp
+	source/dsl/looping.cpp
+	source/dsl/optimizer.cpp
 	source/dsl/primitives.cpp
-	source/util/logging.cpp
 	source/rhi/buffer.cpp
 	source/rhi/command_pool.cpp
-	source/rhi/shader_compiler.cpp
-	source/rhi/device.cpp
 	source/rhi/descriptor_pool.cpp
-	source/rhi/image.cpp
-	source/rhi/session.cpp
+	source/rhi/device.cpp
 	source/rhi/glfw.cpp
+	source/rhi/image.cpp
+	source/rhi/pipeline.cpp
 	source/rhi/queue.cpp
 	source/rhi/render_pass.cpp
+	source/rhi/session.cpp
+	source/rhi/shader_compiler.cpp
 	source/rhi/window.cpp
+	source/util/logging.cpp
 )
 
 add_dependencies(rcgp

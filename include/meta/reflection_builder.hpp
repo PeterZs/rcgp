@@ -1,23 +1,20 @@
 #pragma once
 
-#include <cstddef>
-
 #include "reflection.hpp"
 #include "scaffold.hpp"
 
 // Building the reflection for aggregates
 template <typename Original, typename ... Ts>
-auto new_aggregate_reflection(sequence <Ts...>)
+auto new_aggregate_reflection(std::nullopt_t, std::type_identity <Ts> ...)
 	-> aggregate_reflection <Original, Ts...>;
 
 #define GEN_AGGREGATE_FIELD(T, field)	\
-	std::type_identity <decltype(field)> {},
+	, std::type_identity <decltype(field)> {}
 
-#define DEFINE_REFLECTION(...)							\
-	using reflection = decltype(new_aggregate_reflection <This> (		\
-		sequence {							\
-			MAP(GEN_AGGREGATE_FIELD, /* NA */ , __VA_ARGS__)	\
-		}								\
+#define DEFINE_REFLECTION(...)						\
+	using reflection = decltype(new_aggregate_reflection <This> (	\
+		std::nullopt						\
+		MAP(GEN_AGGREGATE_FIELD, /* NA */ , __VA_ARGS__)	\
 	));
 
 // Mapping each field to a unique (local) index

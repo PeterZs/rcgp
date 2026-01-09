@@ -20,14 +20,14 @@ constexpr auto attribute_description_for_attribute_stream(const AttributeStream 
 }
 
 template <auto &... refs, size_t ... Is>
-constexpr auto sequence_to_vertex_attributes_impl(const sequence <reference <refs>...> &, const std::index_sequence <Is...> &)
+constexpr auto sequence_to_vertex_attributes_impl(const Tlist <reference <refs>...> &, const std::index_sequence <Is...> &)
 {
 	size_t location = 0;
 	return concat(attribute_description_for_attribute_stream(refs, Is, location)...);
 }
 
 template <auto &... refs>
-constexpr auto sequence_to_vertex_attributes(const sequence <reference <refs>...> &in)
+constexpr auto sequence_to_vertex_attributes(const Tlist <reference <refs>...> &in)
 {
 	// TODO: we can do this without concat... just inline here itself...
 	if constexpr (sizeof...(refs) == 0)

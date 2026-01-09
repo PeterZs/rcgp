@@ -32,7 +32,7 @@ struct layout_engine <aggregate_reflection <Original, Ts...>> {
 	} ();
 
 	using hint = scaffold_hint <
-		sequence <typename layout_engine <Ts> ::hint...>,
+		Tlist <typename layout_engine <Ts> ::hint...>,
 		alignment
 	>;
 };

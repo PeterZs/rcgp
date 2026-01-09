@@ -4,7 +4,7 @@
 #include "resources.hpp"
 
 template <auto &ref, typename ... Ts>
-auto add_stream(const sequence <Ts...> &in)
+auto add_stream(const Tlist <Ts...> &in)
 {
 	using base = reference <ref> ::base;
 	if constexpr (!is_attribute_stream_v <base>) {
@@ -14,19 +14,19 @@ auto add_stream(const sequence <Ts...> &in)
 		if constexpr (exists)
 			return in;
 		else
-			return sequence <Ts..., reference <ref>> ::reify();
+			return Tlist <Ts..., reference <ref>> {};
 	}
 }
 
 template <typename ... Ts>
-auto add_stream_from_implicit_context(const sequence <Ts...> &in, const implicit_context <> &)
+auto add_stream_from_implicit_context(const Tlist <Ts...> &in, const implicit_context <> &)
 {
 	// No implicit captures to project into streams; return input unchanged.
 	return in;
 }
 
 template <typename ... Ts, auto &b, auto &... bs>
-auto add_stream_from_implicit_context(const sequence <Ts...> &in, const implicit_context <b, bs...> &)
+auto add_stream_from_implicit_context(const Tlist <Ts...> &in, const implicit_context <b, bs...> &)
 {
 	auto out = add_stream <b> (in);
 	if constexpr (sizeof...(bs))

@@ -72,7 +72,7 @@ struct scaffold_lookup <scaffold_hint <Mapped, Align>, View, AlignTopLevel> {
 
 // Aggregate types
 template <typename ... Ts, size_t Align, aggregate View, bool AlignTopLevel>
-struct scaffold_lookup <scaffold_hint <sequence <Ts...>, Align>, View, AlignTopLevel> {
+struct scaffold_lookup <scaffold_hint <Tlist <Ts...>, Align>, View, AlignTopLevel> {
 	using type = View::template scaffold <Align, AlignTopLevel, Ts...>;
 };
 

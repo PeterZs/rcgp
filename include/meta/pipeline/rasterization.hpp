@@ -67,19 +67,19 @@ template <auto &ref, typename Seq>
 struct stage_flags_for_seq;
 
 template <auto &ref>
-struct stage_flags_for_seq <ref, sequence <>> {
+struct stage_flags_for_seq <ref, Tlist <>> {
 	static constexpr vk::ShaderStageFlags value = {};
 };
 
 template <auto &ref, auto &other, ShaderStage ...Ss, typename ...Rest>
 struct stage_flags_for_seq <
 	ref,
-	sequence <stage_wrapper <reference <other>, Ss...>, Rest...>
+	Tlist <stage_wrapper <reference <other>, Ss...>, Rest...>
 > {
 	static constexpr vk::ShaderStageFlags value =
 		std::same_as <reference <other>, reference <ref>>
 			? stage_flags_of <Ss...> ()
-			: stage_flags_for_seq <ref, sequence <Rest...>> ::value;
+			: stage_flags_for_seq <ref, Tlist <Rest...>> ::value;
 };
 
 template <auto &ref, typename Seq>
@@ -108,20 +108,20 @@ template <auto &ref, uint32_t Offset, typename Seq>
 struct push_constant_offset_accum;
 
 template <auto &ref, uint32_t Offset>
-struct push_constant_offset_accum <ref, Offset, sequence <>> {
+struct push_constant_offset_accum <ref, Offset, Tlist <>> {
 	static constexpr bool found = false;
 	static constexpr uint32_t value = 0;
 };
 
 template <auto &ref, uint32_t Offset, typename Head, typename ... Rest>
-struct push_constant_offset_accum <ref, Offset, sequence <Head, Rest...>> {
+struct push_constant_offset_accum <ref, Offset, Tlist <Head, Rest...>> {
 	static constexpr uint32_t aligned = align_up_u32(Offset, push_constant_info <Head> ::alignment);
 	static constexpr bool matches = std::same_as <typename Head::type, reference <ref>>;
 	static constexpr uint32_t next_offset = aligned + push_constant_info <Head> ::size;
-	static constexpr bool found = matches || push_constant_offset_accum <ref, next_offset, sequence <Rest...>> ::found;
+	static constexpr bool found = matches || push_constant_offset_accum <ref, next_offset, Tlist <Rest...>> ::found;
 	static constexpr uint32_t value = matches
 		? aligned
-		: push_constant_offset_accum <ref, next_offset, sequence <Rest...>> ::value;
+		: push_constant_offset_accum <ref, next_offset, Tlist <Rest...>> ::value;
 };
 
 template <auto &ref, typename Seq>

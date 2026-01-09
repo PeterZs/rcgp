@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../dsl/generators.hpp"
-#include "../../dsl/instructions.hpp"
+#include "../../rhi/pipelines.hpp"
 #include "../../rhi/shader_compiler.hpp"
 #include "../../util/logging.hpp"
 #include "../attribute_description.hpp"
@@ -36,7 +36,7 @@ constexpr auto group_allocation_set_for(const std::tuple <group_allocation_recor
 
 template <auto &... refs, size_t ... Is>
 auto sequence_to_group_allocation_impl(
-	const sequence <reference <refs>...> &,
+	const Tlist <reference <refs>...> &,
 	const std::index_sequence <Is...> &
 )
 {
@@ -44,31 +44,32 @@ auto sequence_to_group_allocation_impl(
 }
 
 template <typename ... Ts>
-auto sequence_to_group_allocation(const sequence <Ts...> &)
+auto sequence_to_group_allocation(const Tlist <Ts...> &)
 {
 	return sequence_to_group_allocation_impl(
-		sequence <typename Ts::type...> ::reify(),
+		Tlist <typename Ts::type...> {},
 		std::make_index_sequence <sizeof...(Ts)> ()
 	);
 }
 
 // Filter helpers for separating descriptor-backed resources from push constants
+// TODO: use a function to try and eliminate the insert 'method'
 template <typename Seq>
 struct descriptor_resource_filter;
 
 template <>
-struct descriptor_resource_filter <sequence <>> {
-	using type = sequence <>;
+struct descriptor_resource_filter <Tlist <>> {
+	using type = Tlist <>;
 };
 
 template <auto &ref, ShaderStage ...Ss, typename ...Rest>
-struct descriptor_resource_filter <sequence <stage_wrapper <reference <ref>, Ss...>, Rest...>> {
+struct descriptor_resource_filter <Tlist <stage_wrapper <reference <ref>, Ss...>, Rest...>> {
 	using base = typename reference <ref> ::base;
-	using tail = typename descriptor_resource_filter <sequence <Rest...>> ::type;
+	using tail = typename descriptor_resource_filter <Tlist <Rest...>> ::type;
 	using type = std::conditional_t <
 		is_push_constant_v <base>,
 		tail,
-		typename tail::template push_front_t <stage_wrapper <reference <ref>, Ss...>>
+		typename tail::template insert <stage_wrapper <reference <ref>, Ss...>>
 	>;
 };
 
@@ -79,17 +80,17 @@ template <typename Seq>
 struct push_constant_filter;
 
 template <>
-struct push_constant_filter <sequence <>> {
-	using type = sequence <>;
+struct push_constant_filter <Tlist <>> {
+	using type = Tlist <>;
 };
 
 template <auto &ref, ShaderStage ...Ss, typename ...Rest>
-struct push_constant_filter <sequence <stage_wrapper <reference <ref>, Ss...>, Rest...>> {
+struct push_constant_filter <Tlist <stage_wrapper <reference <ref>, Ss...>, Rest...>> {
 	using base = typename reference <ref> ::base;
-	using tail = typename push_constant_filter <sequence <Rest...>> ::type;
+	using tail = typename push_constant_filter <Tlist <Rest...>> ::type;
 	using type = std::conditional_t <
 		is_push_constant_v <base>,
-		typename tail::template push_front_t <stage_wrapper <reference <ref>, Ss...>>,
+		typename tail::template insert <stage_wrapper <reference <ref>, Ss...>>,
 		tail
 	>;
 };
@@ -164,7 +165,7 @@ auto reference_to_descriptor_set_layout(const Device &device, const stage_wrappe
 }
 
 template <typename ... Ts>
-auto reference_sequence_to_descriptor_set_layouts(const Device &device, const sequence <Ts...> &)
+auto reference_sequence_to_descriptor_set_layouts(const Device &device, const Tlist <Ts...> &)
 {
 	// TODO: separate arrays for dsl and pc ranges
 	if constexpr (sizeof...(Ts) == 0) {
@@ -190,7 +191,7 @@ auto reference_to_push_constant_range(const stage_wrapper <reference <ref>, Ss..
 }
 
 template <typename ... Ts>
-auto reference_sequence_to_push_constant_ranges(const sequence <Ts...> &)
+auto reference_sequence_to_push_constant_ranges(const Tlist <Ts...> &)
 {
 	if constexpr (sizeof...(Ts) == 0) {
 		return std::array <vk::PushConstantRange, 0> ();
@@ -212,7 +213,7 @@ auto reference_sequence_to_push_constant_ranges(const sequence <Ts...> &)
 }
 
 template <typename ... Ts>
-auto reference_sequence_to_push_constant_allocation_map(const sequence <Ts...> &)
+auto reference_sequence_to_push_constant_allocation_map(const Tlist <Ts...> &)
 {
 	push_constant_allocation_map map;
 	if constexpr (sizeof...(Ts) > 0) {
@@ -241,12 +242,6 @@ consteval vk::PrimitiveTopology translate_topology(Topology T)
 	return vk::PrimitiveTopology::eTriangleList;
 }
 
-struct RasterizationOptions {
-	// TODO: dynamic extent or fixed extent
-	const vk::Extent2D &extent;
-	bool depth_test;
-};
-
 template <auto T>
 struct marker {};
 
@@ -270,20 +265,20 @@ struct RasterizationCombinator {
 		using fragment_icontext = find_implicit_context <Bs...> ::type;
 
 		// Collect vertex attribute streams
-		auto streams0 = sequence <> {};
+		auto streams0 = Tlist <> {};
 		auto streams = add_stream_from_implicit_context(streams0, vertex_icontext());
 
 		// Generate vertex input bindings and attributes
-		auto vbindings = sequence_to_vertex_bindings(streams);
-		auto vattributes = sequence_to_vertex_attributes(streams);
+		auto vertex_bindings = sequence_to_vertex_bindings(streams);
+		auto vertex_attributes = sequence_to_vertex_attributes(streams);
 
 		// Collect global resources
-		auto gvrs0 = sequence <> ::reify();
+		auto gvrs0 = Tlist <> {};
 		auto gvrs1 = add_gvr_from_implicit_context <ShaderStage::eVertex> (gvrs0, vertex_icontext());
 		auto gvrs = add_gvr_from_implicit_context <ShaderStage::eFragment> (gvrs1, fragment_icontext());
 
-		auto descriptor_gvrs = descriptor_resources_t <decltype(gvrs)> ::reify();
-		auto push_constant_gvrs = push_constant_resources_t <decltype(gvrs)> ::reify();
+		auto descriptor_gvrs = descriptor_resources_t <decltype(gvrs)> {};
+		auto push_constant_gvrs = push_constant_resources_t <decltype(gvrs)> {};
 
 		auto alloc = sequence_to_group_allocation(descriptor_gvrs);
 		auto gamap = new_allocation(alloc);
@@ -304,8 +299,8 @@ struct RasterizationCombinator {
 		auto vspv = compiler.glsl_to_spirv(vshader, EShLangVertex);
 		auto fspv = compiler.glsl_to_spirv(fshader, EShLangFragment);
 
-		auto vmodule = compiler.spirv_to_shader_module(vspv);
-		auto fmodule = compiler.spirv_to_shader_module(fspv);
+		auto vertex_shader_module = compiler.spirv_to_shader_module(vspv);
+		auto fragment_shader_module = compiler.spirv_to_shader_module(fspv);
 
 		// Generate the pipeline and descriptor set layouts
 		auto dsls = reference_sequence_to_descriptor_set_layouts(device, descriptor_gvrs);
@@ -316,91 +311,17 @@ struct RasterizationCombinator {
 			layout_info.setPushConstantRanges(pcrs);
 		auto layout = device.logical.createPipelineLayout(layout_info);
 
-		// TODO: the rest of this should be an RHI method
-		// Building the pipeline
-		auto shader_stages = std::array {
-			vk::PipelineShaderStageCreateInfo()
-				.setStage(vk::ShaderStageFlagBits::eVertex)
-				.setModule(vmodule)
-				.setPName("main"),
-			vk::PipelineShaderStageCreateInfo()
-				.setStage(vk::ShaderStageFlagBits::eFragment)
-				.setModule(fmodule)
-				.setPName("main"),
-		};
-
-		auto vertex_input = vk::PipelineVertexInputStateCreateInfo()
-			.setVertexBindingDescriptions(vbindings)
-			.setVertexAttributeDescriptions(vattributes);
-
-		auto input_assembly = vk::PipelineInputAssemblyStateCreateInfo()
-			.setTopology(translate_topology(T))
-			.setPrimitiveRestartEnable(false);
-
-		auto viewport = vk::Viewport()
-			.setX(0.0f)
-			.setY(0.0f)
-			.setWidth(float(options.extent.width))
-			.setHeight(float(options.extent.height))
-			.setMinDepth(0.0f)
-			.setMaxDepth(1.0f);
-
-		auto scissor = vk::Rect2D()
-			.setOffset({ 0, 0 })
-			.setExtent(options.extent);
-
-		auto viewport_state = vk::PipelineViewportStateCreateInfo()
-			.setViewports(viewport)
-			.setScissors(scissor);
-
-		auto rasterization = vk::PipelineRasterizationStateCreateInfo()
-			.setDepthClampEnable(false)
-			.setRasterizerDiscardEnable(false)
-			.setPolygonMode(vk::PolygonMode::eFill)
-			.setCullMode(vk::CullModeFlagBits::eBack)
-			.setFrontFace(vk::FrontFace::eCounterClockwise)
-			.setDepthBiasEnable(false)
-			.setLineWidth(1.0f);
-
-		auto multisampling = vk::PipelineMultisampleStateCreateInfo()
-			.setRasterizationSamples(vk::SampleCountFlagBits::e1)
-			.setSampleShadingEnable(false)
-			.setMinSampleShading(1.0f);
-
-		auto color_blend_attachment = vk::PipelineColorBlendAttachmentState()
-			.setBlendEnable(false)
-			.setColorWriteMask(
-				vk::ColorComponentFlagBits::eR
-				| vk::ColorComponentFlagBits::eG
-				| vk::ColorComponentFlagBits::eB
-				| vk::ColorComponentFlagBits::eA
-			);
-
-		auto color_blend = vk::PipelineColorBlendStateCreateInfo()
-			.setAttachments(color_blend_attachment);
-
-		auto depth_stencil = vk::PipelineDepthStencilStateCreateInfo()
-			.setDepthTestEnable(options.depth_test)
-			.setDepthWriteEnable(options.depth_test)
-			.setDepthCompareOp(vk::CompareOp::eLess)
-			.setDepthBoundsTestEnable(false)
-			.setStencilTestEnable(false);
-
-		auto pipeline_info = vk::GraphicsPipelineCreateInfo()
-			.setLayout(layout)
-			.setPInputAssemblyState(&input_assembly)
-			.setPVertexInputState(&vertex_input)
-			.setPRasterizationState(&rasterization)
-			.setPMultisampleState(&multisampling)
-			.setPColorBlendState(&color_blend)
-			.setPDepthStencilState(&depth_stencil)
-			.setPViewportState(&viewport_state)
-			.setStages(shader_stages)
-			.setRenderPass(render_pass)
-			.setSubpass(0);
-
-		auto [result, pipeline] = device.logical.createGraphicsPipeline(nullptr, pipeline_info, nullptr);
-		assertion(result == vk::Result::eSuccess, "failed to compile pipeline");
+		auto pipeline = compile_rasterization_pipeline(
+			device,
+			render_pass,
+			translate_topology(T),
+			vertex_shader_module,
+			fragment_shader_module,
+			layout,
+			vertex_bindings,
+			vertex_attributes,
+			options
+		);
 
 		return AnnotatedRasterizationPipeline <
 			T,

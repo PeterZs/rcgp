@@ -16,7 +16,7 @@ constexpr auto binding_description_for_attribute_stream(const AttributeStream <T
 }
 
 template <auto &... refs, size_t ... Is>
-constexpr auto sequence_to_vertex_bindings_impl(const sequence <reference <refs>...> &, const std::index_sequence <Is...> &)
+constexpr auto sequence_to_vertex_bindings_impl(const Tlist <reference <refs>...> &, const std::index_sequence <Is...> &)
 {
 	return std::array {
 		binding_description_for_attribute_stream(refs, Is)...
@@ -24,7 +24,7 @@ constexpr auto sequence_to_vertex_bindings_impl(const sequence <reference <refs>
 }
 
 template <auto &... refs>
-constexpr auto sequence_to_vertex_bindings(const sequence <reference <refs>...> &in)
+constexpr auto sequence_to_vertex_bindings(const Tlist <reference <refs>...> &in)
 {
 	if constexpr (sizeof...(refs) == 0)
 		return std::array <vk::VertexInputBindingDescription, 0> ();

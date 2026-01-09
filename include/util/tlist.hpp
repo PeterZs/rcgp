@@ -4,12 +4,8 @@
 
 // Tuples without the baggage
 template <typename ... Args>
-struct sequence {
+struct Tlist {
 	static constexpr size_t size = sizeof...(Args);
-
-	// TODO: get rid of this... type identity already
-	// allows us to avoid declval
-	constexpr sequence(std::type_identity <Args> ...) {}
 
 	template <size_t I>
 	using get = decltype([] {
@@ -21,23 +17,10 @@ struct sequence {
 	} ());
 
 	template <typename T>
-	using push_front_t = sequence <T, Args...>;
-
-	template <typename T>
-	using push_back_t = sequence <Args..., T>;
+	using insert = Tlist <T, Args...>;
 
 	template <template <typename ...> typename F>
 	using invoke = F <Args...>;
-
-	static constexpr auto iseq() {
-		return std::make_index_sequence <size> ();
-	}
-
-	static constexpr auto reify() {
-		return sequence {
-			std::type_identity <Args> {}...
-		};
-	}
 };
 
 // Static enumeration

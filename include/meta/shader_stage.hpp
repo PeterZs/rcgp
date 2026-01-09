@@ -1,8 +1,7 @@
 #pragma once
 
-#include "../dsl/instructions.hpp"
 #include "../dsl/jems.hpp"
-#include "../util/sequence.hpp"
+#include "../util/tlist.hpp"
 #include "implicit_context.hpp"
 #include "reconstruct_type.hpp"
 
@@ -93,27 +92,27 @@ struct invocable : SharedBlockReference {
 
 // Filter through real parameters for a subroutine
 template <typename ... Ts, typename C, typename ... Us>
-auto filter_real_parameters(sequence <Ts...> a, sequence <C, Us...> processing)
+auto filter_real_parameters(Tlist <Ts...> a, Tlist <C, Us...> processing)
 {
-	auto next = sequence <Us...> ::reify();
+	auto next = Tlist <Us...> {};
 	if constexpr (is_implicit_context_v <C> or is_reference_v <C>) {
 		return filter_real_parameters(a, next);
 	} else {
-		auto b = sequence <Ts..., C> ::reify();
+		auto b = Tlist <Ts..., C> {};
 		return filter_real_parameters(b, next);
 	}
 }
 
 template <typename ... Ts>
-auto filter_real_parameters(sequence <Ts...> a, sequence <> processing)
+auto filter_real_parameters(Tlist <Ts...> a, Tlist <> processing)
 {
 	return a;
 }
 
 template <typename R, typename ... Args>
 auto filtered_invocable() -> decltype(filter_real_parameters(
-	sequence <R> ::reify(),
-	sequence <Args...> ::reify()
+	Tlist <R> {},
+	Tlist <Args...> {}
 )) ::template invoke <invocable>;
 
 template <typename ... Args>
@@ -122,8 +121,8 @@ using filtered_invocable_t = decltype(filtered_invocable <Args...> ());
 template <typename R, typename ... Args>
 struct shader_stage <ShaderStage::eSubroutine, R, Args...> : filtered_invocable_t <R, Args...> {
 	using filter_result = decltype(filter_real_parameters(
-		sequence <R> ::reify(),
-		sequence <Args...> ::reify()
+		Tlist <R> {},
+		Tlist <Args...> {}
 	));
 
 	shader_stage(const SharedBlockReference &sbr)

@@ -7,11 +7,10 @@
 #include "scalar.hpp"
 #include "local.hpp"
 
-auto wrap_in_local(auto loc, auto ... cargs)
+auto wrap_in_local(auto loc, auto type, auto ... cargs)
 {
-	auto c = jems::construct_loc(loc, cargs...);
-	auto t = ((Reference &) c)->as <Construct> ().type;
-	auto l = jems::local_loc(loc, t);
+	auto c = jems::construct_loc(loc, type, cargs...);
+	auto l = jems::local_loc(loc, type);
 	jems::store(l, c);
 	return l;
 }
@@ -56,7 +55,7 @@ public:
 	}
 	
 	vector_base(const scalar <T> &x, const scalar <T> &y, $location)
-		: handle(jems::construct_loc(loc,
+		: handle(wrap_in_local(loc,
 			jems::type_loc(loc, VectorType <T, 2> ()),
 			x, y
 		)) {}
@@ -76,31 +75,26 @@ public:
 		}
 	}
 
-	// TODO: need to wrap these delegators in local constructors...
 	vector_base(const scalar <T> x, $location)
 		: handle(wrap_in_local(loc,
 			jems::type_loc(loc, VectorType <T, 3> ()),
 			x, x, x
 		)) {}
-		// : handle(jems::construct_loc(loc,
-		// 	jems::type_loc(loc, VectorType <T, 3> ()),
-		// 	x, x, x
-		// )) {}
 
 	vector_base(const vector_base <T, 4> v, $location)
-		: handle(jems::construct_loc(loc,
+		: handle(wrap_in_local(loc,
 			jems::type_loc(loc, VectorType <T, 3> ()),
 			v
 		)) {}
 	
 	vector_base(const vector_base <T, 2> &xy, const scalar <T> &z, $location)
-		: handle(jems::construct_loc(loc,
+		: handle(wrap_in_local(loc,
 			jems::type_loc(loc, VectorType <T, 3> ()),
 			xy, z
 		)) {}
 	
 	vector_base(const scalar <T> &x, const scalar <T> &y, const scalar <T> &z, $location)
-		: handle(jems::construct_loc(loc,
+		: handle(wrap_in_local(loc,
 			jems::type_loc(loc, VectorType <T, 3> ()),
 			x, y, z
 		)) {}
@@ -121,19 +115,19 @@ public:
 	}
 	
 	vector_base(const scalar <T> &x, $location)
-		: handle(jems::construct_loc(loc,
+		: handle(wrap_in_local(loc,
 			jems::type_loc(loc, VectorType <T, 4> ()),
 			x, x, x, x
 		)) {}
 	
 	vector_base(const vector_base <T, 3> &xyz, const scalar <T> &w, $location)
-		: handle(jems::construct_loc(loc,
+		: handle(wrap_in_local(loc,
 			jems::type_loc(loc, VectorType <T, 4> ()),
 			xyz, w
 		)) {}
 
 	vector_base(const vector_base <T, 2> &xy, const scalar <T> &z, const scalar <T> &w, $location)
-		: handle(jems::construct_loc(loc,
+		: handle(wrap_in_local(loc,
 			jems::type_loc(loc, VectorType <T, 4> ()),
 			xy, z, w
 		)) {}
