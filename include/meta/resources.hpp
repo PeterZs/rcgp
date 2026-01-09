@@ -2,13 +2,14 @@
 
 #include "../dsl/jems.hpp"
 #include "../dsl/primitives.hpp"
+#include "../util/cti.hpp"
+#include "layout/all.hpp"
 #include "reflection.hpp"
 #include "reflection_builder.hpp"
-#include "layout/all.hpp"
 
 // Corresponds to vertex buffes
 // TODO: shoudl be more restrictive than reflected... at least must be static
-template <reflected T,  template <typename> typename L = layouts::scalar, vk::VertexInputRate R = vk::VertexInputRate::eVertex>
+template <reflected T, template <typename> typename L = layouts::scalar, vk::VertexInputRate R = vk::VertexInputRate::eVertex>
 struct AttributeStream : T {
 	using reflection = attribute_stream_reflection <T, R>;
 	DEFINE_REFLECTION_STAMP();
@@ -18,20 +19,10 @@ struct AttributeStream : T {
 // TODO: should not allow index/vertex buffers here
 template <reflected T>
 struct ResourceGroup : T {
+	using value_type = T;
 	using reflection = resource_group_reflection <T>;
 	DEFINE_REFLECTION_STAMP();
 };
-
-// TODO: is_X_reflection goes to reflection.hpp...
-template <typename T>
-struct is_resource_group_reflection : std::false_type {};
-
-template <typename T>
-struct is_resource_group_reflection <resource_group_reflection <T>> : std::true_type {};
-
-template <typename T>
-constexpr bool is_resource_group_v =
-	has_reflection <T> () && is_resource_group_reflection <typename T::reflection> ::value;
 
 // Push constants
 template <reflected T, template <typename> typename L = layouts::std430>
@@ -40,23 +31,7 @@ struct PushConstant : T {
 	DEFINE_REFLECTION_STAMP();
 };
 
-// TODO: macrofiy concepts/is_X stuff for this
-// DEFINE_TYPE_CLASS(is_push_constant_reflection)
-//
-// template <typename T, template <typename> typename L>
-// APPEND_TO_TYPE_CLASS(is_push_constant_reflection, push_constant_reflection <T, L>)
-template <typename T>
-struct is_push_constant_reflection : std::false_type {};
-
-template <typename T, template <typename> typename L>
-struct is_push_constant_reflection <push_constant_reflection <T, L>> : std::true_type {};
-
-template <typename T>
-constexpr bool is_push_constant_v =
-	has_reflection <T> () && is_push_constant_reflection <typename T::reflection> ::value;
-
 // Uniform buffers
-// TODO: these need layouts...
 template <reflected T, template <typename> typename L = layouts::std430>
 struct UniformBuffer : T {
 	using reflection = uniform_buffer_reflection <T, L>;
@@ -73,103 +48,60 @@ struct StorageBuffer : T {
 template <reflected T, template <typename> typename L = layouts::std430>
 using ArrayBuffer = StorageBuffer <array <T>, L>;
 
-template <reflected T, template <typename> typename L = layouts::std430>
-struct BufferReference {
-	// TODO: jems handle corresponding to
-	// device_address := uint64_t underneath
-};
-
 template <native_scalar T, size_t D>
 struct Sampler : jems::handle {
 	using reflection = sampler_reflection <T, D>;
 	DEFINE_REFLECTION_STAMP();
 
 	auto sample(vector <T, D> x, $location) const
-		requires native_float_scalar <T>
-	{
-		return vector <T, 4> ::reinterpret(jems::builtin_intrinsic_loc(loc, BuiltinIntrinsicCode::eSample, *this, x));
+	requires native_float_scalar <T> {
+		auto result = jems::builtin_intrinsic_loc(
+			loc, BuiltinIntrinsicCode::eSample,
+			*this, x
+		);
+
+		return vector <T, 4> ::reinterpret(result);
 	}
 };
 
+// Aliases for the common case
 using Sampler1D = Sampler <float, 1>;
 using Sampler2D = Sampler <float, 2>;
 using Sampler3D = Sampler <float, 3>;
 
-template <typename T>
-struct is_sampler : std::false_type {};
+// Type traits for these resources
+TYPE_TRAIT(is_attribute_stream);
+	template <reflected T, template <typename> typename L, vk::VertexInputRate R>
+	TYPE_TRAIT_INCLUDES(is_attribute_stream, AttributeStream <T, L, R>);
 
-template <typename T, size_t D>
-struct is_sampler <Sampler <T, D>> : std::true_type {};
+TYPE_TRAIT(is_resource_group);
+	template <reflected T>
+	TYPE_TRAIT_INCLUDES(is_resource_group, ResourceGroup <T>);
 
-template <typename T>
-constexpr bool is_sampler_v = is_sampler <T> ::value;
+TYPE_TRAIT(is_push_constant);
+	template <typename T, template <typename> typename L>
+	TYPE_TRAIT_INCLUDES(is_push_constant, PushConstant <T, L>);
 
-// Reflection helpers (resource types)
-template <typename T>
-struct is_sampler_reflection : std::false_type {};
+TYPE_TRAIT(is_storage_buffer);
+	template <typename T, template <typename> typename L>
+	TYPE_TRAIT_INCLUDES(is_storage_buffer, StorageBuffer <T, L>);
 
-template <typename T, size_t D>
-struct is_sampler_reflection <sampler_reflection <T, D>> : std::true_type {};
+TYPE_TRAIT(is_sampler);
+	template <typename T, size_t D>
+	TYPE_TRAIT_INCLUDES(is_sampler, Sampler <T, D>);
 
-template <typename T>
-constexpr bool is_sampler_reflection_v = is_sampler_reflection <T> ::value;
+TYPE_TRAIT(is_global_resource);
+	template <reflected T>
+	TYPE_TRAIT_INCLUDES(is_global_resource, ResourceGroup <T>);
 
-template <typename T>
-struct is_uniform_buffer_reflection : std::false_type {};
-
-template <typename T, template <typename> typename L>
-struct is_uniform_buffer_reflection <uniform_buffer_reflection <T, L>> : std::true_type {};
-
-template <typename T>
-constexpr bool is_uniform_buffer_reflection_v = is_uniform_buffer_reflection <T> ::value;
-
-template <typename T>
-struct is_storage_buffer_reflection : std::false_type {};
-
-template <typename T, template <typename> typename L>
-struct is_storage_buffer_reflection <storage_buffer_reflection <T, L>> : std::true_type {};
-
-template <typename T>
-constexpr bool is_storage_buffer_reflection_v = is_storage_buffer_reflection <T> ::value;
-
-template <reflected T>
-struct RayPayload : T {};
-
-// Introspection
-template <typename T>
-struct is_global_resource_reflection : std::false_type {};
-
-template <typename T, template <typename> typename L>
-struct is_global_resource_reflection <push_constant_reflection <T, L>> : std::true_type {};
-
-template <typename T>
-struct is_global_resource_reflection <resource_group_reflection <T>> : std::true_type {};
-
-template <typename T, template <typename> typename L>
-struct is_global_resource_reflection <uniform_buffer_reflection <T, L>> : std::true_type {};
-
-template <typename T, template <typename> typename L>
-struct is_global_resource_reflection <storage_buffer_reflection <T, L>> : std::true_type {};
-
-template <typename T, size_t D>
-struct is_global_resource_reflection <sampler_reflection <T, D>> : std::true_type {};
-
-template <typename T>
-constexpr bool is_global_resource_reflection_v = is_global_resource_reflection <T> ::value;
-
-template <typename T>
-constexpr bool is_global_resource_v = is_global_resource_reflection <typename T::reflection> ::value;
-
-// Attribute stream detection
-template <typename T>
-struct is_attribute_stream_reflection : std::false_type {};
-
-template <typename T, vk::VertexInputRate R>
-struct is_attribute_stream_reflection <attribute_stream_reflection <T, R>> : std::true_type {};
-
-template <typename T>
-constexpr bool is_attribute_stream_reflection_v = is_attribute_stream_reflection <T> ::value;
-
-template <typename T>
-constexpr bool is_attribute_stream_v =
-	has_reflection <T> () && is_attribute_stream_reflection_v <typename T::reflection>;
+	template <typename T, template <typename> typename L>
+	TYPE_TRAIT_INCLUDES(is_global_resource, PushConstant <T, L>);
+	
+	template <typename T, template <typename> typename L>
+	TYPE_TRAIT_INCLUDES(is_global_resource, UniformBuffer  <T, L>);
+	
+	template <typename T, template <typename> typename L>
+	TYPE_TRAIT_INCLUDES(is_global_resource, StorageBuffer  <T, L>);
+	
+	template <typename T, size_t D>
+	TYPE_TRAIT_INCLUDES(is_global_resource, Sampler <T, D>);

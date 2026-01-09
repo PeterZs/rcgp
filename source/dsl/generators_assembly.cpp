@@ -9,47 +9,47 @@
 
 namespace {
 
-struct AssemblyContext {
+struct Context {
 	const SharedBlockReference &sbr;
 	std::map <intptr_t, uint32_t> ids;
 };
 
-std::string stringify(AssemblyContext &ctx, Reference ref);
-std::string stringify(AssemblyContext &ctx, Constant x, Reference ref);
-std::string stringify_type(AssemblyContext &ctx, PrimitiveType x, Reference ref);
-std::string stringify_type(AssemblyContext &ctx, AggregateType x, Reference ref);
-std::string stringify_type(AssemblyContext &ctx, ArrayType x, Reference ref);
-std::string stringify(AssemblyContext &ctx, Type x, Reference ref);
-std::string stringify(AssemblyContext &ctx, Operation x, Reference ref);
-std::string stringify(AssemblyContext &ctx, Store x, Reference ref);
-std::string stringify(AssemblyContext &ctx, ArrayAccess x, Reference ref);
-std::string stringify(AssemblyContext &ctx, FieldAccess x, Reference ref);
-std::string stringify(AssemblyContext &ctx, Argument x, Reference ref);
+std::string stringify(Context &ctx, Reference ref);
+std::string stringify(Context &ctx, Constant x, Reference ref);
+std::string stringify_type(Context &ctx, PrimitiveType x, Reference ref);
+std::string stringify_type(Context &ctx, AggregateType x, Reference ref);
+std::string stringify_type(Context &ctx, ArrayType x, Reference ref);
+std::string stringify(Context &ctx, Type x, Reference ref);
+std::string stringify(Context &ctx, Operation x, Reference ref);
+std::string stringify(Context &ctx, Store x, Reference ref);
+std::string stringify(Context &ctx, ArrayAccess x, Reference ref);
+std::string stringify(Context &ctx, FieldAccess x, Reference ref);
+std::string stringify(Context &ctx, Argument x, Reference ref);
 std::string stringify(GlobalResourceLayout layout);
-std::string stringify(AssemblyContext &ctx, GlobalResource x, Reference ref);
-std::string stringify(AssemblyContext &ctx, ThreadInput x, Reference ref);
+std::string stringify(Context &ctx, GlobalResource x, Reference ref);
+std::string stringify(Context &ctx, ThreadInput x, Reference ref);
 std::string stringify_rate_properties(RateProperties properties);
-std::string stringify(AssemblyContext &ctx, ThreadOutput x, Reference ref);
-std::string stringify(AssemblyContext &ctx, Invocation x, Reference ref);
-std::string stringify(AssemblyContext &ctx, GlobalIntrinsic x, Reference ref);
-std::string stringify(AssemblyContext &ctx, Construct x, Reference ref);
-std::string stringify(AssemblyContext &ctx, BuiltinIntrinsic x, Reference ref);
-std::string stringify(AssemblyContext &ctx, Swizzle x, Reference ref);
-std::string stringify(AssemblyContext &ctx, Branch x, Reference ref);
-std::string stringify(AssemblyContext &ctx, Loop x, Reference ref);
-std::string stringify(AssemblyContext &ctx, Local x, Reference ref);
-std::string stringify(AssemblyContext &ctx, Block x, Reference ref);
+std::string stringify(Context &ctx, ThreadOutput x, Reference ref);
+std::string stringify(Context &ctx, Invocation x, Reference ref);
+std::string stringify(Context &ctx, GlobalIntrinsic x, Reference ref);
+std::string stringify(Context &ctx, Construct x, Reference ref);
+std::string stringify(Context &ctx, BuiltinIntrinsic x, Reference ref);
+std::string stringify(Context &ctx, Swizzle x, Reference ref);
+std::string stringify(Context &ctx, Branch x, Reference ref);
+std::string stringify(Context &ctx, Loop x, Reference ref);
+std::string stringify(Context &ctx, Local x, Reference ref);
+std::string stringify(Context &ctx, Block x, Reference ref);
 std::string stringify(ShaderStage stage);
-std::string generate(AssemblyContext &ctx, size_t tabs = 0, bool emit_branches = true);
-std::string stringify_block_ref(AssemblyContext &ctx, const SharedBlockReference &blk);
-std::string generate_block_body(AssemblyContext &ctx, const SharedBlockReference &blk, const std::string &indent);
+std::string generate(Context &ctx, size_t tabs = 0, bool emit_branches = true);
+std::string stringify_block_ref(Context &ctx, const SharedBlockReference &blk);
+std::string generate_block_body(Context &ctx, const SharedBlockReference &blk, const std::string &indent);
 void emit_debug_line(std::string &result, const std::string &text, const std::source_location &origin);
-void emit_branch_block(AssemblyContext &ctx, const Branch &branch, Reference instr,
+void emit_branch_block(Context &ctx, const Branch &branch, Reference instr,
 	std::string &result);
-void emit_loop_block(AssemblyContext &ctx, const Loop &loop, Reference instr,
+void emit_loop_block(Context &ctx, const Loop &loop, Reference instr,
 	std::string &result);
 
-std::string stringify(AssemblyContext &ctx, Reference ref)
+std::string stringify(Context &ctx, Reference ref)
 {
 	if (!ref)
 		return "nil";
@@ -68,14 +68,14 @@ std::string stringify(AssemblyContext &ctx, Reference ref)
 
 #define $assign stringify(ctx, ref) + " = " +
 
-std::string stringify(AssemblyContext &ctx, Constant x, Reference ref)
+std::string stringify(Context &ctx, Constant x, Reference ref)
 {
 	return $assign std::visit([](auto x) {
 		return fmt::format("{}", x);
 	}, x);
 }
 
-std::string stringify_type(AssemblyContext &ctx, PrimitiveType x, Reference ref)
+std::string stringify_type(Context &ctx, PrimitiveType x, Reference ref)
 {
 	vswitch(x) {
 	vcase(bool): return "bool";
@@ -104,7 +104,7 @@ std::string stringify_type(AssemblyContext &ctx, PrimitiveType x, Reference ref)
 	return "primitive(?)";
 }
 
-std::string stringify_type(AssemblyContext &ctx, AggregateType x, Reference ref)
+std::string stringify_type(Context &ctx, AggregateType x, Reference ref)
 {
 	std::string result;
 	for (size_t i = 0; i < x.size(); i++) {
@@ -116,20 +116,20 @@ std::string stringify_type(AssemblyContext &ctx, AggregateType x, Reference ref)
 	return "aggregate(" + result + ")";
 }
 
-std::string stringify_type(AssemblyContext &ctx, ArrayType x, Reference ref)
+std::string stringify_type(Context &ctx, ArrayType x, Reference ref)
 {
 	return fmt::format("array({}, {})",
 		stringify(ctx, x.base), x.size);
 }
 
-std::string stringify(AssemblyContext &ctx, Type x, Reference ref)
+std::string stringify(Context &ctx, Type x, Reference ref)
 {
 	return $assign std::visit([&](auto x) {
 		return stringify_type(ctx, x, ref);
 	}, x);
 }
 
-std::string stringify(AssemblyContext &ctx, Operation x, Reference ref)
+std::string stringify(Context &ctx, Operation x, Reference ref)
 {
 	std::string op = "?";
 	switch (x.code) {
@@ -151,25 +151,25 @@ std::string stringify(AssemblyContext &ctx, Operation x, Reference ref)
 		op, stringify(ctx, x.a), stringify(ctx, x.b));
 }
 
-std::string stringify(AssemblyContext &ctx, Store x, Reference ref)
+std::string stringify(Context &ctx, Store x, Reference ref)
 {
 	return fmt::format("store {} {}",
 		stringify(ctx, x.destination), stringify(ctx, x.source));
 }
 
-std::string stringify(AssemblyContext &ctx, ArrayAccess x, Reference ref)
+std::string stringify(Context &ctx, ArrayAccess x, Reference ref)
 {
 	return $assign fmt::format("index({}, {})",
 		stringify(ctx, x.value), stringify(ctx, x.index));
 }
 
-std::string stringify(AssemblyContext &ctx, FieldAccess x, Reference ref)
+std::string stringify(Context &ctx, FieldAccess x, Reference ref)
 {
 	return $assign fmt::format("field {}:{}",
 		stringify(ctx, x.value), x.fidx);
 }
 
-std::string stringify(AssemblyContext &ctx, Argument x, Reference ref)
+std::string stringify(Context &ctx, Argument x, Reference ref)
 {
 	return $assign fmt::format("argument {}:{}",
 		stringify(ctx, x.type), x.argi);
@@ -186,7 +186,7 @@ std::string stringify(GlobalResourceLayout layout)
 	}
 }
 
-std::string stringify(AssemblyContext &ctx, GlobalResource x, Reference ref)
+std::string stringify(Context &ctx, GlobalResource x, Reference ref)
 {
 	std::string kind = "?";
 	switch (x.kind) {
@@ -206,7 +206,7 @@ std::string stringify(AssemblyContext &ctx, GlobalResource x, Reference ref)
 		stringify(ctx, x.type), opint(x.group), opint(x.index), stringify(x.layout));
 }
 
-std::string stringify(AssemblyContext &ctx, ThreadInput x, Reference ref)
+std::string stringify(Context &ctx, ThreadInput x, Reference ref)
 {
 	return $assign fmt::format("thread in({}, {})",
 		stringify(ctx, x.type), x.argi);
@@ -226,14 +226,14 @@ std::string stringify_rate_properties(RateProperties properties)
 	return "?";
 }
 
-std::string stringify(AssemblyContext &ctx, ThreadOutput x, Reference ref)
+std::string stringify(Context &ctx, ThreadOutput x, Reference ref)
 {
 	return $assign fmt::format("thread out({}, {}, {})",
 		stringify(ctx, x.type), x.argi,
 		stringify_rate_properties(x.properties));
 }
 
-std::string stringify(AssemblyContext &ctx, GlobalIntrinsic x, Reference ref)
+std::string stringify(Context &ctx, GlobalIntrinsic x, Reference ref)
 {
 	switch (x) {
 	case GlobalIntrinsic::eScreenPosition:
@@ -245,7 +245,7 @@ std::string stringify(AssemblyContext &ctx, GlobalIntrinsic x, Reference ref)
 	return "?";
 }
 
-std::string stringify(AssemblyContext &ctx, Construct x, Reference ref)
+std::string stringify(Context &ctx, Construct x, Reference ref)
 {
 	std::string result = fmt::format("new {}(", stringify(ctx, x.type));
 
@@ -260,7 +260,7 @@ std::string stringify(AssemblyContext &ctx, Construct x, Reference ref)
 	return $assign result;
 }
 
-std::string stringify(AssemblyContext &ctx, BuiltinIntrinsic x, Reference ref)
+std::string stringify(Context &ctx, BuiltinIntrinsic x, Reference ref)
 {
 	std::string ftn = "?";
 	switch (x.code) {
@@ -289,13 +289,13 @@ std::string stringify(AssemblyContext &ctx, BuiltinIntrinsic x, Reference ref)
 	return $assign ftn + "(" + args + ")";
 }
 
-std::string stringify(AssemblyContext &ctx, Swizzle x, Reference ref)
+std::string stringify(Context &ctx, Swizzle x, Reference ref)
 {
 	return $assign fmt::format("swizzle({}, {})",
 		stringify(ctx, x.value), swizzle_string(x.code));
 }
 
-std::string stringify(AssemblyContext &ctx, Branch x, Reference ref)
+std::string stringify(Context &ctx, Branch x, Reference ref)
 {
 	std::string result = "branch(";
 	for (size_t i = 0; i < x.segments.size(); i++) {
@@ -316,7 +316,7 @@ std::string stringify(AssemblyContext &ctx, Branch x, Reference ref)
 	return $assign result;
 }
 
-std::string stringify(AssemblyContext &ctx, Loop x, Reference ref)
+std::string stringify(Context &ctx, Loop x, Reference ref)
 {
 	std::string result = "loop(";
 	switch (x.kind) {
@@ -341,12 +341,12 @@ std::string stringify(AssemblyContext &ctx, Loop x, Reference ref)
 	return $assign result;
 }
 
-std::string stringify(AssemblyContext &ctx, Local x, Reference ref)
+std::string stringify(Context &ctx, Local x, Reference ref)
 {
 	return $assign fmt::format("local {}", stringify(ctx, x.type));
 }
 
-std::string stringify(AssemblyContext &ctx, Invocation x, Reference ref)
+std::string stringify(Context &ctx, Invocation x, Reference ref)
 {
 	std::string result = fmt::format("@{}(", (void *) x.sbr.get());
 	for (size_t i = 0; i < x.args.size(); i++) {
@@ -361,7 +361,7 @@ std::string stringify(AssemblyContext &ctx, Invocation x, Reference ref)
 
 #undef $assign
 
-std::string stringify(AssemblyContext &ctx, Block x, Reference ref)
+std::string stringify(Context &ctx, Block x, Reference ref)
 {
 	fatal("cannot generate assembly for block");
 }
@@ -387,7 +387,7 @@ void emit_debug_line(std::string &result, const std::string &text, const std::so
 		text, rel.string(), origin.line());
 }
 
-void emit_branch_block(AssemblyContext &ctx, const Branch &branch, Reference instr,
+void emit_branch_block(Context &ctx, const Branch &branch, Reference instr,
 	std::string &result)
 {
 	for (auto &segment : branch.segments) {
@@ -420,7 +420,7 @@ void emit_branch_block(AssemblyContext &ctx, const Branch &branch, Reference ins
 	result += "  )\n";
 }
 
-void emit_loop_block(AssemblyContext &ctx, const Loop &loop, Reference instr,
+void emit_loop_block(Context &ctx, const Loop &loop, Reference instr,
 	std::string &result)
 {
 	if (loop.init.has_value()) {
@@ -456,7 +456,7 @@ void emit_loop_block(AssemblyContext &ctx, const Loop &loop, Reference instr,
 	result += "  )\n";
 }
 
-std::string generate(AssemblyContext &ctx, size_t tabs, bool emit_branches)
+std::string generate(Context &ctx, size_t tabs, bool emit_branches)
 {
 	std::string result = "block {\n";
 
@@ -551,7 +551,7 @@ std::string generate(AssemblyContext &ctx, size_t tabs, bool emit_branches)
 	return result;
 }
 
-std::string stringify_block_ref(AssemblyContext &ctx, const SharedBlockReference &blk)
+std::string stringify_block_ref(Context &ctx, const SharedBlockReference &blk)
 {
 	if (!blk)
 		return "nil";
@@ -566,14 +566,14 @@ std::string stringify_block_ref(AssemblyContext &ctx, const SharedBlockReference
 	return fmt::format("${}", id);
 }
 
-std::string generate_block_body(AssemblyContext &ctx, const SharedBlockReference &blk, const std::string &indent)
+std::string generate_block_body(Context &ctx, const SharedBlockReference &blk, const std::string &indent)
 {
 	std::string result = "block {\n";
 
 	auto prefix = indent + "  ";
 	auto pad_width = 40;
-	if (indent.size() < static_cast <size_t> (pad_width))
-		pad_width -= static_cast <int> (indent.size());
+	if (indent.size() < pad_width)
+		pad_width -= indent.size();
 
 	if (blk->empty())
 		result += prefix + "(empty block)\n";
@@ -597,6 +597,6 @@ std::string generate_block_body(AssemblyContext &ctx, const SharedBlockReference
 
 std::string generate_assembly(const SharedBlockReference &sbr, size_t tabs)
 {
-	AssemblyContext ctx { sbr, {} };
+	Context ctx { sbr, {} };
 	return generate(ctx, tabs);
 }

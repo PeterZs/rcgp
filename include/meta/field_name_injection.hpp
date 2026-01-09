@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstdlib>
+#include "static_string.hpp"
 
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push

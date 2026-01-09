@@ -8,6 +8,7 @@
 #include "rhi/window.hpp"
 
 #include "util/logging.hpp"
+#include "util/cti.hpp"
 
 auto Device::find_memory_type(uint32_t filter, vk::MemoryPropertyFlags flags) const
 	-> uint32_t
@@ -79,9 +80,7 @@ Device Device::from(
 
 	info("queue families:");
 	for (const auto &[i, family] : std::views::enumerate(queue_families)) {
-		info("%zu: %u of %s",
-			static_cast <size_t> (i),
-			family.queueCount,
+		info("%d: %u of %s", i, family.queueCount,
 			vk::to_string(family.queueFlags).c_str());
 	}
 
@@ -144,7 +143,7 @@ Device Device::from(
 
 	// Populate the queue handles
 	for (auto &[_, queue] : device.queues)
-		static_cast <vk::Queue &> (queue) = device.logical.getQueue(queue.family_index, 0);
+		Tas <vk::Queue &> (queue) = device.logical.getQueue(queue.family_index, 0);
 
 	return device;
 }

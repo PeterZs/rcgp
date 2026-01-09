@@ -102,7 +102,7 @@ using Read = std::remove_pointer_t <decltype(adl_lever(Reader <v> {}))>;
 #define $returns(...) decltype(frenj_ret::Writer <__COUNTER__, compact_returns_t <__VA_ARGS__>> {}, void())
 #define $return (_return_operator <frenj_ret::Read <__rpidx.value>> ()) << 
 #define $fn (_fn_operator <ShaderStage::eSubroutine, __COUNTER__ + 2> ()) \
-	<< [__rpidx = cti <__COUNTER__ + 1> ()] $context_capture
+	<< [__rpidx = std::integral_constant <size_t, __COUNTER__ + 1> ()] $context_capture
 #define $cafn(...) (_fn_operator <ShaderStage::eSubroutine, __COUNTER__ + 2> ()) \
 	<< [__VA_ARGS__ __VA_OPT__(,) __rpidx = el <__COUNTER__ + 1> ()] $context_capture
 

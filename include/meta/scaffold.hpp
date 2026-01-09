@@ -1,7 +1,8 @@
 #pragma once
 
 #include "reflection.hpp"
-#include <cstddef>
+#include "static_string.hpp"
+#include "../util/tlist.hpp"
 
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push

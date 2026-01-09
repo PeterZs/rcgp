@@ -53,7 +53,7 @@ auto coerce_to_handle(const T &value)
 template <aggregate T>
 auto coerce_to_handle(const T &value)
 {
-	cti_constexpr_for(Is, T::reflection::field_count,
+	constexpr_for(Is, T::reflection::field_count,
 		jems::construct(
 			reconstruct_type <T> (),
 			coerce_to_handle(value.template

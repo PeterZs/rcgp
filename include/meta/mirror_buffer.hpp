@@ -49,7 +49,7 @@ struct MirrorBuffer <T, L, F> : Buffer {
 		auto base = Buffer::from(device, sizeof(value_type), F | extra_usage, properties);
 
 		MirrorBuffer result;
-		static_cast <Buffer &> (result) = base;
+		Tas <Buffer &> (result) = base;
 		return result;
 	}
 };
@@ -91,7 +91,7 @@ struct MirrorBuffer <T, L, F> : Buffer {
 		auto base = Buffer::from(device, offset + max_elements * sizeof(element_type), F | extra_usage, properties);
 
 		MirrorBuffer result;
-		static_cast <Buffer &> (result) = base;
+		Tas <Buffer &> (result) = base;
 		return result;
 	}
 

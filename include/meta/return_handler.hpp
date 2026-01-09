@@ -30,7 +30,7 @@ void return_handler(const T &ret, size_t &argi)
 template <typename ... Args>
 void return_handler(const std::tuple <Args...> &ret, size_t &argi)
 {
-	cti_constexpr_for(Is, sizeof...(Args),
+	constexpr_for(Is, sizeof...(Args),
 		(return_handler(std::get <Is> (ret), argi), ...)
 	);
 }

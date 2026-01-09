@@ -4,7 +4,7 @@ std::string swizzle_string(SwizzleCode code)
 {
 	static constexpr char letters[] = "xyzw";
 
-	auto raw = static_cast <int> (code);
+	auto raw = std::to_underlying(code);
 	if (raw < 0)
 		return "?";
 

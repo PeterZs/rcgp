@@ -6,6 +6,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "../util/cti.hpp"
+
 struct Attachments {
 	std::vector <vk::AttachmentDescription> descriptions;
 	std::map <std::string, uint32_t> mapping;
@@ -21,7 +23,7 @@ struct color_attachments : std::array <vk::AttachmentReference, N> {
 	requires (sizeof...(Ts) == N)
 	color_attachments(Ts ... args)
 		: std::array <vk::AttachmentReference, N> {
-			static_cast <vk::AttachmentReference> (args)...
+			Tas <vk::AttachmentReference> (args)...
 		} {}
 };
 
@@ -36,7 +38,7 @@ struct depth_attachments : std::array <vk::AttachmentReference, N> {
 	requires (sizeof...(Ts) == N)
 	depth_attachments(Ts ... args)
 		: std::array <vk::AttachmentReference, N> {
-			static_cast <vk::AttachmentReference> (args)...
+			Tas <vk::AttachmentReference> (args)...
 		} {}
 };
 
@@ -51,7 +53,7 @@ struct input_attachments : std::array <vk::AttachmentReference, N> {
 	requires (sizeof...(Ts) == N)
 	input_attachments(Ts ... args)
 		: std::array <vk::AttachmentReference, N> {
-			static_cast <vk::AttachmentReference> (args)...
+			Tas <vk::AttachmentReference> (args)...
 		} {}
 };
 

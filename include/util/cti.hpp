@@ -1,23 +1,16 @@
 #pragma once
 
-// Compile-time index (constant, list, sequence)
-template <size_t I>
-using cti = std::integral_constant <size_t, I>;
+// Emulating for loops with index sequences
+#define constexpr_for(name, N, ...)				\
+	[&] <size_t ... name> (std::index_sequence <name...>) {	\
+		__VA_ARGS__;					\
+	} (std::make_index_sequence <N> ())
 
-template <size_t ... Is>
-using cti_list = std::index_sequence <Is...>;
+// Shorthand for casting
+#define Tas static_cast
 
-template <size_t N>
-constexpr auto cti_seq = std::make_index_sequence <N> ();
-
-#define cti_constexpr_for(name, N, ...)			\
-	[&] <size_t ... name> (cti_list <name...>) {	\
-		__VA_ARGS__;				\
-	} (cti_seq <N>)
-
-// Casting
-template <typename T>
-auto &&Tas(auto &&x)
-{
-	return static_cast <T> (x);
-}
+// Defining type traits
+#define TYPE_TRAIT(name) 						\
+	template <typename T> struct name : std::false_type {};		\
+	template <typename T> constexpr bool name##_v = name <T> ::value
+#define TYPE_TRAIT_INCLUDES(name, ...) struct name <__VA_ARGS__> : std::true_type {}

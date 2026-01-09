@@ -20,9 +20,8 @@ consteval GlobalResourceLayout layout_of()
 		static_assert(false, "unsupported layout for global resource");
 }
 
-// Implementations for intrinsic()
 template <typename T, template <typename> typename L>
-jems::handle push_constant_reflection <T, L> ::intrinsic(uint32_t binding)
+jems::handle resource_intrinsic(const PushConstant <T, L> &, uint32_t binding)
 {
 	return jems::global_resource(
 		reconstruct_type <T> (),
@@ -34,7 +33,7 @@ jems::handle push_constant_reflection <T, L> ::intrinsic(uint32_t binding)
 }
 
 template <typename T, template <typename> typename L>
-jems::handle uniform_buffer_reflection <T, L> ::intrinsic(uint32_t binding)
+jems::handle resource_intrinsic(const UniformBuffer <T, L> &, uint32_t binding)
 {
 	return jems::global_resource(
 		reconstruct_type <T> (),
@@ -46,7 +45,7 @@ jems::handle uniform_buffer_reflection <T, L> ::intrinsic(uint32_t binding)
 }
 
 template <typename T, template <typename> typename L>
-jems::handle storage_buffer_reflection <T, L> ::intrinsic(uint32_t binding)
+jems::handle resource_intrinsic(const StorageBuffer <T, L> &, uint32_t binding)
 {
 	return jems::global_resource(
 		reconstruct_type <T> (),
@@ -58,7 +57,7 @@ jems::handle storage_buffer_reflection <T, L> ::intrinsic(uint32_t binding)
 }
 
 template <typename T, size_t D>
-jems::handle sampler_reflection <T, D> ::intrinsic(uint32_t binding)
+jems::handle resource_intrinsic(const Sampler <T, D> &, uint32_t binding)
 {
 	return jems::global_resource(
 		jems::type(VectorType <T, D> ()),

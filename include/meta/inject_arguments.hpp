@@ -27,22 +27,15 @@ void inject_one_argument(T &value, InjectionCounters &counters)
 template <ShaderStage S, auto &... refs>
 void inject_one_argument(implicit_context <refs...> &value, InjectionCounters &counters) {}
 
-// TODO: just take void * input...
 template <aggregate T, size_t I>
 void inject_resource_group_element(void *addr, T &value)
 {
-	auto &field = value.template _ugp_field_reference <I> ();
-	using R = std::decay_t <decltype(field)> ::reflection;
+	auto &field = value.template _rcgp_get <I> ();
+	using R = std::decay_t <decltype(field)>;
 
-	auto grsrc = R::intrinsic(I);
+	auto grsrc = resource_intrinsic(R(), I);
 	$tsb.context.add_global_resource(addr, grsrc);
 	inject_reference(field, grsrc);
-}
-
-template <aggregate T, size_t ... Is>
-void inject_resource_group_carrier(void *addr, T &value, cti_list <Is...>)
-{
-	(inject_resource_group_element <T, Is> (addr, value), ...);
 }
 
 template <typename T, T &ref>
@@ -56,13 +49,13 @@ void inject_resource_reference(reference <ref> &value)
 		// TODO: defer to overloads to handle tuple vs aggregates
 		static_assert(is_aggregate_reflection_v <R>);
 		using V = R::original_type;
-		
-		static constexpr auto N = R::field_count;
-		inject_resource_group_carrier(&ref, Tas <V &> (value), cti_seq <N>);
+
+		constexpr_for(Is, R::field_count,
+			(inject_resource_group_element <V, Is> (&ref, value), ...)
+		);
 	} else if constexpr (is_global_resource_v <T>) {
 		// Global resources
-		using R = typename T::reflection;
-		auto grsrc = R::intrinsic(0);
+		auto grsrc = resource_intrinsic(T(), 0);
 		$tsb.context.add_global_resource(&ref, grsrc);
 		inject_reference(Tas <T &> (value), grsrc);
 	} else {
@@ -87,7 +80,7 @@ void inject_one_argument(reference <ref> &value, InjectionCounters &counters)
 		// TODO: this can be a method; similar for argument, if its used many times
 		auto tin = ThreadInput(type, counters.threadidx++);
 		$tsb.context.add_thread_input(tin);
-		inject_reference(static_cast <T &> (value), jems::thread_input(tin));
+		inject_reference(Tas <T &> (value), jems::thread_input(tin));
 	} else {
 		// Regular case
 		inject_resource_reference(value);
@@ -124,7 +117,7 @@ template <ShaderStage S, typename ... Args>
 void inject_arguments(std::tuple <Args...> &args)
 {
 	auto counters = InjectionCounters(0, 0);
-	cti_constexpr_for(Is, sizeof...(Args),
+	constexpr_for(Is, sizeof...(Args),
 		(inject_one_argument <S> (std::get <Is> (args), counters), ...)
 	);
 }

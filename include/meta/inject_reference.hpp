@@ -19,9 +19,9 @@ void inject_reference(T &value, Reference ref)
 template <aggregate T>
 void inject_reference(T &value, Reference ref)
 {
-	cti_constexpr_for(Is, T::reflection::field_count,
+	constexpr_for(Is, T::reflection::field_count,
 		(inject_reference(
-			value.template _ugp_field_reference <Is> (),
+			value.template _rcgp_get <Is> (),
 			jems::field_access(ref, Is)
 		), ...)
 	);
@@ -31,13 +31,13 @@ void inject_reference(T &value, Reference ref)
 template <typename T, template <typename> typename L>
 void inject_reference(PushConstant <T, L> &value, Reference ref)
 {
-	return inject_reference(static_cast <T &> (value), ref);
+	return inject_reference(Tas <T &> (value), ref);
 }
 
 template <typename T, template <typename> typename L>
 void inject_reference(StorageBuffer <T, L> &value, Reference ref)
 {
-	return inject_reference(static_cast <T &> (value), ref);
+	return inject_reference(Tas <T &> (value), ref);
 }
 
 // Fallback with error reported

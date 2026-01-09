@@ -22,7 +22,7 @@ template <ShaderStage S, auto &ref, typename ... Ts>
 auto add_gvr(const Tlist <Ts...> &in)
 {
 	using base = reference <ref> ::base;
-	if constexpr (!is_global_resource_v <base>) {
+	if constexpr (not is_global_resource_v <base>) {
 		return in;
 	} else {
 		constexpr auto exists = (std::same_as <typename Ts::type, reference <ref>> || ...);

@@ -14,7 +14,7 @@ vk::Bool32 validation_callback(
 	void *user_data
 )
 {
-	const auto *session = static_cast <const Session *> (user_data);
+	const auto *session = (const Session *) user_data;
 	const bool trap_on_error = session ? session->trap_on_error : false;
 
 	auto fg = fmt::fg(fmt::color::gray);

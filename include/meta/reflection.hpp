@@ -1,26 +1,15 @@
 #pragma once
 
-#include <cstdlib>
-
-#include <vulkan/vulkan.hpp>
-
-#include "../util/tlist.hpp"
-#include "static_string.hpp"
-#include "field_name_injection.hpp"
-#include "macro_hell.hpp"
-#include "this_injection.hpp"
-
 // Forward declarations
-namespace jems {
-
-class handle;
-
-} // namespace jems
+namespace vk { enum class VertexInputRate; }
+namespace jems { class handle; }
 
 // Reflection types
 template <typename T>
 struct primitive_reflection {};
 
+// TODO: we only NEED reflection info for aggregates...
+// everything else can be inferred from the top level type
 template <typename Original, typename ... Ts>
 struct aggregate_reflection {
 	using original_type = Original;
@@ -78,6 +67,7 @@ struct attribute_stream_reflection {
 };
 
 // Specific kinds of reflection
+// TODO: replace with type traits
 template <typename T>
 struct is_primitive_reflection : std::false_type {};
 
@@ -110,16 +100,13 @@ template <typename T>
 constexpr bool is_dynamic_reflection_v = is_dynamic_reflection <T> ::value;
 
 template <typename T>
-constexpr bool is_static_reflection_v = !is_dynamic_reflection <T> ::value;
+constexpr bool is_static_reflection_v = not is_dynamic_reflection <T> ::value;
 
 // Querying reflection status
 template <typename T>
 constexpr bool has_reflection()
 {
-	if constexpr (requires { T::_ugp_has_reflection; })
-		return T::_ugp_has_reflection;
-	else
-		return false;
+	return requires { T::_rcgp_has_reflection; };
 }
 
 template <typename T>

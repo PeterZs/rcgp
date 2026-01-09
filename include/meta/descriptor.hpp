@@ -32,6 +32,7 @@ struct reflection_unwrap <reference_reflection <ref, T>> {
 	using type = T;
 };
 
+// TODO: this doesnt properly account for nested aggregates...
 template <typename T>
 struct bindings_from_reflection : std::integral_constant <size_t, 1> {};
 
@@ -43,73 +44,67 @@ template <typename Original, typename ... Ts>
 struct bindings_from_reflection <aggregate_reflection <Original, Ts...>>
 	: std::integral_constant <size_t, sizeof...(Ts)> {};
 
+union DescriptorInfoUnion {
+	vk::DescriptorImageInfo image;
+	vk::DescriptorBufferInfo buffer;
+};
+
 template <auto &ref, bool resolved>
 struct DescriptorWritePair {
 	const DescriptorFor <ref, resolved> &descriptor;
 	const ResourceTypeFor <ref> &resource;
 
-	using ref_base = reference_base_t <ref>;
-	using ref_reflection = typename reflection_unwrap <typename ref_base::reflection> ::type;
-	static constexpr bool is_group = is_resource_group_reflection <ref_reflection> ::value
-		|| is_aggregate_reflection_v <ref_reflection>;
-	static constexpr size_t bindings = is_group
+	using Reference = reference_base_t <ref>;
+	// TODO: remove and simplify...
+	using ref_reflection = typename reflection_unwrap <typename Reference::reflection> ::type;
+	static constexpr size_t bindings = is_resource_group_v <Reference>
 		? bindings_from_reflection <ref_reflection> ::value
 		: 1;
-
-	struct DescriptorInfoUnion {
-		vk::DescriptorImageInfo image;
-		vk::DescriptorBufferInfo buffer;
-	};
-
 	std::array <DescriptorInfoUnion, bindings> descriptor_infos;
 
 	void bind(const std::span <vk::WriteDescriptorSet, bindings> &writes) {
-		if constexpr (is_group) {
-			using group_value = typename resource_group_value_from_reflection <ref_reflection> ::type;
-			using group_reflection = expand_reflection_t <group_value>;
-			static_assert(is_aggregate_reflection_v <group_reflection>,
-				"resource group must wrap an aggregate type");
+		if constexpr (is_resource_group_v <Reference>) {
+			using Structure = Reference::value_type;
+			static_assert(aggregate <Structure>);
 
-			auto bind_one = [&]<size_t I>() {
-				using field_t = typename group_reflection::template field_type <I>;
-				auto &field = resource.template get <I> ();
-
-				writes[I]
-					.setDstSet(descriptor)
-					.setDstBinding(I);
-
-				// TODO: again need a method to go from reflection/resource type to descriptor type
-				if constexpr (is_sampler_reflection_v <field_t>) {
-					descriptor_infos[I].image = field.descriptor_info();
+			auto bind_one = [&] <size_t I> () {
+				using Resource = Structure::reflection::template field_type <I>;
+				auto info = resource.template get <I> ().descriptor_info();
+				if constexpr (is_sampler_v <Resource>) {
+					descriptor_infos[I].image = info;
 					writes[I]
 						.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
 						.setImageInfo(descriptor_infos[I].image);
-				} else if constexpr (is_storage_buffer_reflection_v <field_t>) {
-					descriptor_infos[I].buffer = field.descriptor_info();
+				} else if constexpr (is_storage_buffer_v <Resource>) {
+					descriptor_infos[I].buffer = info;
 					writes[I]
 						.setDescriptorType(vk::DescriptorType::eStorageBuffer)
 						.setBufferInfo(descriptor_infos[I].buffer);
 				} else {
-					descriptor_infos[I].buffer = field.descriptor_info();
+					descriptor_infos[I].buffer = info;
 					writes[I]
 						.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 						.setBufferInfo(descriptor_infos[I].buffer);
 				}
+
+				writes[I]
+					.setDstSet(descriptor)
+					.setDstBinding(I);
 			};
 
-			cti_constexpr_for(Is, bindings,
+			constexpr_for(Is, bindings,
 				(bind_one.template operator() <Is> (), ...)
 			);
 		} else {
-			static constexpr bool is_sampler = is_sampler_v <ref_base>;
-			if constexpr (is_sampler) {
+			// TODO: its the same thing as above, move to a method...
+			if constexpr (is_sampler_v <Reference>) {
 				descriptor_infos[0].image = resource.descriptor_info();
 				writes[0]
 					.setDstSet(descriptor)
 					.setDstBinding(0)
 					.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
 					.setImageInfo(descriptor_infos[0].image);
-			} else if constexpr (is_storage_buffer_reflection_v <ref_reflection>) {
+			} else if constexpr (is_storage_buffer_v <Reference>) {
 				descriptor_infos[0].buffer = resource.descriptor_info();
 				writes[0]
 					.setDstSet(descriptor)

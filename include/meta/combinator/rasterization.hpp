@@ -4,25 +4,21 @@
 #include "../../rhi/pipelines.hpp"
 #include "../../rhi/shader_compiler.hpp"
 #include "../../util/logging.hpp"
-#include "../attribute_description.hpp"
-#include "../binding_description.hpp"
 #include "../collect_gvrs.hpp"
 #include "../collect_streams.hpp"
 #include "../group_allocation.hpp"
 #include "../implicit_context.hpp"
+#include "../input_assembly.hpp"
 #include "../pipeline/rasterization.hpp"
 #include "../shader_stage.hpp"
 
 template <typename ... Ts>
 auto sequence_to_group_allocation(const Tlist <Ts...> &)
 {
-	return cti_constexpr_for(Is, sizeof...(Ts),
+	return constexpr_for(Is, sizeof...(Ts),
 		return Tlist <group_allocation_record <Ts::type::handle, Is>...> {}
 	);
 }
-
-#define TYPE_TRAIT(name) template <typename T> struct name : std::false_type {}
-#define TYPE_TRAIT_INCLUDES(name, ...) struct name <__VA_ARGS__> : std::true_type {}
 
 TYPE_TRAIT(is_push_constant_wrapper);
 	template <auto &ref, ShaderStage ... Ss>
@@ -45,36 +41,34 @@ using descriptable_resources_t = tlist_filter_t <is_descriptable_wrapper, List>;
 template <auto &ref, ShaderStage ... Ss>
 auto reference_to_descriptor_set_layout(const Device &device, const stage_wrapper <reference <ref>, Ss...> &)
 {
-	using base = typename reference <ref> ::base;
-	using ref_reflection = typename base::reflection;
+	using Reference = reference_base_t <ref>;
+
 	auto stage_flags = (stage_to_flag(Ss) | ...);
+	if constexpr (is_resource_group_v <Reference>) {
+		using Structure = Reference::value_type;
+		static_assert(aggregate <Structure>);
 
-	if constexpr (is_resource_group_v <base>) {
-		using group_value = typename ref_reflection::value_type;
-		using group_reflection = expand_reflection_t <group_value>;
-		static_assert(is_aggregate_reflection_v <group_reflection>,
-			"resource group must wrap an aggregate type");
-
-		constexpr size_t bindings = group_reflection::field_count;
+		constexpr size_t bindings = Structure::reflection::field_count;
 		std::array <vk::DescriptorSetLayoutBinding, bindings> dslbs {};
 
 		auto fill_one = [&] <size_t I> () {
-			using field_t = typename group_reflection::template field_type <I>;
+			using Resource = Structure::reflection::template field_type <I>;
+
 			vk::DescriptorType dtype = vk::DescriptorType::eUniformBuffer;
-			if constexpr (is_sampler_reflection_v <field_t>) {
+			if constexpr (is_sampler_v <Resource>) {
 				dtype = vk::DescriptorType::eCombinedImageSampler;
-			} else if constexpr (is_storage_buffer_reflection_v <field_t>) {
+			} else if constexpr (is_storage_buffer_v <Resource>) {
 				dtype = vk::DescriptorType::eStorageBuffer;
 			}
 
 			dslbs[I] = vk::DescriptorSetLayoutBinding()
-				.setBinding(static_cast <uint32_t> (I))
+				.setBinding(I)
 				.setDescriptorCount(1)
 				.setDescriptorType(dtype)
 				.setStageFlags(stage_flags);
 		};
 
-		cti_constexpr_for(Is, bindings,
+		constexpr_for(Is, bindings,
 			(fill_one.template operator() <Is> (), ...)
 		);
 
@@ -85,9 +79,9 @@ auto reference_to_descriptor_set_layout(const Device &device, const stage_wrappe
 	} else {
 		// TODO: method for generating DescriptorType for global resources
 		vk::DescriptorType dtype = vk::DescriptorType::eUniformBuffer;
-		if constexpr (is_sampler_v <base>) {
+		if constexpr (is_sampler_v <Reference>) {
 			dtype = vk::DescriptorType::eCombinedImageSampler;
-		} else if constexpr (is_storage_buffer_reflection_v <ref_reflection>) {
+		} else if constexpr (is_storage_buffer_v <Reference>) {
 			dtype = vk::DescriptorType::eStorageBuffer;
 		}
 

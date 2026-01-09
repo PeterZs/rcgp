@@ -7,10 +7,10 @@ namespace detail {
 
 consteval size_t hash_string(std::string_view str)
 {
-	size_t hash = 14695981039346656037ULL;
+	size_t hash = 14695981039346656037ull;
 	for (char c : str) {
-		hash ^= static_cast <size_t> (c);
-		hash *= 1099511628211ULL;
+		hash ^= size_t(c);
+		hash *= 1099511628211ull;
 	}
 
 	return hash;
