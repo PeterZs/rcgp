@@ -9,5 +9,6 @@
 #include "rhi/queue.hpp"
 #include "rhi/render_pass.hpp"
 #include "rhi/session.hpp"
+#include "rhi/command_buffer.hpp"
 #include "rhi/shader_compiler.hpp"
 #include "rhi/window.hpp"

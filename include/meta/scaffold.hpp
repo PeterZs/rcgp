@@ -46,6 +46,10 @@ struct alignas(AlignTopLevel ? Align : 0) scaffold_structural : T {
 		T::operator=(rhs);
 		return *this;
 	}
+
+	T cast() const {
+		return *this;
+	}
 };
 
 // Scaffold lookup procedure

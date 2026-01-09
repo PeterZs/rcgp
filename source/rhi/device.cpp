@@ -1,6 +1,7 @@
 #include <ranges>
 #include <set>
 
+#include "rhi/command_buffer.hpp"
 #include "rhi/command_pool.hpp"
 #include "rhi/descriptor_pool.hpp"
 #include "rhi/device.hpp"
@@ -22,13 +23,15 @@ auto Device::find_memory_type(uint32_t filter, vk::MemoryPropertyFlags flags) co
 }
 
 auto Device::new_command_buffers(const CommandPool &cpool, size_t count) const
-	-> std::vector <vk::CommandBuffer>
+	-> std::vector <CommandBuffer>
 {
 	auto info = vk::CommandBufferAllocateInfo()
 		.setCommandBufferCount(count)
 		.setCommandPool(cpool);
 
-	return logical.allocateCommandBuffers(info);
+	return logical.allocateCommandBuffers(info)
+		| std::views::transform([] (auto x) { return CommandBuffer(x); })
+		| std::ranges::to <std::vector> ();
 }
 	
 auto Device::new_descriptor_sets(const DescriptorPool &dpool, const vk::ArrayProxy <vk::DescriptorSetLayout> &dsls) const

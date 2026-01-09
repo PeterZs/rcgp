@@ -10,6 +10,7 @@
 struct CommandPool;
 struct DescriptorPool;
 struct Frame;
+struct CommandBuffer;
 
 template <auto &ref, bool resolved>
 struct DescriptorWritePair;
@@ -44,7 +45,7 @@ struct Device {
 	}
 
 	// TODO: return neutral command buffers
-	auto new_command_buffers(const CommandPool &cpool, size_t count) const -> std::vector <vk::CommandBuffer>;
+	auto new_command_buffers(const CommandPool &cpool, size_t count) const -> std::vector <CommandBuffer>;
 	auto new_descriptor_sets(const DescriptorPool &dpool, const vk::ArrayProxy <vk::DescriptorSetLayout> &dsls) const -> std::vector <vk::DescriptorSet>;
 	
 	template <typename ... Ts>
