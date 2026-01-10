@@ -2,6 +2,10 @@
 
 #include <functional>
 
+#include <fmt/format.h>
+
+#include "../rhi/command_buffer.hpp"
+#include "../util/timer.hpp"
 #include "pipeline/rasterization.hpp"
 #include "vertex_buffer_for.hpp"
 
@@ -11,30 +15,42 @@
 struct CommandsTraceAux {
 	vk::PipelineBindPoint bind_point;
 	vk::PipelineLayout layout;
+	// TODO: pipeline handle -> (layout, maps)
 	// TODO: also track pipeline stage for syncing
 };
 
-using command_operator = std::function <void (const vk::CommandBuffer &, CommandsTraceAux &)>;
+// TODO: more efficient mechanism for this?
+using command_operator = std::function <void (const CommandBuffer &, CommandsTraceAux &)>;
 
-// TODO: profile/benchmark performance of commands
 template <typename ... Effects>
 struct Commands : std::vector <command_operator> {
 	using std::vector <command_operator> ::vector;
 
+	void trace(const CommandBuffer &cmd, CommandsTraceAux &aux) const {
+		for (auto &op : *this)
+			op(cmd, aux);
+	}
+
 	auto &operator()(const vk::CommandBuffer &cmd) const {
+		TSCOPE("commands serialization");
+
 		CommandsTraceAux aux;
 
 		cmd.reset();
 		cmd.begin(vk::CommandBufferBeginInfo());
 
-		for (auto &op : *this)
-			op(cmd, aux);
+		TimerToken::note(fmt::format("{} commands traced", size()));
+		trace(cmd, aux);
 
 		cmd.end();
 
 		return cmd;
 	}
 };
+
+TYPE_TRAIT(is_commands);
+	template <typename ... Effects>
+	TYPE_TRAIT_INCLUDES(is_commands, Commands <Effects...>);
 
 template <typename ... EAs, typename ... EBs>
 auto cmdcat(const Commands <EAs...> &x, const Commands <EBs...> &y)
@@ -81,7 +97,7 @@ inline auto begin_render_pass(const vk::RenderPass &render_pass,
 		       const vk::Rect2D &render_area,
 		       const std::span <vk::ClearValue> &clear_values)
 {
-	auto binder = [=](const vk::CommandBuffer &cmd, CommandsTraceAux &) {
+	auto binder = [=](const CommandBuffer &cmd, CommandsTraceAux &) {
 		auto rp_begin = vk::RenderPassBeginInfo()
 			.setRenderPass(render_pass)
 			.setFramebuffer(framebuffer)
@@ -98,7 +114,7 @@ template <Topology T, typename AttributeStreams, typename GroupAllocation, typen
 auto bind_pipeline(const AnnotatedRasterizationPipeline <T, AttributeStreams, GroupAllocation, GlobalResources> &pipeline)
 {
 	// TODO: write bind point and layout in an interm state (CommandBufferAux &)?
-	auto binder = [=](const vk::CommandBuffer &cmd, CommandsTraceAux &aux) {
+	auto binder = [=](const CommandBuffer &cmd, CommandsTraceAux &aux) {
 		aux.bind_point = vk::PipelineBindPoint::eGraphics;
 		aux.layout = pipeline.layout;
 		cmd.bindPipeline(aux.bind_point, pipeline.handle);
@@ -110,16 +126,11 @@ auto bind_pipeline(const AnnotatedRasterizationPipeline <T, AttributeStreams, Gr
 template <auto &... refs>
 auto bind_descriptors(const DescriptorFor <refs, true> &... descriptors)
 {
-	auto binder = [=](const vk::CommandBuffer &cmd, CommandsTraceAux &aux) {
-		// TODO: store set index in the descriptor as well; populate when allocated
-
-		// NOTE: for now assuming its in order and all at once
-		
-   		size_t idx = 0;
+	auto binder = [=](const CommandBuffer &cmd, CommandsTraceAux &aux) {
 		(cmd.bindDescriptorSets(
 			aux.bind_point,
 			aux.layout,
-			idx++, { descriptors }, {}
+			descriptors.set, { descriptors.handle }, {}
 		), ...);
 	};
 
@@ -139,18 +150,10 @@ auto bind_push_constants(const AnnotatedRasterizationPipeline <T, AttributeStrea
 	static_assert(sizeof(ResourceTypeFor <ref>) % 4u == 0u,
 		"push constant size must be a multiple of 4 bytes");
 
-	auto binder = [stage_flags, constants](const vk::CommandBuffer &cmd, CommandsTraceAux &aux) {
+	auto binder = [stage_flags, constants](const CommandBuffer &cmd, CommandsTraceAux &aux) {
 		constexpr auto offset = push_constant_offset_for_v <ref, GlobalResources>;
 		cmd.pushConstants <ResourceTypeFor <ref>> (aux.layout, stage_flags, offset, constants);
 	};
-
-	return Commands <> { binder };
-}
-
-inline auto unbind_pipeline()
-{
-	// Vulkan has no explicit unbind; this is a logical state transition helper.
-	auto binder = [](const vk::CommandBuffer &, CommandsTraceAux &) {};
 
 	return Commands <> { binder };
 }
@@ -159,7 +162,7 @@ inline auto unbind_pipeline()
 template <auto &ref>
 auto bind_vertex_buffer(const VertexBufferFor <ref> &buffer, size_t boffset)
 {
-	auto binder = [=](const vk::CommandBuffer &cmd, CommandsTraceAux &) {
+	auto binder = [=](const CommandBuffer &cmd, CommandsTraceAux &) {
 		cmd.bindVertexBuffers(boffset, { buffer.handle }, { 0 });
 	};
 
@@ -182,7 +185,7 @@ template <Topology T, typename I>
 inline auto bind_index_buffer(const IndexBuffer <T, I> &ibuffer)
 {
 	// TODO: templates for inferring the index type
-	auto binder = [=](const vk::CommandBuffer &cmd, CommandsTraceAux &) {
+	auto binder = [=](const CommandBuffer &cmd, CommandsTraceAux &) {
 		cmd.bindIndexBuffer(ibuffer.handle, 0, vk::IndexType::eUint32);
 	};
 
@@ -192,7 +195,7 @@ inline auto bind_index_buffer(const IndexBuffer <T, I> &ibuffer)
 inline auto draw_indexed(uint32_t count)
 {
 	// TODO: should return an aux state which adds back the dependencies
-	auto binder = [=](const vk::CommandBuffer &cmd, CommandsTraceAux &) {
+	auto binder = [=](const CommandBuffer &cmd, CommandsTraceAux &) {
 		cmd.drawIndexed(count, 1, 0, 0, 0);
 	};
 
@@ -201,9 +204,28 @@ inline auto draw_indexed(uint32_t count)
 
 inline auto end_render_pass()
 {
-	auto binder = [](const vk::CommandBuffer &cmd, CommandsTraceAux &) {
+	auto binder = [](const CommandBuffer &cmd, CommandsTraceAux &) {
 		cmd.endRenderPass();
 	};
 
 	return Commands <> { binder };
+}
+
+inline auto manual_commands(auto F)
+{
+	return Commands <> { F };
+}
+
+template <typename T, typename F>
+requires is_commands_v <std::invoke_result_t <F, T>>
+inline auto foreach(const std::vector <T> &container, F &&ftn)
+{
+	using C = std::invoke_result_t <F, T>;
+
+	auto binder = [&](const CommandBuffer &cmd, CommandsTraceAux &aux) {
+		for (auto &&value : container)
+			ftn(value).trace(cmd, aux);
+	};
+
+	return C { binder };
 }

@@ -5,7 +5,10 @@
 #include "resources.hpp"
 
 template <auto &ref, bool resolved = true>
-struct DescriptorFor : vk::DescriptorSet {};
+struct DescriptorFor {
+	vk::DescriptorSet handle;
+	size_t set;
+};
 
 // Counting the number of bindings needed by a resource
 template <typename T>
@@ -77,7 +80,7 @@ struct DescriptorWritePair {
 
 			set_descriptor_write_and_union <Resource, I> (
 				resource.template get <I> (),
-				descriptor,
+				descriptor.handle,
 				writes[I],
 				info_unions[I]
 			);
@@ -92,7 +95,7 @@ struct DescriptorWritePair {
 	requires (not is_resource_group_v <Reference>) {
 		set_descriptor_write_and_union <Reference, 0> (
 			resource,
-			descriptor,
+			descriptor.handle,
 			writes[0],
 			info_unions[0]
 		);
@@ -123,8 +126,15 @@ template <auto &...refs, bool ... rs>
 
 	logical.updateDescriptorSets(writes, nullptr);
 
-	if constexpr (sizeof...(dwpairs) == 1)
-		return DescriptorFor <refs...[0], true> ((dwpairs...[0]).descriptor);
-	else
-		return std::make_tuple(DescriptorFor <refs, true> (dwpairs.descriptor)...);
+	if constexpr (sizeof...(dwpairs) == 1) {
+		return DescriptorFor <refs...[0], true> (
+			(dwpairs...[0]).descriptor.handle,
+			(dwpairs...[0]).descriptor.set
+		);
+	} else {
+		return std::make_tuple(DescriptorFor <refs, true> (
+			dwpairs.descriptor.handle,
+			dwpairs.descriptor.set
+		)...);
+	}
 }

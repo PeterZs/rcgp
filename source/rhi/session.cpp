@@ -45,12 +45,12 @@ vk::Bool32 validation_callback(
 	return false;
 }
 
-std::tuple <Session, vk::detail::DispatchLoaderDynamic> Session::from(const Options &info)
+std::tuple <Session, vk::detail::DispatchLoaderDynamic> Session::from(const Options &options)
 {
 	auto product = std::tuple <Session, vk::detail::DispatchLoaderDynamic> {};
 	auto &[session, dld] = product;
 
-	session.trap_on_error = info.trap_on_error;
+	session.trap_on_error = options.trap_on_error;
 
 	glfw::boot();
 
@@ -61,7 +61,7 @@ std::tuple <Session, vk::detail::DispatchLoaderDynamic> Session::from(const Opti
 	dld.init(vkGetInstanceProcAddr);
 
 	auto layers = std::vector <const char *> {};
-	if (info.validation)
+	if (options.validation)
 		layers.emplace_back("VK_LAYER_KHRONOS_validation");
 
 	auto extensions = std::vector <const char *> {
@@ -69,7 +69,7 @@ std::tuple <Session, vk::detail::DispatchLoaderDynamic> Session::from(const Opti
 	};
 
 	glfw::load_extensions(extensions);
-	if (info.validation) {
+	if (options.validation) {
 		extensions.emplace_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 		extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}
@@ -92,22 +92,22 @@ std::tuple <Session, vk::detail::DispatchLoaderDynamic> Session::from(const Opti
 
 	auto app_info = vk::ApplicationInfo()
 		.setApiVersion(VK_API_VERSION_1_4)
-		.setApplicationVersion(info.application_version)
-		.setPApplicationName(info.application_name)
-		.setEngineVersion(info.engine_version)
-		.setPEngineName(info.engine_name);
+		.setApplicationVersion(options.application_version)
+		.setPApplicationName(options.application_name)
+		.setEngineVersion(options.engine_version)
+		.setPEngineName(options.engine_name);
 
 	auto validation_features = vk::ValidationFeaturesEXT()
-		.setEnabledValidationFeatures(info.validation_features);
+		.setEnabledValidationFeatures(options.validation_features);
 
 	auto instance_info = vk::InstanceCreateInfo()
 		.setPApplicationInfo(&app_info)
 		.setPEnabledLayerNames(layers)
 		.setPEnabledExtensionNames(extensions);
 
-	if (info.validation) {
+	if (options.validation) {
 		instance_info.setPNext(&validation_features);
-		if (info.validate_instance)
+		if (options.validate_instance)
 			validation_features.setPNext(&debug_info);
 	}
 
@@ -115,7 +115,7 @@ std::tuple <Session, vk::detail::DispatchLoaderDynamic> Session::from(const Opti
 
 	dld.init(session.handle, vkGetInstanceProcAddr);
 
-	if (info.validation)
+	if (options.validation)
 		session.debugger = session.handle.createDebugUtilsMessengerEXT(debug_info, nullptr, dld);
 
 	return product;

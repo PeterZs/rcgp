@@ -90,6 +90,7 @@ struct Window {
 		uint32_t width;
 		uint32_t height;
 		const char *const title;
+		vk::PresentModeKHR present_mode;
 	};
 
 	static Window from(const Session &session, const Device &device, const Options &options);

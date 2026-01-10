@@ -441,9 +441,6 @@ void statement(Context &ctx, Reference instruction)
 	}
 	vcase(Store): {
 		auto &store = value.as <Store> ();
-		info("storing %s into %s\n",
-			store.source->repr().c_str(),
-			store.destination->repr().c_str());
 		ctx.result += fmt::format("{}{} = {};\n",
 			ctx.indent,
 			reference(ctx, store.destination),

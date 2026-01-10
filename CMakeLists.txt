@@ -81,6 +81,7 @@ add_library(rcgp STATIC
 	source/rhi/shader_compiler.cpp
 	source/rhi/window.cpp
 	source/util/logging.cpp
+	source/util/timer.cpp
 )
 
 add_dependencies(rcgp

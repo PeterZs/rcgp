@@ -170,7 +170,7 @@ Window Window::from(const Session &session, const Device &device, const Options 
 		.setImageFormat(result.format)
 		.setMinImageCount(surface_capabilities.minImageCount)
 		.setOldSwapchain(nullptr)
-		.setPresentMode(vk::PresentModeKHR::eFifo)
+		.setPresentMode(options.present_mode)
 		.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
 		.setSurface(surface);
 

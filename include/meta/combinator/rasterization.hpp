@@ -165,14 +165,17 @@ auto reference_sequence_to_push_constant_allocation_map(const Tlist <Ts...> &)
 
 		(add(Ts()), ...);
 	}
+
 	return map;
 }
 
 consteval vk::PrimitiveTopology translate_topology(Topology T)
 {
+	using enum vk::PrimitiveTopology;
+
 	switch (T) {
-	case Topology::eTriangleList: return vk::PrimitiveTopology::eTriangleList;
-	case Topology::eTriangleFan: return vk::PrimitiveTopology::eTriangleFan;
+	case Topology::eTriangleList: return eTriangleList;
+	case Topology::eTriangleFan: return eTriangleFan;
 	}
 
 	return vk::PrimitiveTopology::eTriangleList;
