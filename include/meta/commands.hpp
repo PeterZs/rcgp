@@ -70,7 +70,67 @@ struct SerializationContext {
 	size_t pplid;
 };
 
-// TODO: more efficient mechanism for this?
+// Atomic command effects
+// TODO: test resource group barriers/syncs with matrix mult example
+// (SAXPY -> s * (A * X) + y should have 2 barriers; and test with sync validation)
+
+// We have a dependency on ref
+template <auto &ref>
+struct Dependency {};
+
+// We *might have a dependency for an index buffer for topology T
+template <Topology T>
+struct DependencyIndicatorForIndexBuffer {};
+
+// We *have a dependency for an index buffer as needed (unknown topology)
+struct DependencyEnforcerForIndexBuffer {};
+
+// We *have a dependency for an index buffer for topology T
+template <Topology T>
+struct DependencyForIndexBuffer {};
+
+// We are granted a handle for ref
+template <auto &ref>
+struct Resolvant {};
+
+// We are granted a handle for an index buffer for topology T
+template <Topology T>
+struct ResolvantForIndexBuffer {};
+
+// We need all previous dependencies to be resolved
+struct DependencySentinel {};
+
+// TODO: algebra: communitivity...
+// Ibuffer enforcer can commute backwards until it hits
+// the indicator, after which its replaced by a real dependency
+// failure occurs if there is no indicator
+// dependency <r> + resolvant <r> = resolvant <r> (they dont cancel)
+
+// Dependency sequences for annotated pipelines
+template <auto &... refs>
+consteval auto dependency_sequence_for_streams(Tlist <reference <refs>...>)
+{
+	return Tlist <Dependency <refs>...> {};
+}
+
+template <typename ... Wrappers>
+consteval auto dependency_sequence_for_grcs(Tlist <Wrappers...>)
+{
+	return Tlist <Dependency <Wrappers::type::handle>...> {};
+}
+
+template <Topology T, typename AS, typename GAMAP, typename GRCs>
+consteval auto dependency_sequence(const AnnotatedRasterizationPipeline <T, AS, GAMAP, GRCs> &pipeline)
+{
+	auto ib = Tlist <DependencyIndicatorForIndexBuffer <T>> {};
+	auto as = dependency_sequence_for_streams(AS());
+	auto grcs = dependency_sequence_for_grcs(GRCs());
+	return tlist_concat(ib, as, grcs);
+}
+
+// TODO: more efficient std function representation?
+// TODO: need to compare with slang version...
+// ideally finish up specular lighting...
 using command_operator = std::function <void (const CommandBuffer &, SerializationContext &)>;
 
 template <typename ... Effects>
@@ -82,6 +142,7 @@ struct Commands : std::vector <command_operator> {
 			op(cmd, sctx);
 	}
 
+	// TODO: must be in a satisfied state...
 	auto &operator()(const vk::CommandBuffer &cmd) const {
 		TSCOPE("commands serialization");
 		TNOTE("{} commands to trace", size());
@@ -160,7 +221,13 @@ auto bind_pipeline(const Pipeline &pipeline)
 		cmd.bindPipeline(cid.bind_point, pipeline.handle);
 	};
 
-	return Commands <> { binder };
+	// TODO: load up the dependencies
+	constexpr auto dependencies = dependency_sequence(pipeline);
+
+	using list = decltype(dependencies);
+	using cmds = list::template invoke <Commands>;
+
+	return cmds { binder };
 }
 
 // TODO: for assurance (compatibility) should also template with a pipeline int ID
@@ -176,7 +243,7 @@ auto bind_descriptors(const DescriptorFor <refs, true> &... descriptors)
 		), ...);
 	};
 
-	return Commands <> { binder };
+	return Commands <Resolvant <refs>...> { binder };
 }
 
 template <auto &... refs>
@@ -196,7 +263,7 @@ auto bind_push_constants(const ResourceTypeFor <refs> &... constants)
 		), ...);
 	};
 
-	return Commands <> { binder };
+	return Commands <Resolvant <refs>...> { binder };
 }
 
 template <auto &... refs>
@@ -216,7 +283,7 @@ auto bind_vertex_buffers(const VertexBufferFor <refs> &... buffers)
 		(cmd.bindVertexBuffers(vb_offsets.at(&refs), { handles }, { 0 }), ...);
 	};
 
-	return Commands <> { binder };
+	return Commands <Resolvant <refs>...> { binder };
 }
 
 template <Topology T, typename I>
@@ -231,7 +298,7 @@ inline auto bind_index_buffer(const IndexBuffer <T, I> &ibuffer)
 			static_assert(false, "unsupported index buffer scalar type");
 	};
 
-	return Commands <> { binder };
+	return Commands <ResolvantForIndexBuffer <T>> { binder };
 }
 
 inline auto draw_indexed(uint32_t count)
@@ -240,7 +307,10 @@ inline auto draw_indexed(uint32_t count)
 		cmd.drawIndexed(count, 1, 0, 0, 0);
 	};
 
-	return Commands <> { binder };
+	return Commands <
+		DependencyEnforcerForIndexBuffer,
+		DependencySentinel
+	> { binder };
 }
 
 inline auto end_render_pass()

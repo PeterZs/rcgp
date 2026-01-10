@@ -1,21 +1,36 @@
 #pragma once
 
 #include <chrono>
+#include <functional>
+#include <list>
 #include <memory>
 #include <stack>
 #include <string>
+#include <vector>
 
 #include <fmt/format.h>
 
 struct TimerToken {
 	using clock = std::chrono::system_clock;
 
-	struct Payload;
+	struct Payload {
+		std::string name;
+		double milliseconds = 0.0;
+		clock::time_point begin;
+		std::list <std::string> notes;
+		std::list <std::shared_ptr <Payload>> nested;
+
+		std::string report_string() const;
+	};
 
 	static thread_local clock clk;
 	static thread_local std::stack <std::shared_ptr <Payload>> active;
 
-	// TODO: callback in the case of not wanting to immediately dump it
+	using PayloadCallback = std::function <void (const Payload &)>;
+	static void add_payload_callback(PayloadCallback callback);
+	static void add_default_report_callback();
+	static void clear_payload_callbacks();
+
 	std::shared_ptr <Payload> payload;
 
 	TimerToken() = default;

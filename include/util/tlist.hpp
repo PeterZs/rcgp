@@ -23,6 +23,17 @@ struct Tlist {
 	using invoke = F <Args...>;
 };
 
+// Tlist concatenation
+template <typename ... Ts, typename ... Us, typename ... Rest>
+consteval auto tlist_concat(Tlist <Ts...>, Tlist <Us...>, Rest... rest)
+{
+	auto interim = Tlist <Ts..., Us...> {};
+	if constexpr (sizeof...(Rest))
+		return tlist_concat(interim, rest...);
+	else
+		return interim;
+}
+
 // Tlist filtering with arbitrary conditions
 template <template <typename> typename Filter, typename ... Ts>
 auto tlist_filter(Tlist <Ts...> ongoing, Tlist <> processing)
