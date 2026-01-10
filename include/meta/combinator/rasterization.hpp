@@ -250,6 +250,7 @@ struct RasterizationCombinator {
 			layout_info.setPushConstantRanges(pcrs);
 		auto layout = device.logical.createPipelineLayout(layout_info);
 
+		// TODO: stuff above is constant per device & signature; move to a method and cache
 		auto pipeline = compile_rasterization_pipeline(
 			device,
 			render_pass,

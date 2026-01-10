@@ -5,6 +5,8 @@
 #include <stack>
 #include <string>
 
+#include <fmt/format.h>
+
 struct TimerToken {
 	using clock = std::chrono::system_clock;
 
@@ -40,3 +42,5 @@ struct ScopedTimerToken {
 #define TSCOPE(str) ScopedTimerToken timer_token_##__LINE__(str)
 #define TSTART(id, str) TimerToken id(str)
 #define TEND(id) (id).end()
+#define TNOTE(...) TimerToken::note(fmt::format(__VA_ARGS__))
+#define TENTRY(str, t) TimerToken::entry(str, t)

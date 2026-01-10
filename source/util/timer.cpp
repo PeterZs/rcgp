@@ -17,7 +17,7 @@ struct TimerToken::Payload {
 	std::list <std::shared_ptr <Payload>> nested;
 
 	struct ReportWidths {
-		size_t label = 0;
+		size_t label = 0; // prefix + label width, in display columns
 		size_t ms = 0;
 		size_t pct = 0;
 	};
@@ -42,13 +42,24 @@ struct TimerToken::Payload {
 	void report() const;
 };
 
+static size_t display_width(const std::string &text)
+{
+	size_t width = 0;
+	for (unsigned char ch : text) {
+		if ((ch & 0xC0) != 0x80)
+			++width;
+	}
+	return width;
+}
+
 thread_local TimerToken::clock TimerToken::clk;
 thread_local std::stack <std::shared_ptr <TimerToken::Payload>> TimerToken::active;
 
 TimerToken::Payload::ReportWidths TimerToken::Payload::merge_widths(
 	const ReportWidths &a,
 	const ReportWidths &b
-) {
+)
+{
 	return {
 		std::max(a.label, b.label),
 		std::max(a.ms, b.ms),
@@ -61,7 +72,8 @@ TimerToken::Payload::ReportWidths TimerToken::Payload::measure_widths(
 	bool is_last,
 	bool has_parent,
 	double parent
-) const {
+) const
+{
 	const std::string line_prefix = has_parent
 		? prefix + (is_last ? "└─ " : "├─ ")
 		: std::string();
@@ -69,12 +81,12 @@ TimerToken::Payload::ReportWidths TimerToken::Payload::measure_widths(
 	const std::string ms_str = fmt::format("{:.2f} ms", milliseconds);
 	size_t pct_len = 0;
 	if (parent > 0) {
-		const std::string pct_str = fmt::format("({:.2f}%)", 100 * milliseconds / parent);
+		const std::string pct_str = fmt::format("({:2.2f}%)", 100 * milliseconds / parent);
 		pct_len = 1 + pct_str.size();
 	}
 
 	ReportWidths widths {
-		line_prefix.size() + label.size(),
+		display_width(line_prefix) + label.size(),
 		ms_str.size(),
 		pct_len,
 	};
@@ -84,9 +96,19 @@ TimerToken::Payload::ReportWidths TimerToken::Payload::measure_widths(
 		child_prefix += is_last ? "   " : "│  ";
 
 	const size_t nested_count = nested.size();
+	const size_t note_count = notes.size();
+	const size_t total = note_count + nested_count;
 	size_t idx = 0;
+
+	if (note_count > 0) {
+		for (auto &note : notes) {
+			const size_t note_label_width = display_width(child_prefix) + 3 + 1 + display_width(note);
+			widths.label = std::max(widths.label, note_label_width);
+		}
+	}
+
 	for (auto &payload : nested) {
-		const bool last = (++idx == nested_count);
+		const bool last = (++idx == total);
 		widths = merge_widths(widths, payload->measure_widths(
 			child_prefix, last, true, milliseconds
 		));
@@ -101,7 +123,8 @@ std::string TimerToken::Payload::report_impl(
 	bool has_parent,
 	const ReportWidths &widths,
 	double parent
-) const {
+) const
+{
 	const std::string line_prefix = has_parent
 		? prefix + (is_last ? "└─ " : "├─ ")
 		: std::string();
@@ -110,25 +133,26 @@ std::string TimerToken::Payload::report_impl(
 
 	std::string result;
 	result += line_prefix + label;
-	const size_t label_pad = widths.label > line_prefix.size() + label.size()
-		? widths.label - (line_prefix.size() + label.size())
-		: 0;
-	result += std::string(label_pad + 1, ' ');
+	const size_t label_len = display_width(line_prefix) + label.size();
+	const size_t ms_col = widths.label + 1;
+	const size_t label_pad = ms_col > label_len ? ms_col - label_len : 1;
+	result += std::string(label_pad, ' ');
 	const size_t ms_pad = widths.ms > ms_str.size() ? widths.ms - ms_str.size() : 0;
 	result += std::string(ms_pad, ' ');
 	result += fmt::format(fmt::fg(fmt::color::gray), "{}", ms_str);
 
+	const size_t current_col = ms_col + widths.ms;
+	const size_t pct_col = current_col + 1;
+	const size_t pct_pad = pct_col > current_col ? pct_col - current_col : 0;
 	if (parent > 0) {
 		const std::string pct_str = fmt::format("({:.2f}%)", 100 * milliseconds / parent);
-		const size_t pct_len = 1 + pct_str.size();
-		const size_t pct_pad = widths.pct > pct_len ? widths.pct - pct_len : 0;
-		result += std::string(pct_pad + 1, ' ');
+		result += std::string(pct_pad, ' ');
 		result += fmt::format(
 			fmt::emphasis::italic | fmt::fg(fmt::color::gray),
 			"{}", pct_str
 		);
 	} else if (widths.pct > 0) {
-		result += std::string(widths.pct, ' ');
+		result += std::string(pct_pad + widths.pct, ' ');
 	}
 	result += "\n";
 
@@ -159,17 +183,20 @@ std::string TimerToken::Payload::report_impl(
 	return result;
 }
 
-void TimerToken::Payload::report() const {
+void TimerToken::Payload::report() const
+{
 	auto widths = measure_widths("", true, false);
 	info("scoped timer payload report:\n%s",
 		report_impl("", true, false, widths).c_str());
 }
 
-TimerToken::TimerToken(const std::string &name) {
+TimerToken::TimerToken(const std::string &name)
+{
 	begin(name);
 }
 
-void TimerToken::begin(const std::string &name) {
+void TimerToken::begin(const std::string &name)
+{
 	payload = std::make_shared <Payload> ();
 	payload->name = name;
 	payload->begin = clk.now();
@@ -182,7 +209,8 @@ void TimerToken::begin(const std::string &name) {
 	active.push(payload);
 }
 
-void TimerToken::end() {
+void TimerToken::end()
+{
 	using std::chrono::duration_cast;
 	using std::chrono::microseconds;
 
@@ -200,13 +228,15 @@ void TimerToken::end() {
 		payload->report();
 }
 
-void TimerToken::note(const std::string &note) {
+void TimerToken::note(const std::string &note)
+{
 	assertion(not active.empty(), "cannot add notes when there is no active scope timer");
 	auto &top = active.top();
 	top->notes.emplace_back(note);
 }
 
-void TimerToken::entry(const std::string &name, double ms) {
+void TimerToken::entry(const std::string &name, double ms)
+{
 	assertion(not active.empty(), "cannot add entry when there is no active scope timer");
 
 	auto entry_payload = std::make_shared <Payload> ();

@@ -2,102 +2,131 @@
 
 #include <functional>
 
-#include <fmt/format.h>
-
-#include "../rhi/command_buffer.hpp"
 #include "../util/timer.hpp"
+#include "../rhi/command_buffer.hpp"
 #include "pipeline/rasterization.hpp"
 #include "vertex_buffer_for.hpp"
 
-// Auxiliary command buffer state as dependency information
-// TODO: concept for command state
+// TODO: we can id refs as well with reference <ref>
+struct RuntimeTypeRegistry {
+	static inline size_t counter = 0;
 
-struct CommandsTraceAux {
-	vk::PipelineBindPoint bind_point;
+	template <typename T>
+	static size_t id() {
+		static size_t value = counter++;
+		return value;
+	}
+};
+
+struct PipelineMappings {
 	vk::PipelineLayout layout;
-	// TODO: pipeline handle -> (layout, maps)
-	// TODO: also track pipeline stage for syncing
+	vk::PipelineBindPoint bind_point;
+	std::map <void *, size_t> pc_offsets;
+	std::map <void *, vk::ShaderStageFlags> pc_stages;
+	std::map <void *, size_t> vb_offsets;
+
+	static inline std::map <size_t, PipelineMappings> cache;
+};
+
+template <auto &... refs>
+void write_vb_offsets(PipelineMappings &dst, Tlist <reference <refs>...>)
+{
+	size_t counter = 0;
+	(dst.vb_offsets.emplace(&refs, counter++), ...);
+}
+
+template <typename ... Wrappers>
+void write_pb_infos(PipelineMappings &dst, Tlist <Wrappers...>)
+{
+	using GRCs = Tlist <Wrappers...>;
+	auto write = [&] <auto &ref> () {
+		using Resource = reference_base_t <ref>;
+		
+		if constexpr (is_push_constant_v <Resource>) {
+			auto flags = stage_flags_for_v <ref, GRCs>;
+			auto offset = push_constant_offset_for_v <ref, GRCs>;
+			dst.pc_stages.emplace(&ref, flags);
+			dst.pc_offsets.emplace(&ref, offset);
+		}
+	};
+
+	(write.template operator() <Wrappers::type::handle> (), ...);
+}
+
+template <Topology T, typename AS, typename GAMAP, typename GRCs>
+auto pipeline_mappings(const AnnotatedRasterizationPipeline <T, AS, GAMAP, GRCs> &pipeline)
+{
+	PipelineMappings result;
+	result.layout = pipeline.layout;
+	result.bind_point = vk::PipelineBindPoint::eGraphics;
+	write_vb_offsets(result, AS());
+	write_pb_infos(result, GRCs());
+	return result;
+}
+
+// TODO: keep in mind of variant based command dispatch;
+// downside is that custom/manual commands wouldn't be possible
+struct SerializationContext {
+	size_t pplid;
 };
 
 // TODO: more efficient mechanism for this?
-using command_operator = std::function <void (const CommandBuffer &, CommandsTraceAux &)>;
+using command_operator = std::function <void (const CommandBuffer &, SerializationContext &)>;
 
 template <typename ... Effects>
 struct Commands : std::vector <command_operator> {
 	using std::vector <command_operator> ::vector;
 
-	void trace(const CommandBuffer &cmd, CommandsTraceAux &aux) const {
+	void serialize(const CommandBuffer &cmd, SerializationContext &sctx) const {
 		for (auto &op : *this)
-			op(cmd, aux);
+			op(cmd, sctx);
 	}
 
 	auto &operator()(const vk::CommandBuffer &cmd) const {
 		TSCOPE("commands serialization");
+		TNOTE("{} commands to trace", size());
 
-		CommandsTraceAux aux;
+		SerializationContext aux;
 
 		cmd.reset();
 		cmd.begin(vk::CommandBufferBeginInfo());
 
-		TimerToken::note(fmt::format("{} commands traced", size()));
-		trace(cmd, aux);
+		serialize(cmd, aux);
 
 		cmd.end();
 
 		return cmd;
 	}
+
+	template <typename ... Es>
+	friend auto operator|(const Commands &a, const Commands <Es...> &b) {
+		// TODO: normalize <...>
+		auto cmd = Commands <Effects..., Es...> {};
+		cmd.append_range(a);
+		cmd.append_range(b);
+		return cmd;
+	}
+
+	friend auto operator|(const std::nullptr_t &, const Commands &x) {
+		return x;
+	}
+
+	// TODO: allow |= if the result is the same
 };
 
 TYPE_TRAIT(is_commands);
 	template <typename ... Effects>
 	TYPE_TRAIT_INCLUDES(is_commands, Commands <Effects...>);
 
-template <typename ... EAs, typename ... EBs>
-auto cmdcat(const Commands <EAs...> &x, const Commands <EBs...> &y)
+// TODO: later encode the number of attachments, and subpass progression
+inline auto begin_render_pass(
+	const vk::RenderPass &render_pass,
+	const vk::Framebuffer &framebuffer,
+	const vk::Rect2D &render_area,
+	const std::span <vk::ClearValue> &clear_values
+)
 {
-	// TODO: simplify EAs + EBs
-	auto cmd = Commands <EAs..., EBs...> {};
-	cmd.append_range(x);
-	cmd.append_range(y);
-	return cmd;
-}
-
-template <typename First, typename Second, typename ...Rest>
-auto cmdcat(const First &first, const Second &second, const Rest &... rest)
-{
-	static_assert(sizeof...(Rest) >= 0, "seq requires at least two arguments");
-	auto combined = cmdcat(first, second);
-	if constexpr (sizeof...(Rest) == 0)
-		return combined;
-	else
-		return cmdcat(combined, rest...);
-}
-
-// Pipe operator: syntactic sugar for seq
-template <typename ... EAs, typename ... EBs>
-auto operator|(const Commands <EAs...> &lhs, const Commands <EBs...> &rhs)
-{
-	return cmdcat(lhs, rhs);
-}
-
-template <typename ... EAs>
-auto operator|(const Commands <EAs...> &x, const std::nullptr_t &)
-{
-	return x;
-}
-
-template <typename ... EAs>
-auto operator|(const std::nullptr_t &, const Commands <EAs...> &x)
-{
-	return x;
-}
-
-inline auto begin_render_pass(const vk::RenderPass &render_pass,
-		       const vk::Framebuffer &framebuffer,
-		       const vk::Rect2D &render_area,
-		       const std::span <vk::ClearValue> &clear_values)
-{
-	auto binder = [=](const CommandBuffer &cmd, CommandsTraceAux &) {
+	auto binder = [=](const CommandBuffer &cmd, SerializationContext &) {
 		auto rp_begin = vk::RenderPassBeginInfo()
 			.setRenderPass(render_pass)
 			.setFramebuffer(framebuffer)
@@ -110,26 +139,39 @@ inline auto begin_render_pass(const vk::RenderPass &render_pass,
 	return Commands <> { binder };
 }
 
-template <Topology T, typename AttributeStreams, typename GroupAllocation, typename GlobalResources>
-auto bind_pipeline(const AnnotatedRasterizationPipeline <T, AttributeStreams, GroupAllocation, GlobalResources> &pipeline)
+TYPE_TRAIT(is_annotated_pipeline);
+	template <Topology T, typename AS, typename GAMAP, typename GRCs>
+	TYPE_TRAIT_INCLUDES(is_annotated_pipeline, AnnotatedRasterizationPipeline <T, AS, GAMAP, GRCs>);
+
+template <typename Pipeline>
+requires is_annotated_pipeline_v <Pipeline>
+auto bind_pipeline(const Pipeline &pipeline)
 {
-	// TODO: write bind point and layout in an interm state (CommandBufferAux &)?
-	auto binder = [=](const CommandBuffer &cmd, CommandsTraceAux &aux) {
-		aux.bind_point = vk::PipelineBindPoint::eGraphics;
-		aux.layout = pipeline.layout;
-		cmd.bindPipeline(aux.bind_point, pipeline.handle);
+	static const size_t id = RuntimeTypeRegistry::id <Pipeline> ();
+
+	if (not PipelineMappings::cache.contains(id)) {
+		auto mappings = pipeline_mappings(pipeline);
+		PipelineMappings::cache.emplace(id, mappings);
+	}
+
+	auto &cid = PipelineMappings::cache.at(id);
+	auto binder = [=](const CommandBuffer &cmd, SerializationContext &sctx) {
+		sctx.pplid = id;
+		cmd.bindPipeline(cid.bind_point, pipeline.handle);
 	};
 
 	return Commands <> { binder };
 }
 
+// TODO: for assurance (compatibility) should also template with a pipeline int ID
 template <auto &... refs>
 auto bind_descriptors(const DescriptorFor <refs, true> &... descriptors)
 {
-	auto binder = [=](const CommandBuffer &cmd, CommandsTraceAux &aux) {
+	auto binder = [=](const CommandBuffer &cmd, SerializationContext &sctx) {
+		auto &cid = PipelineMappings::cache.at(sctx.pplid);
 		(cmd.bindDescriptorSets(
-			aux.bind_point,
-			aux.layout,
+			cid.bind_point,
+			cid.layout,
 			descriptors.set, { descriptors.handle }, {}
 		), ...);
 	};
@@ -137,56 +179,56 @@ auto bind_descriptors(const DescriptorFor <refs, true> &... descriptors)
 	return Commands <> { binder };
 }
 
-template <auto &ref, Topology T, typename AttributeStreams, typename GroupAllocation, typename GlobalResources>
-auto bind_push_constants(const AnnotatedRasterizationPipeline <T, AttributeStreams, GroupAllocation, GlobalResources> &,
-		    const ResourceTypeFor <ref> &constants)
+template <auto &... refs>
+auto bind_push_constants(const ResourceTypeFor <refs> &... constants)
 {
-	static_assert(is_push_constant_v <reference_base_t <ref>>);
+	static_assert((is_push_constant_v <reference_base_t <refs>> && ...));
 
-	constexpr auto stage_flags = stage_flags_for_v <ref, GlobalResources>;
-	static_assert(stage_flags != vk::ShaderStageFlags(), "push constant not used by any stage");
-	static_assert(push_constant_offset_found_v <ref, GlobalResources>,
-		"push constant not found in pipeline layout");
-	static_assert(sizeof(ResourceTypeFor <ref>) % 4u == 0u,
-		"push constant size must be a multiple of 4 bytes");
-
-	auto binder = [stage_flags, constants](const CommandBuffer &cmd, CommandsTraceAux &aux) {
-		constexpr auto offset = push_constant_offset_for_v <ref, GlobalResources>;
-		cmd.pushConstants <ResourceTypeFor <ref>> (aux.layout, stage_flags, offset, constants);
+	auto binder = [constants...](const CommandBuffer &cmd, SerializationContext &sctx) {
+		auto &cid = PipelineMappings::cache.at(sctx.pplid);
+		auto &pc_stages = cid.pc_stages;
+		auto &pc_offsets = cid.pc_offsets;
+		(cmd.pushConstants <ResourceTypeFor <refs>> (
+			cid.layout,
+			pc_stages.at(&refs),
+			pc_offsets.at(&refs),
+			constants
+		), ...);
 	};
 
 	return Commands <> { binder };
 }
 
-// TODO: bind_vertex_buffer only form the pipeline
-template <auto &ref>
-auto bind_vertex_buffer(const VertexBufferFor <ref> &buffer, size_t boffset)
+template <auto &... refs>
+auto bind_vertex_buffers(const VertexBufferFor <refs> &... buffers)
 {
-	auto binder = [=](const CommandBuffer &cmd, CommandsTraceAux &) {
-		cmd.bindVertexBuffers(boffset, { buffer.handle }, { 0 });
+	auto binder = [...handles = buffers.handle](
+		const CommandBuffer &cmd,
+		SerializationContext &sctx
+	) {
+		auto &vb_offsets = PipelineMappings::cache.at(sctx.pplid).vb_offsets;
+
+		// TODO: if they are adjacent then a single dispatch is enough...
+		// we can cache that info here once per id...
+		// auto offsets = std::array <vk::DeviceSize, sizeof...(refs)> (0);
+		// auto buffers = std::array { handles... };
+	
+		(cmd.bindVertexBuffers(vb_offsets.at(&refs), { handles }, { 0 }), ...);
 	};
 
 	return Commands <> { binder };
 }
 
-// template <auto &... refs>
-// auto bind_vertex_buffers(const VertexBufferOf <refs> &... buffers)
-// {
-// 	auto binder = [=](const vk::CommandBuffer &cmd, CommandsTraceAux &) {
-// 		std::array <vk::DeviceSize, sizeof...(refs)> offsets {};
-// 		cmd.bindVertexBuffers(0, { buffers.handle... }, offsets);
-// 	};
-//
-// 	return Commands <> { binder };
-// }
-
-// and add a state tag that encodes this... ProvidedIndexBuffer <T>
 template <Topology T, typename I>
 inline auto bind_index_buffer(const IndexBuffer <T, I> &ibuffer)
 {
-	// TODO: templates for inferring the index type
-	auto binder = [=](const CommandBuffer &cmd, CommandsTraceAux &) {
-		cmd.bindIndexBuffer(ibuffer.handle, 0, vk::IndexType::eUint32);
+	auto binder = [=](const CommandBuffer &cmd, SerializationContext &) {
+		if constexpr (std::same_as <I, uint32_t>)
+			cmd.bindIndexBuffer(ibuffer.handle, 0, vk::IndexType::eUint32);
+		else if constexpr (std::same_as <I, uint16_t>)
+			cmd.bindIndexBuffer(ibuffer.handle, 0, vk::IndexType::eUint16);
+		else
+			static_assert(false, "unsupported index buffer scalar type");
 	};
 
 	return Commands <> { binder };
@@ -194,8 +236,7 @@ inline auto bind_index_buffer(const IndexBuffer <T, I> &ibuffer)
 
 inline auto draw_indexed(uint32_t count)
 {
-	// TODO: should return an aux state which adds back the dependencies
-	auto binder = [=](const CommandBuffer &cmd, CommandsTraceAux &) {
+	auto binder = [=](const CommandBuffer &cmd, SerializationContext &) {
 		cmd.drawIndexed(count, 1, 0, 0, 0);
 	};
 
@@ -204,7 +245,7 @@ inline auto draw_indexed(uint32_t count)
 
 inline auto end_render_pass()
 {
-	auto binder = [](const CommandBuffer &cmd, CommandsTraceAux &) {
+	auto binder = [](const CommandBuffer &cmd, SerializationContext &) {
 		cmd.endRenderPass();
 	};
 
@@ -222,9 +263,12 @@ inline auto foreach(const std::vector <T> &container, F &&ftn)
 {
 	using C = std::invoke_result_t <F, T>;
 
-	auto binder = [&](const CommandBuffer &cmd, CommandsTraceAux &aux) {
+	auto binder = [&](const CommandBuffer &cmd, SerializationContext &sctx) {
+		TSCOPE("foreach serialization");
+		TNOTE("container size of {}", container.size());
+
 		for (auto &&value : container)
-			ftn(value).trace(cmd, aux);
+			ftn(value).serialize(cmd, sctx);
 	};
 
 	return C { binder };
