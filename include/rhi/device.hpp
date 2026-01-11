@@ -11,6 +11,8 @@ struct CommandPool;
 struct DescriptorPool;
 struct Frame;
 struct CommandBuffer;
+struct TimestampQueryPool;
+struct TimestampQueryResult;
 
 template <auto &ref, bool resolved>
 struct DescriptorWritePair;
@@ -62,6 +64,10 @@ struct Device {
 
 	void wait_for_frame(const Frame &frame, uint64_t timeout = UINT64_MAX) const;
 	bool acquire_image_for_frame(Frame &frame, uint64_t timeout = UINT64_MAX) const;
+
+	// Timestamp pool
+	TimestampQueryPool new_timestamp_pool(vk::QueryResultFlags flags, size_t count) const;
+	TimestampQueryResult get_timestamp_results(const TimestampQueryPool &tqpool) const;
 
 	struct Options {
 		std::vector <const char *> extensions;

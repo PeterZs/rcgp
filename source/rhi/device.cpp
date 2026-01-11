@@ -6,6 +6,7 @@
 #include "rhi/descriptor_pool.hpp"
 #include "rhi/device.hpp"
 #include "rhi/window.hpp"
+#include "rhi/timestamp_pool.hpp"
 
 #include "util/logging.hpp"
 #include "util/cti.hpp"
@@ -63,6 +64,42 @@ bool Device::acquire_image_for_frame(Frame &frame, uint64_t timeout) const
 	frame.image_index = acq.value;
 
 	return !(acq.result == vk::Result::eErrorOutOfDateKHR || acq.result == vk::Result::eSuboptimalKHR);
+}
+
+TimestampQueryPool Device::new_timestamp_pool(vk::QueryResultFlags flags, size_t count) const
+{
+	TimestampQueryPool tqpool;
+
+	auto info = vk::QueryPoolCreateInfo()
+		.setQueryCount(count)
+		.setQueryType(vk::QueryType::eTimestamp);
+
+
+	auto properties = physical.getProperties();
+	tqpool.period = properties.limits.timestampPeriod;
+	tqpool.handle = logical.createQueryPool(info);
+	tqpool.flags = flags;
+	tqpool.count = count;
+
+	return tqpool;
+}
+
+TimestampQueryResult Device::get_timestamp_results(const TimestampQueryPool &tqpool) const
+{
+	auto su64 = sizeof(uint64_t);
+	auto stride = (tqpool.flags & vk::QueryResultFlagBits::eWithAvailability) ? (2 * su64) : su64;
+	auto data_size = tqpool.count * stride;
+	auto queries = logical.getQueryPoolResults <uint64_t> (
+		tqpool.handle,
+		0, tqpool.count,
+		data_size, stride,
+		vk::QueryResultFlagBits::e64 | tqpool.flags
+	);
+
+	if (queries.has_value())
+		return { queries.value, tqpool.flags, tqpool.period };
+	else
+		return { {}, tqpool.flags, tqpool.period };
 }
 
 Device Device::from(

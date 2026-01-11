@@ -65,7 +65,7 @@ struct MirrorBuffer <T, L, F> : Buffer {
 		return value_type();
 	}
 
-	void write(const value_type &data) const {
+	auto &write(const value_type &data) const {
 		// TODO: handle flushing if not host coherent
 		// TODO: do this all in one mapped context
 		auto [dyn, offset] = dynamic_part <T> (data);
@@ -73,6 +73,7 @@ struct MirrorBuffer <T, L, F> : Buffer {
 			Buffer::write(&data, offset, 0);
 
 		Buffer::write(dyn.data(), std::span(dyn).size_bytes(), offset);
+		return *this;
 	}
 	
 	template <typename U>

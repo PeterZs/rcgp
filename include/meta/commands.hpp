@@ -74,6 +74,11 @@ struct SerializationContext {
 // TODO: test resource group barriers/syncs with matrix mult example
 // (SAXPY -> s * (A * X) + y should have 2 barriers; and test with sync validation)
 
+// TODO: effect to confirm we are in a pipeline?
+// or are residual resource bindings not allowed...
+// dep <r> + res <r> -> sat <r>?
+// but res <r> without anything should be X
+
 // We have a dependency on ref
 template <auto &ref>
 struct Dependency {};
