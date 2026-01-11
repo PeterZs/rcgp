@@ -35,7 +35,7 @@ struct IndexBuffer : index_buffer_base_t <T, I> {
 	}
 
 	template <typename U>
-	auto &write_unsafe(std::span <U> memory, size_t offset = 0) const {
+	auto &write_unsafe(std::span <const U> memory, size_t offset = 0) const {
 		Buffer::write <U> (memory, offset);
 		return *this;
 	}

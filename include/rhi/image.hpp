@@ -41,6 +41,13 @@ struct Image {
 			.setLayerCount(1)
 			.setLevelCount(1);
 	}
+	
+	vk::DescriptorImageInfo descriptor_info(const vk::Sampler &sampler) const {
+		return vk::DescriptorImageInfo()
+			.setSampler(sampler)
+			.setImageView(view)
+			.setImageLayout(layout);
+	}
 
 	void destroy();
 

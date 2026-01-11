@@ -10,27 +10,28 @@ struct VertexBufferFor {
 
 template <reflected T, template <typename> typename L, vk::VertexInputRate R, AttributeStream <T, L, R> &ref>
 struct VertexBufferFor <ref> : VertexMirrorBuffer <array <T>, L> {
-	using typename VertexMirrorBuffer <array <T>, L> ::MirrorBuffer;
+	using super = VertexMirrorBuffer <array <T>, L>;
 
 	VertexBufferFor() = default;
-	VertexBufferFor(const VertexMirrorBuffer <array <T>, L> &other)
-		: VertexMirrorBuffer <array <T>, L> (other) {}
+	VertexBufferFor(const super &other) : super(other) {}
 
-	auto &write(const typename VertexMirrorBuffer <array <T>, L> ::value_type &data) const {
-		VertexMirrorBuffer <array <T>, L> ::write(data);
+	auto &write(const typename super::value_type &data) const {
+		super::write(data);
 		return *this;
 	}
 
 	template <typename U>
-	auto &write_unsafe(std::span <U> memory, size_t offset = 0) const {
-		Buffer::write <U> (memory, offset);
+	auto &write_unsafe(std::span <const U> memory, size_t offset = 0) const {
+		super::write_unsafe(memory, offset);
 		return *this;
 	}
 
-	static VertexBufferFor from(const Device &device,
-			  	 size_t max_elements,
-			  	 vk::MemoryPropertyFlags properties,
-			  	 vk::BufferUsageFlags extra_usage = vk::BufferUsageFlagBits(0)) {
-		return VertexMirrorBuffer <array <T>, L> ::from(device, max_elements, properties, extra_usage);
+	static VertexBufferFor from(
+		const Device &device,
+		size_t max_elements,
+		vk::MemoryPropertyFlags properties,
+		vk::BufferUsageFlags extra_usage = vk::BufferUsageFlagBits(0)
+	) {
+		return super::from(device, max_elements, properties, extra_usage);
 	}
 };

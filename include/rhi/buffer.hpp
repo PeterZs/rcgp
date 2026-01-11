@@ -20,8 +20,15 @@ struct Buffer {
 	) const -> const Buffer &;
 	
 	template <typename U>
-	auto &write(std::span <U> memory, vk::DeviceSize offset = 0) const {
+	auto &write(std::span <const U> memory, vk::DeviceSize offset = 0) const {
 		return write(memory.data(), memory.size_bytes(), offset);
+	}
+
+	vk::DescriptorBufferInfo descriptor_info() const {
+		return vk::DescriptorBufferInfo()
+			.setBuffer(handle)
+			.setOffset(offset)
+			.setRange(size);
 	}
 	
 	void destroy();

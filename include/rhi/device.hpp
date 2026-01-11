@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include <vector>
 
 #include "session.hpp"
@@ -49,6 +50,14 @@ struct Device {
 	// TODO: return neutral command buffers
 	auto new_command_buffers(const CommandPool &cpool, size_t count) const -> std::vector <CommandBuffer>;
 	auto new_descriptor_sets(const DescriptorPool &dpool, const vk::ArrayProxy <vk::DescriptorSetLayout> &dsls) const -> std::vector <vk::DescriptorSet>;
+
+	auto new_shader_module(std::span <const uint32_t> spirv) const -> vk::ShaderModule {
+		auto info = vk::ShaderModuleCreateInfo()
+			.setCodeSize(spirv.size() * sizeof(uint32_t))
+			.setPCode(spirv.data());
+
+		return logical.createShaderModule(info);
+	}
 	
 	template <typename ... Ts>
 	auto new_render_pass(const Attachments &attachments, Ts ... subpasses) const {

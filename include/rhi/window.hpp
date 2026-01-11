@@ -77,6 +77,10 @@ struct Window {
 
 	vk::Extent2D extent() const;
 
+	float aspect_ratio() const {
+		return float(extent().width) / extent().height;
+	}
+
 	Frame next_frame();
 
 	void on_mouse_button(MouseButtonHandler handler);
