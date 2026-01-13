@@ -1,9 +1,36 @@
 #pragma once
 
+#include <type_traits>
+
+#include "../dsl/array.hpp"
 #include "stage_intrinsics.hpp"
 
 template <typename T>
 void return_handler(const T &ret, size_t &argi) {}
+
+template <reflected T>
+void return_handler(const TaskPayload <T> &, size_t &)
+{
+	$tsb.context.task_payload_type = reconstruct_type <T> ();
+}
+
+// TODO: can we do ..., void>?
+template <MeshPrimitive P, uint32_t MaxVertices, uint32_t MaxPrimitives, typename T>
+requires std::is_void_v <T>
+void return_handler(const MeshletPayload <P, MaxVertices, MaxPrimitives, T> &, size_t &)
+{
+	$tsb.context.mesh_max_vertices = MaxVertices;
+	$tsb.context.mesh_max_primitives = MaxPrimitives;
+	$tsb.context.mesh_primitive_kind = P;
+}
+
+template <MeshPrimitive P, uint32_t MaxVertices, uint32_t MaxPrimitives, reflected T>
+void return_handler(const MeshletPayload <P, MaxVertices, MaxPrimitives, T> &, size_t &)
+{
+	$tsb.context.mesh_max_vertices = MaxVertices;
+	$tsb.context.mesh_max_primitives = MaxPrimitives;
+	$tsb.context.mesh_primitive_kind = P;
+}
 
 template <primitive T, RateProperties P>
 void return_handler(const Interpolant <T, P> &ret, size_t &argi)

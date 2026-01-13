@@ -21,6 +21,7 @@ struct PushConstantAllocation {
 using push_constant_allocation_map = std::map <void *, PushConstantAllocation>;
 
 struct Block : std::vector <Reference> {
+	// TODO: un-inner this struct
 	struct Context {
 		ShaderStage model = ShaderStage::eSubroutine;
 
@@ -29,6 +30,12 @@ struct Block : std::vector <Reference> {
 		std::vector <ThreadOutput> thread_outputs;
 		std::map <void *, std::set <Reference>> global_resources;
 		std::optional <std::array <uint32_t, 3>> workgroup_size;
+		std::optional <Reference> task_payload_type;
+		std::optional <uint32_t> mesh_max_vertices;
+		std::optional <uint32_t> mesh_max_primitives;
+		std::optional <MeshPrimitive> mesh_primitive_kind;
+		std::map <uint32_t, bool> mesh_perprimitive_outputs;
+		uint32_t mesh_output_counter = 0;
 		
 		void add_argument(Argument arg);
 		void add_thread_input(ThreadInput tin);

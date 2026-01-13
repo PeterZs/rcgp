@@ -246,6 +246,12 @@ std::string stringify(Context &ctx, GlobalIntrinsic x, Reference ref)
 		return $assign "WorkGroupID";
 	case GlobalIntrinsic::eGlobalInvocationID:
 		return $assign "GlobalInvocationID";
+	case GlobalIntrinsic::eTaskPayload:
+		return $assign "TaskPayload";
+	case GlobalIntrinsic::eMeshVertices:
+		return $assign "MeshVertices";
+	case GlobalIntrinsic::ePrimitiveTriangleIndices:
+		return $assign "PrimitiveTriangleIndices";
 	default:
 		break;
 	}
@@ -283,6 +289,7 @@ std::string stringify(Context &ctx, BuiltinIntrinsic x, Reference ref)
 	case BuiltinIntrinsicCode::eMax: ftn = "max"; break;
 	case BuiltinIntrinsicCode::ePow: ftn = "pow"; break;
 	case BuiltinIntrinsicCode::eMin: ftn = "min"; break;
+	case BuiltinIntrinsicCode::eSetMeshOutputsEXT: ftn = "SetMeshOutputsEXT"; break;
 	default:
 		break;
 	}
@@ -381,6 +388,8 @@ std::string stringify(ShaderStage stage)
 	case ShaderStage::eVertex: return "vertex shader";
 	case ShaderStage::eFragment: return "fragment shader";
 	case ShaderStage::eCompute: return "compute shader";
+	case ShaderStage::eTask: return "task shader";
+	case ShaderStage::eMesh: return "mesh shader";
 	default:
 		break;
 	}

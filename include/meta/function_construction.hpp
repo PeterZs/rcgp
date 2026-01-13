@@ -60,6 +60,8 @@ struct _stage_operator {};
 #define $vertex		$stage(eVertex)
 #define $fragment	$stage(eFragment)
 #define $compute	$stage(eCompute)
+#define $task		$stage(eTask)
+#define $mesh		$stage(eMesh)
 
 template <typename ... Args>
 struct compact_returns {

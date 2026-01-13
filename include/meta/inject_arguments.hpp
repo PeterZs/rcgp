@@ -27,13 +27,26 @@ void inject_one_argument(T &value, InjectionCounters &counters)
 template <ShaderStage S, uint32_t X, uint32_t Y, uint32_t Z>
 void inject_one_argument(WorkGroup <X, Y, Z> &, InjectionCounters &)
 {
-	static_assert(S == ShaderStage::eCompute, "WorkGroup is only valid for compute shaders");
+	static_assert(
+		S == ShaderStage::eCompute
+		|| S == ShaderStage::eTask
+		|| S == ShaderStage::eMesh,
+		"WorkGroup is only valid for compute/task/mesh shaders"
+	);
 	$tsb.context.set_workgroup_size(X, Y, Z);
 }
 
 // Nothing to do for the implicit context
 template <ShaderStage S, auto &... refs>
 void inject_one_argument(implicit_context <refs...> &value, InjectionCounters &counters) {}
+
+template <ShaderStage S, reflected T>
+void inject_one_argument(TaskPayload <T> &value, InjectionCounters &)
+{
+	static_assert(S == ShaderStage::eMesh, "TaskPayload is only valid for mesh shaders");
+	$tsb.context.task_payload_type = reconstruct_type <T> ();
+	inject_reference(Tas <T &> (value), jems::global_intrinsic(GlobalIntrinsic::eTaskPayload));
+}
 
 template <aggregate T, size_t I>
 void inject_resource_group_element(void *addr, T &value)

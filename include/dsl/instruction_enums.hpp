@@ -43,6 +43,9 @@ enum class GlobalIntrinsic {
 	eLocalInvocationID,
 	eWorkGroupID,
 	eGlobalInvocationID,
+	eTaskPayload,
+	eMeshVertices,
+	ePrimitiveTriangleIndices,
 };
 
 enum class RateProperties {
@@ -50,6 +53,10 @@ enum class RateProperties {
 	eSmooth,
 	eFlat,
 	eNoPerspective,
+};
+
+enum class MeshPrimitive {
+	eTriangles,
 };
 
 enum class BuiltinIntrinsicCode {
@@ -69,6 +76,7 @@ enum class BuiltinIntrinsicCode {
 	eSin,
 	eTan,
 	eTranspose,
+	eSetMeshOutputsEXT,
 };
 
 enum class SwizzleCode {
@@ -114,6 +122,8 @@ enum class ShaderStage {
 	eVertex,
 	eFragment,
 	eCompute,
+	eTask,
+	eMesh,
 };
 
 enum class LoopKind {

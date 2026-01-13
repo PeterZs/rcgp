@@ -1,41 +1,43 @@
 #include "util/logging.hpp"
 
-#include <cstdio>
 #include <cstdarg>
+#include <cstdio>
+#include <string>
+#include <vector>
 
-constexpr const char *COLOR_RESET = "\x1b[0m";
-constexpr const char *COLOR_INFO = "\x1b[94m";
-constexpr const char *COLOR_WARNING = "\x1b[93m";
-constexpr const char *COLOR_ERROR = "\x1b[91m";
-constexpr const char *COLOR_OK = "\x1b[92m";
-constexpr const char *COLOR_ASSERT = "\x1b[31m";
-constexpr const char *COLOR_FATAL = "\x1b[95m";
-constexpr const char *STYLE_BOLD = "\x1b[1m";
-constexpr const char *STYLE_FAINT = "\x1b[2m";
+#include <fmt/color.h>
+#include <fmt/format.h>
 
-void logv(const char *level, const char *color, const char *fmt_str, va_list args)
+std::string format_with_va_list(const char *fmt_str, va_list args)
 {
-	std::fputs(STYLE_BOLD, stderr);
-	std::fputs("rcgp:", stderr);
-	std::fputs(COLOR_RESET, stderr);
-	std::fputs(" ", stderr);
-	std::fputs(color, stderr);
-	std::fputs(STYLE_BOLD, stderr);
-	std::fputs(level, stderr);
-	std::fputs(":", stderr);
-	std::fputs(COLOR_RESET, stderr);
-	std::fputs(" ", stderr);
-	std::fputs(STYLE_FAINT, stderr);
-	std::vfprintf(stderr, fmt_str, args);
-	std::fputs(COLOR_RESET, stderr);
-	std::fputc('\n', stderr);
+	va_list copy;
+	va_copy(copy, args);
+	int size = std::vsnprintf(nullptr, 0, fmt_str, copy);
+	va_end(copy);
+	if (size <= 0)
+		return "?";
+
+	std::vector <char> buffer(size + 1);
+	std::vsnprintf(buffer.data(), buffer.size(), fmt_str, args);
+	return std::string(buffer.data(), size);
+}
+
+void logv(const char *level, fmt::color color, const char *fmt_str, va_list args)
+{
+	auto message = format_with_va_list(fmt_str, args);
+	fmt::print(stderr, fmt::emphasis::bold, "rcgp:");
+	fmt::print(stderr, " ");
+	fmt::print(stderr, fmt::emphasis::bold | fmt::fg(color), "{}:", level);
+	fmt::print(stderr, " ");
+	fmt::print(stderr, fmt::emphasis::faint, "{}", message);
+	fmt::print(stderr, "\n");
 }
 
 void info(const char *fmt_str, ...)
 {
 	va_list args;
 	va_start(args, fmt_str);
-	logv("info", COLOR_INFO, fmt_str, args);
+	logv("info", fmt::color::light_blue, fmt_str, args);
 	va_end(args);
 }
 
@@ -43,7 +45,7 @@ void warning(const char *fmt_str, ...)
 {
 	va_list args;
 	va_start(args, fmt_str);
-	logv("warning", COLOR_WARNING, fmt_str, args);
+	logv("warning", fmt::color::golden_rod, fmt_str, args);
 	va_end(args);
 }
 
@@ -51,7 +53,7 @@ void error(const char *fmt_str, ...)
 {
 	va_list args;
 	va_start(args, fmt_str);
-	logv("error", COLOR_ERROR, fmt_str, args);
+	logv("error", fmt::color::light_coral, fmt_str, args);
 	va_end(args);
 }
 
@@ -59,25 +61,38 @@ void ok(const char *fmt_str, ...)
 {
 	va_list args;
 	va_start(args, fmt_str);
-	logv("ok", COLOR_OK, fmt_str, args);
+	logv("ok", fmt::color::light_green, fmt_str, args);
 	va_end(args);
 }
 
-void assertion(bool condition, const char *fmt_str, ...)
+void assertion_impl(
+	bool condition,
+	const std::source_location &loc,
+	const char *fmt_str,
+	...
+)
 {
 	if (condition) return;
 	va_list args;
 	va_start(args, fmt_str);
-	logv("assertion failed", COLOR_ASSERT, fmt_str, args);
+	logv("assertion failed", fmt::color::violet, fmt_str, args);
 	va_end(args);
+	fmt::print(stderr, fmt::emphasis::italic | fmt::fg(fmt::color::gray),
+		"    at {}:{}\n", loc.file_name(), loc.line());
 	__builtin_trap();
 }
 
-[[noreturn]] void fatal(const char *fmt_str, ...)
+[[noreturn]] void fatal_impl(
+	const std::source_location &loc,
+	const char *fmt_str,
+	...
+)
 {
 	va_list args;
 	va_start(args, fmt_str);
-	logv("fatal error", COLOR_FATAL, fmt_str, args);
+	logv("fatal error", fmt::color::purple, fmt_str, args);
 	va_end(args);
+	fmt::print(stderr, fmt::emphasis::italic | fmt::fg(fmt::color::gray),
+		"    at {}:{}\n", loc.file_name(), loc.line());
 	__builtin_trap();
 }

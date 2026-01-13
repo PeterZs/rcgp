@@ -102,6 +102,12 @@ std::string primitive_type_string(const PrimitiveType &primitive)
 	vcase(VectorType <float, 2>): return "vec2";
 	vcase(VectorType <float, 3>): return "vec3";
 	vcase(VectorType <float, 4>): return "vec4";
+	vcase(VectorType <int32_t, 2>): return "ivec2";
+	vcase(VectorType <int32_t, 3>): return "ivec3";
+	vcase(VectorType <int32_t, 4>): return "ivec4";
+	vcase(VectorType <uint32_t, 2>): return "uvec2";
+	vcase(VectorType <uint32_t, 3>): return "uvec3";
+	vcase(VectorType <uint32_t, 4>): return "uvec4";
 	vcase(MatrixType <int32_t, 2, 2>): return "imat2";
 	vcase(MatrixType <int32_t, 3, 3>): return "imat3";
 	vcase(MatrixType <int32_t, 4, 4>): return "imat4";
@@ -222,6 +228,9 @@ std::string reference(Context &ctx, GlobalIntrinsic gi)
 	case GlobalIntrinsic::eLocalInvocationID: return "gl_LocalInvocationID";
 	case GlobalIntrinsic::eWorkGroupID: return "gl_WorkGroupID";
 	case GlobalIntrinsic::eGlobalInvocationID: return "gl_GlobalInvocationID";
+	case GlobalIntrinsic::eTaskPayload: return "task_payload";
+	case GlobalIntrinsic::eMeshVertices: return "gl_MeshVerticesEXT";
+	case GlobalIntrinsic::ePrimitiveTriangleIndices: return "gl_PrimitiveTriangleIndicesEXT";
 	default:
 		return "?";
 	}
@@ -375,7 +384,15 @@ std::string expression(Context &ctx, Reference expr)
 	}
 	vcase(ArrayAccess): {
 		auto &access = value.as <ArrayAccess> ();
-		return fmt::format("{}[{}]", expression(ctx, access.value), expression(ctx, access.index));
+		if (access.value && access.value->is <GlobalIntrinsic> ()) {
+			auto gi = access.value->as <GlobalIntrinsic> ();
+			if (gi == GlobalIntrinsic::eMeshVertices) {
+				return fmt::format("gl_MeshVerticesEXT[{}].gl_Position",
+					expression(ctx, access.index));
+			}
+		}
+		return fmt::format("{}[{}]",
+			expression(ctx, access.value), expression(ctx, access.index));
 	}
 	vcase(Swizzle): {
 		auto &swizzle = value.as <Swizzle> ();
@@ -385,6 +402,8 @@ std::string expression(Context &ctx, Reference expr)
 		return reference(ctx, value.as <GlobalResource> ());
 	vcase(GlobalIntrinsic):
 		return reference(ctx, value.as <GlobalIntrinsic> ());
+	vcase(ThreadOutput):
+		return reference(ctx, value.as <ThreadOutput> ());
 	vcase(Argument):
 		return reference(ctx, value.as <Argument> ());
 	vcase(Invocation): {
@@ -423,6 +442,7 @@ std::string expression(Context &ctx, Reference expr)
 		case BuiltinIntrinsicCode::eNormalize: out = "normalize"; break;
 		case BuiltinIntrinsicCode::eSample: out = "texture"; break;
 		case BuiltinIntrinsicCode::eTranspose: out = "transpose"; break;
+		case BuiltinIntrinsicCode::eSetMeshOutputsEXT: out = "SetMeshOutputsEXT"; break;
 		default:
 			break;
 		}
@@ -442,7 +462,7 @@ std::string expression(Context &ctx, Reference expr)
 		break;
 	}
 
-	fatal("expression not implemented for %d", value.index());
+	fatal("expression not implemented for %s", expr->repr().c_str());
 	return "?";
 }
 
@@ -465,6 +485,11 @@ void statement(Context &ctx, Reference instruction)
 			expression(ctx, store.source));
 		return;
 	}
+	vcase(BuiltinIntrinsic):
+		ctx.result += fmt::format("{}{};\n",
+			ctx.indent,
+			expression(ctx, instruction));
+		return;
 	vcase(Invocation):
 		ctx.result += fmt::format("{}{};\n",
 			ctx.indent,
@@ -477,6 +502,7 @@ void statement(Context &ctx, Reference instruction)
 			ctx.indent += "    ";
 			for (auto &nested : *blk) {
 				if (nested->is <Store> () || nested->is <Invocation> ()
+					|| nested->is <BuiltinIntrinsic> ()
 					|| nested->is <Branch> () || nested->is <Loop> ()
 					|| nested->is <Local> ())
 					statement(ctx, nested);
@@ -509,6 +535,7 @@ void statement(Context &ctx, Reference instruction)
 			ctx.indent += "    ";
 			for (auto &nested : *blk) {
 				if (nested->is <Store> () || nested->is <Invocation> ()
+					|| nested->is <BuiltinIntrinsic> ()
 					|| nested->is <Branch> () || nested->is <Loop> ()
 					|| nested->is <Local> ())
 					statement(ctx, nested);
@@ -544,6 +571,7 @@ void emit_block_statements(Context &ctx, const Block &blk)
 {
 	for (auto &instr : blk) {
 		if (instr->is <Store> () || instr->is <Invocation> ()
+			|| instr->is <BuiltinIntrinsic> ()
 			|| instr->is <Branch> () || instr->is <Loop> ()
 			|| instr->is <Local> ())
 			statement(ctx, instr);
@@ -608,8 +636,15 @@ void emit_preamble(Context &ctx)
 {
 	ctx.result = "// Preamble\n";
 	ctx.result += "#version 460\n\n";
-	ctx.result += "#extension GL_EXT_scalar_block_layout : require\n\n";
-	if (ctx.block.context.model == ShaderStage::eCompute) {
+	ctx.result += "#extension GL_EXT_scalar_block_layout : require\n";
+	if (ctx.block.context.model == ShaderStage::eTask
+		|| ctx.block.context.model == ShaderStage::eMesh) {
+		ctx.result += "#extension GL_EXT_mesh_shader : require\n";
+	}
+	ctx.result += "\n";
+	if (ctx.block.context.model == ShaderStage::eCompute
+		|| ctx.block.context.model == ShaderStage::eTask
+		|| ctx.block.context.model == ShaderStage::eMesh) {
 		auto size = ctx.block.context.workgroup_size.value_or(
 			std::array <uint32_t, 3> { 1, 1, 1 }
 		);
@@ -617,6 +652,18 @@ void emit_preamble(Context &ctx)
 			"layout (local_size_x = {}, local_size_y = {}, local_size_z = {}) in;\n\n",
 			size[0], size[1], size[2]
 		);
+	}
+	if (ctx.block.context.model == ShaderStage::eMesh) {
+		if (!ctx.block.context.mesh_max_vertices.has_value()
+			|| !ctx.block.context.mesh_max_primitives.has_value())
+			fatal("mesh shader missing MeshletPayload size information");
+		auto max_vertices = ctx.block.context.mesh_max_vertices.value();
+		auto max_primitives = ctx.block.context.mesh_max_primitives.value();
+		ctx.result += fmt::format(
+			"layout (max_vertices = {}, max_primitives = {}) out;\n",
+			max_vertices, max_primitives
+		);
+		ctx.result += "layout (triangles) out;\n\n";
 	}
 }
 
@@ -662,6 +709,17 @@ void emit_aggregate_decls(Context &ctx)
 	ctx.result += "\n";
 }
 
+void emit_task_payload(Context &ctx)
+{
+	if (!ctx.block.context.task_payload_type.has_value())
+		return;
+
+	auto decl = type_repr(ctx, ctx.block.context.task_payload_type.value());
+	ctx.result += "// Task Payload\n";
+	ctx.result += fmt::format("taskPayloadSharedEXT {} task_payload{};\n\n",
+		decl.base, decl.suffix);
+}
+
 void emit_thread_inputs(Context &ctx)
 {
 	ctx.result += "// Inputs\n";
@@ -704,6 +762,11 @@ void emit_thread_outputs(Context &ctx)
 
 	for (auto &[_, tout] : outputs) {
 		auto qualifier = rate_qualifier(tout.properties);
+		if (ctx.block.context.model == ShaderStage::eMesh) {
+			auto it = ctx.block.context.mesh_perprimitive_outputs.find(tout.argi);
+			if (it != ctx.block.context.mesh_perprimitive_outputs.end() && it->second)
+				qualifier = qualifier.empty() ? "perprimitiveEXT " : qualifier + " perprimitiveEXT ";
+		}
 		auto decl = type_repr(ctx, tout.type);
 		ctx.result += fmt::format("layout (location = {}) {}out {} lout{}{};\n",
 			tout.argi, qualifier, decl.base, tout.argi, decl.suffix);
@@ -987,6 +1050,7 @@ std::string generate(Context &ctx, size_t tabs)
 
 	emit_preamble(ctx);
 	emit_aggregate_decls(ctx);
+	emit_task_payload(ctx);
 	emit_thread_inputs(ctx);
 	emit_thread_outputs(ctx);
 	emit_global_resources(ctx);

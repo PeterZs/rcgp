@@ -131,4 +131,10 @@ public:
 			jems::type_loc(loc, VectorType <T, 4> ()),
 			xy, z, w
 		)) {}
+
+	vector_base(const scalar <T> &x, const scalar <T> &y, const scalar <T> &z, const scalar <T> &w, $location)
+		: handle(wrap_in_local(loc,
+			jems::type_loc(loc, VectorType <T, 4> ()),
+			x, y, z, w
+		)) {}
 };
