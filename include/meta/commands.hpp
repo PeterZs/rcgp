@@ -1,11 +1,13 @@
 #pragma once
 
+#include <array>
 #include <functional>
 
 #include "../util/timer.hpp"
 #include "../rhi/command_buffer.hpp"
 #include "pipeline/compute.hpp"
 #include "pipeline/rasterization.hpp"
+#include "barrier.hpp"
 #include "vertex_buffer_for.hpp"
 
 // TODO: we can id refs as well with reference <ref>
@@ -116,6 +118,10 @@ struct ResolvantForIndexBuffer {};
 // We need all previous dependencies to be resolved
 struct DependencySentinel {};
 
+// We have synchronized ref
+template <auto &ref, typename Phase>
+struct Sync {};
+
 // TODO: algebra: communitivity...
 // Ibuffer enforcer can commute backwards until it hits
 // the indicator, after which its replaced by a real dependency
@@ -133,7 +139,7 @@ consteval auto dependency_sequence_for_streams(Tlist <reference <refs>...>)
 template <typename ... Wrappers>
 consteval auto dependency_sequence_for_grcs(Tlist <Wrappers...>)
 {
-	return Tlist <Dependency <Wrappers::reference::address>...> {};
+	return Tlist <Dependency <Wrappers::reference::handle>...> {};
 }
 
 template <Topology T, typename AS, typename GAMAP, typename GRCs>
@@ -353,6 +359,41 @@ inline auto manual_commands(auto F)
 {
 	return Commands <> { F };
 }
+
+template <auto &... refs, typename ... SrcPhases, typename ... DstPhases>
+inline auto barriers(const Barrier <refs, SrcPhases, DstPhases> &... barriers)
+{
+	static constexpr size_t barrier_count =
+		(Barrier <refs, SrcPhases, DstPhases> ::count + ... + 0);
+
+	auto binder = [=](const CommandBuffer &cmd, SerializationContext &) {
+		std::array <vk::BufferMemoryBarrier2, barrier_count> buffer_barriers {};
+		size_t idx = 0;
+		(barriers.write_to(buffer_barriers, idx), ...);
+		cmd.pipelineBarrier2(vk::DependencyInfo().setBufferMemoryBarriers(buffer_barriers));
+	};
+
+	return Commands <Sync <refs, DstPhases>...> { binder };
+}
+
+template <typename ... Es, auto &ref, typename SrcPhase, typename DstPhase>
+inline auto operator|(const Commands <Es...> &cmds, const Barrier <ref, SrcPhase, DstPhase> &b)
+{
+	return cmds | barriers(b);
+}
+
+template <auto &ref, typename SrcPhase, typename DstPhase, typename ... Es>
+inline auto operator|(const Barrier <ref, SrcPhase, DstPhase> &b, const Commands <Es...> &cmds)
+{
+	return barriers(b) | cmds;
+}
+
+template <auto &ref, typename SrcPhase, typename DstPhase>
+inline auto operator|(const std::nullptr_t &, const Barrier <ref, SrcPhase, DstPhase> &b)
+{
+	return barriers(b);
+}
+
 
 inline auto dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1)
 {
