@@ -4,6 +4,8 @@
 namespace vk { enum class VertexInputRate; }
 namespace jems { class handle; }
 
+#include "../dsl/instruction_enums.hpp"
+
 // Reflection types
 template <typename T>
 struct primitive_reflection {};
@@ -51,7 +53,7 @@ struct uniform_buffer_reflection {
 	static jems::handle intrinsic(uint32_t binding);
 };
 
-template <typename T, template <typename> typename L>
+template <typename T, template <typename> typename L, GlobalResourceAccess A>
 struct storage_buffer_reflection {
 	static jems::handle intrinsic(uint32_t binding);
 };

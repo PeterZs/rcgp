@@ -39,14 +39,24 @@ struct UniformBuffer : T {
 };
 
 // TODO: Read/write flags and aliases...
-template <reflected T, template <typename> typename L = layouts::std430>
+template <reflected T, template <typename> typename L = layouts::std430, GlobalResourceAccess A = GlobalResourceAccess::eReadWrite>
 struct StorageBuffer : T {
-	using reflection = storage_buffer_reflection <T, L>;
+	using reflection = storage_buffer_reflection <T, L, A>;
 	DEFINE_REFLECTION_STAMP();
 };
 
+// TODO: aliases in a different header
+template <reflected T, template <typename> typename L = layouts::std430, GlobalResourceAccess A = GlobalResourceAccess::eReadWrite>
+using ArrayBuffer = StorageBuffer <array <T>, L, A>;
+
 template <reflected T, template <typename> typename L = layouts::std430>
-using ArrayBuffer = StorageBuffer <array <T>, L>;
+using RStorageBuffer = StorageBuffer <T, L, GlobalResourceAccess::eRead>;
+
+template <reflected T, template <typename> typename L = layouts::std430>
+using WStorageBuffer = StorageBuffer <T, L, GlobalResourceAccess::eWrite>;
+
+template <reflected T, template <typename> typename L = layouts::std430>
+using RWStorageBuffer = StorageBuffer <T, L, GlobalResourceAccess::eReadWrite>;
 
 template <native_scalar T, size_t D>
 struct Sampler : jems::handle {
@@ -83,8 +93,8 @@ TYPE_TRAIT(is_push_constant);
 	TYPE_TRAIT_INCLUDES(is_push_constant, PushConstant <T, L>);
 
 TYPE_TRAIT(is_storage_buffer);
-	template <typename T, template <typename> typename L>
-	TYPE_TRAIT_INCLUDES(is_storage_buffer, StorageBuffer <T, L>);
+	template <typename T, template <typename> typename L, GlobalResourceAccess A>
+	TYPE_TRAIT_INCLUDES(is_storage_buffer, StorageBuffer <T, L, A>);
 
 TYPE_TRAIT(is_sampler);
 	template <typename T, size_t D>
@@ -100,8 +110,8 @@ TYPE_TRAIT(is_global_resource);
 	template <typename T, template <typename> typename L>
 	TYPE_TRAIT_INCLUDES(is_global_resource, UniformBuffer  <T, L>);
 	
-	template <typename T, template <typename> typename L>
-	TYPE_TRAIT_INCLUDES(is_global_resource, StorageBuffer  <T, L>);
+	template <typename T, template <typename> typename L, GlobalResourceAccess A>
+	TYPE_TRAIT_INCLUDES(is_global_resource, StorageBuffer  <T, L, A>);
 	
 	template <typename T, size_t D>
 	TYPE_TRAIT_INCLUDES(is_global_resource, Sampler <T, D>);

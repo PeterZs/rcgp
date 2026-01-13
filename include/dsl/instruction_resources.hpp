@@ -12,6 +12,7 @@ struct GlobalResource {
 	using Layout = GlobalResourceLayout;
 	Kind kind;
 	Layout layout;
+	GlobalResourceAccess access = GlobalResourceAccess::eReadWrite;
 
 	// group := descriptor set index
 	std::optional <uint32_t> group;

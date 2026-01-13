@@ -235,6 +235,12 @@ std::string stringify(Context &ctx, GlobalIntrinsic x, Reference ref)
 	switch (x) {
 	case GlobalIntrinsic::eScreenPosition:
 		return $assign "SVPosition";
+	case GlobalIntrinsic::eLocalInvocationID:
+		return $assign "LocalInvocationID";
+	case GlobalIntrinsic::eWorkGroupID:
+		return $assign "WorkGroupID";
+	case GlobalIntrinsic::eGlobalInvocationID:
+		return $assign "GlobalInvocationID";
 	default:
 		break;
 	}

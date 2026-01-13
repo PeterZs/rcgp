@@ -109,6 +109,15 @@ void Block::Context::add_global_resource(void *addr, Reference resource)
 	global_resources[addr].insert(resource);
 }
 
+void Block::Context::set_workgroup_size(uint32_t x, uint32_t y, uint32_t z)
+{
+	auto size = std::array <uint32_t, 3> { x, y, z };
+	if (workgroup_size.has_value() && workgroup_size.value() != size) {
+		__builtin_trap();
+	}
+	workgroup_size = size;
+}
+
 // TODO: use a script to generate instantiations
 template Reference Block::add <Argument> (const Argument &sub, Debug aux);
 template Reference Block::add <Block> (const Block &sub, Debug aux);

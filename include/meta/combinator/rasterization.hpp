@@ -17,19 +17,19 @@ template <typename ... Ts>
 auto sequence_to_group_allocation(const Tlist <Ts...> &)
 {
 	return constexpr_for(Is, sizeof...(Ts),
-		return Tlist <group_allocation_record <Ts::type::handle, Is>...> {}
+		return Tlist <group_allocation_record <Ts::reference::handle, Is>...> {}
 	);
 }
 
 TYPE_TRAIT(is_push_constant_wrapper);
 	template <auto &ref, ShaderStage ... Ss>
 	requires (is_push_constant_v <reference_base_t <ref>>)
-	TYPE_TRAIT_INCLUDES(is_push_constant_wrapper, stage_wrapper <reference <ref>, Ss...>);
+	TYPE_TRAIT_INCLUDES(is_push_constant_wrapper, stage_wrapper <ref, Ss...>);
 
 TYPE_TRAIT(is_descriptable_wrapper);
 	template <auto &ref, ShaderStage ... Ss>
 	requires (not is_push_constant_v <reference_base_t <ref>>)
-	TYPE_TRAIT_INCLUDES(is_descriptable_wrapper, stage_wrapper <reference <ref>, Ss...>);
+	TYPE_TRAIT_INCLUDES(is_descriptable_wrapper, stage_wrapper <ref, Ss...>);
 
 template <typename List>
 using push_constant_resources_t = tlist_filter_t <is_push_constant_wrapper, List>;
@@ -39,8 +39,9 @@ using descriptable_resources_t = tlist_filter_t <is_descriptable_wrapper, List>;
 
 // TODO: need to manage names...
 // TODO: also need to clean this stuff up...
+// TODO: separate header...
 template <auto &ref, ShaderStage ... Ss>
-auto reference_to_descriptor_set_layout(const Device &device, const stage_wrapper <reference <ref>, Ss...> &)
+auto reference_to_descriptor_set_layout(const Device &device, const stage_wrapper <ref, Ss...> &)
 {
 	using Reference = reference_base_t <ref>;
 
@@ -114,57 +115,51 @@ auto reference_sequence_to_descriptor_set_layouts(const Device &device, const Tl
 	}
 }
 
-template <auto &ref, ShaderStage ... Ss>
-auto reference_to_push_constant_range(const stage_wrapper <reference <ref>, Ss...> &, uint32_t offset)
+template <typename ... Wrappers>
+auto reference_sequence_to_push_constant_ranges(const Tlist <Wrappers...> &)
 {
-	using info = push_constant_info <stage_wrapper <reference <ref>, Ss...>>;
-
-	auto range = vk::PushConstantRange()
-		.setOffset(offset)
-		.setSize(info::size)
-		.setStageFlags(info::stage_flags);
-
-	return range;
-}
-
-template <typename ... Ts>
-auto reference_sequence_to_push_constant_ranges(const Tlist <Ts...> &)
-{
-	if constexpr (sizeof...(Ts) == 0) {
+	if constexpr (sizeof...(Wrappers) == 0) {
 		return std::array <vk::PushConstantRange, 0> ();
 	} else {
-		std::array <vk::PushConstantRange, sizeof...(Ts)> ranges {};
+		std::array <vk::PushConstantRange, sizeof...(Wrappers)> ranges {};
+
 		uint32_t offset = 0;
 		size_t index = 0;
 
-		auto add = [&](auto tag) {
-			using info = push_constant_info <decltype(tag)>;
-			offset = align_up_u32(offset, info::alignment);
-			ranges[index++] = reference_to_push_constant_range(tag, offset);
-			offset += info::size;
+		auto populate = [&] <typename W> () {
+			using T = ResourceTypeFor <W::reference::handle>;
+
+			info("push constant range offset=%d, size=%d", offset, sizeof(T));
+			offset = align_up_u32(offset, alignof(T));
+			ranges[index++] = vk::PushConstantRange()
+				.setOffset(offset)
+				.setSize(sizeof(T))
+				.setStageFlags(W::flags);
+			offset += sizeof(T);
 		};
 
-		(add(Ts()), ...);
+		(populate.template operator() <Wrappers> (), ...);
+
 		return ranges;
 	}
 }
 
-template <typename ... Ts>
-auto reference_sequence_to_push_constant_allocation_map(const Tlist <Ts...> &)
+template <typename ... Wrappers>
+auto reference_sequence_to_push_constant_allocation_map(const Tlist <Wrappers...> &)
 {
 	push_constant_allocation_map map;
-	if constexpr (sizeof...(Ts) > 0) {
+	if constexpr (sizeof...(Wrappers) > 0) {
 		uint32_t offset = 0;
 		uint32_t index = 0;
 
-		auto add = [&](auto tag) {
-			using info = push_constant_info <decltype(tag)>;
-			offset = align_up_u32(offset, info::alignment);
-			map.emplace(info::addr, PushConstantAllocation { index++, offset });
-			offset += info::size;
+		auto allocate = [&] <typename W> () {
+			using T = ResourceTypeFor <W::reference::handle>;
+			offset = align_up_u32(offset, alignof(T));
+			map.emplace(W::reference::address, PushConstantAllocation { index++, offset });
+			offset += sizeof(T);
 		};
 
-		(add(Ts()), ...);
+		(allocate.template operator() <Wrappers> (), ...);
 	}
 
 	return map;
@@ -238,7 +233,7 @@ struct RasterizationCombinator {
 		// info("vertex shader:\n%s", vshader.c_str());
 
 		auto fshader = generate_glsl(fragment);
-		// info("fragment shader:\n%s", fshader.c_str());
+		info("fragment shader:\n%s", fshader.c_str());
 	
 		auto vspv = compiler.glsl_to_spirv(vshader, EShLangVertex);
 		auto fspv = compiler.glsl_to_spirv(fshader, EShLangFragment);
@@ -270,7 +265,7 @@ struct RasterizationCombinator {
 			options
 		);
 
-		return AnnotatedRasterizationPipeline <
+		return RasterizationPipeline <
 			T,
 			decltype(streams),
 			decltype(alloc),

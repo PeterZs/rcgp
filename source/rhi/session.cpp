@@ -14,8 +14,7 @@ vk::Bool32 validation_callback(
 	void *user_data
 )
 {
-	const auto *session = (const Session *) user_data;
-	const bool trap_on_error = session ? session->trap_on_error : false;
+	const bool trap_on_error = reinterpret_cast <std::intptr_t> (user_data);
 
 	auto fg = fmt::fg(fmt::color::gray);
 	bool trap = false;
@@ -84,11 +83,12 @@ std::tuple <Session, vk::detail::DispatchLoaderDynamic> Session::from(const Opti
 		| vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation
 		| vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
 
+	std::intptr_t trap_on_error = options.trap_on_error;
 	auto debug_info = vk::DebugUtilsMessengerCreateInfoEXT()
 		.setMessageType(debug_type_flags)
 		.setMessageSeverity(debug_severity_flags)
 		.setPfnUserCallback(validation_callback)
-		.setPUserData(&session);
+		.setPUserData(reinterpret_cast <void *> (trap_on_error));
 
 	auto app_info = vk::ApplicationInfo()
 		.setApiVersion(VK_API_VERSION_1_4)

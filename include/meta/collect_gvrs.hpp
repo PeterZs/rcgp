@@ -5,17 +5,22 @@
 #include "resources.hpp"
 #include "shader_stage.hpp"
 
-template <typename T, ShaderStage ... Ss>
+// TODO: refactor...
+template <auto &ref, ShaderStage ... Ss>
 struct stage_wrapper {
 	using stages = std::integer_sequence <ShaderStage, Ss...>;
-	using type = T;
+	using type = reference_base_t <ref>;
+	using reference = reference <ref>;
 
+	// TODO: get rid of this...?
 	template <ShaderStage S>
 	using append_stage = std::conditional_t <
 		((Ss == S) || ...),
-		stage_wrapper <T, Ss...>,
-		stage_wrapper <T, Ss..., S>
+		stage_wrapper <ref, Ss...>,
+		stage_wrapper <ref, Ss..., S>
 	>;
+
+	static constexpr auto flags = stage_flags_of <Ss...> ();
 };
 
 template <ShaderStage S, auto &ref, typename ... Ts>
@@ -25,18 +30,18 @@ auto add_gvr(const Tlist <Ts...> &in)
 	if constexpr (not is_global_resource_v <base>) {
 		return in;
 	} else {
-		constexpr auto exists = (std::same_as <typename Ts::type, reference <ref>> || ...);
+		constexpr auto exists = (std::same_as <typename Ts::reference, reference <ref>> || ...);
 
 		if constexpr (exists) {
 			return Tlist <
 				std::conditional_t <
-					std::same_as <typename Ts::type, reference <ref>>,
+					std::same_as <typename Ts::reference, reference <ref>>,
 					typename Ts::template append_stage <S>,
 					Ts
 				> ...
 			> {};
 		} else {
-			return Tlist <Ts..., stage_wrapper <reference <ref>, S>> {};
+			return Tlist <Ts..., stage_wrapper <ref, S>> {};
 		}
 	}
 }

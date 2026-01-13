@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../util/logging.hpp"
+#include "../dsl/aliases.hpp"
 #include "reconstruct_type.hpp"
 
 // TODO: also the associated stage...
@@ -23,6 +24,19 @@ struct projection <read_only_intrinsic <G, T>> {
 
 using InstanceIndex = read_only_intrinsic <GlobalIntrinsic::eInstanceIndex, i32>;
 using VertexIndex = read_only_intrinsic <GlobalIntrinsic::eVertexIndex, i32>;
+using LocalInvocationID = read_only_intrinsic <GlobalIntrinsic::eLocalInvocationID, uvec3>;
+using WorkGroupID = read_only_intrinsic <GlobalIntrinsic::eWorkGroupID, uvec3>;
+using GlobalInvocationID = read_only_intrinsic <GlobalIntrinsic::eGlobalInvocationID, uvec3>;
+
+template <uint32_t X, uint32_t Y = 1, uint32_t Z = 1>
+struct WorkGroup {
+	static constexpr uint32_t size_x = X;
+	static constexpr uint32_t size_y = Y;
+	static constexpr uint32_t size_z = Z;
+	LocalInvocationID local_index;
+	WorkGroupID workgroup_index;
+	GlobalInvocationID global_index;
+};
 
 // Required result of the vertex shader
 struct Position {

@@ -4,6 +4,7 @@
 
 #include "../util/timer.hpp"
 #include "../rhi/command_buffer.hpp"
+#include "pipeline/compute.hpp"
 #include "pipeline/rasterization.hpp"
 #include "vertex_buffer_for.hpp"
 
@@ -44,22 +45,32 @@ void write_pb_infos(PipelineMappings &dst, Tlist <Wrappers...>)
 		
 		if constexpr (is_push_constant_v <Resource>) {
 			auto flags = stage_flags_for_v <ref, GRCs>;
-			auto offset = push_constant_offset_for_v <ref, GRCs>;
+			constexpr auto offset = push_constant_offset_for <ref> (GRCs());
 			dst.pc_stages.emplace(&ref, flags);
 			dst.pc_offsets.emplace(&ref, offset);
 		}
 	};
 
-	(write.template operator() <Wrappers::type::handle> (), ...);
+	(write.template operator() <Wrappers::reference::handle> (), ...);
 }
 
 template <Topology T, typename AS, typename GAMAP, typename GRCs>
-auto pipeline_mappings(const AnnotatedRasterizationPipeline <T, AS, GAMAP, GRCs> &pipeline)
+auto pipeline_mappings(const RasterizationPipeline <T, AS, GAMAP, GRCs> &pipeline)
 {
 	PipelineMappings result;
 	result.layout = pipeline.layout;
 	result.bind_point = vk::PipelineBindPoint::eGraphics;
 	write_vb_offsets(result, AS());
+	write_pb_infos(result, GRCs());
+	return result;
+}
+
+template <typename GAMAP, typename GRCs>
+auto pipeline_mappings(const ComputePipeline <GAMAP, GRCs> &pipeline)
+{
+	PipelineMappings result;
+	result.layout = pipeline.layout;
+	result.bind_point = vk::PipelineBindPoint::eCompute;
 	write_pb_infos(result, GRCs());
 	return result;
 }
@@ -112,6 +123,7 @@ struct DependencySentinel {};
 // dependency <r> + resolvant <r> = resolvant <r> (they dont cancel)
 
 // Dependency sequences for annotated pipelines
+// TODO: split headers...
 template <auto &... refs>
 consteval auto dependency_sequence_for_streams(Tlist <reference <refs>...>)
 {
@@ -121,16 +133,23 @@ consteval auto dependency_sequence_for_streams(Tlist <reference <refs>...>)
 template <typename ... Wrappers>
 consteval auto dependency_sequence_for_grcs(Tlist <Wrappers...>)
 {
-	return Tlist <Dependency <Wrappers::type::handle>...> {};
+	return Tlist <Dependency <Wrappers::reference::address>...> {};
 }
 
 template <Topology T, typename AS, typename GAMAP, typename GRCs>
-consteval auto dependency_sequence(const AnnotatedRasterizationPipeline <T, AS, GAMAP, GRCs> &pipeline)
+consteval auto dependency_sequence(const RasterizationPipeline <T, AS, GAMAP, GRCs> &pipeline)
 {
 	auto ib = Tlist <DependencyIndicatorForIndexBuffer <T>> {};
 	auto as = dependency_sequence_for_streams(AS());
 	auto grcs = dependency_sequence_for_grcs(GRCs());
 	return tlist_concat(ib, as, grcs);
+}
+
+template <typename GAMAP, typename GRCs>
+consteval auto dependency_sequence(const ComputePipeline <GAMAP, GRCs> &pipeline)
+{
+	auto grcs = dependency_sequence_for_grcs(GRCs());
+	return grcs;
 }
 
 // TODO: more efficient std function representation?
@@ -205,12 +224,15 @@ inline auto begin_render_pass(
 	return Commands <> { binder };
 }
 
-TYPE_TRAIT(is_annotated_pipeline);
+TYPE_TRAIT(is_pipeline);
 	template <Topology T, typename AS, typename GAMAP, typename GRCs>
-	TYPE_TRAIT_INCLUDES(is_annotated_pipeline, AnnotatedRasterizationPipeline <T, AS, GAMAP, GRCs>);
+	TYPE_TRAIT_INCLUDES(is_pipeline, RasterizationPipeline <T, AS, GAMAP, GRCs>);
+
+	template <typename GA, typename GR>
+	TYPE_TRAIT_INCLUDES(is_pipeline, ComputePipeline <GA, GR>);
 
 template <typename Pipeline>
-requires is_annotated_pipeline_v <Pipeline>
+requires is_pipeline_v <Pipeline>
 auto bind_pipeline(const Pipeline &pipeline)
 {
 	static const size_t id = RuntimeTypeRegistry::id <Pipeline> ();
@@ -330,6 +352,15 @@ inline auto end_render_pass()
 inline auto manual_commands(auto F)
 {
 	return Commands <> { F };
+}
+
+inline auto dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1)
+{
+	auto binder = [=](const CommandBuffer &cmd, SerializationContext &) {
+		cmd.dispatch(x, y, z);
+	};
+
+	return Commands <DependencySentinel> { binder };
 }
 
 template <typename T, typename F>

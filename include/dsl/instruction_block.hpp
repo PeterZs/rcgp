@@ -2,7 +2,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <array>
 #include <map>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -26,11 +28,13 @@ struct Block : std::vector <Reference> {
 		std::vector <ThreadInput> thread_inputs;
 		std::vector <ThreadOutput> thread_outputs;
 		std::map <void *, std::set <Reference>> global_resources;
+		std::optional <std::array <uint32_t, 3>> workgroup_size;
 		
 		void add_argument(Argument arg);
 		void add_thread_input(ThreadInput tin);
 		void add_thread_output(ThreadOutput tout);
 		void add_global_resource(void *addr, Reference resource);
+		void set_workgroup_size(uint32_t x, uint32_t y, uint32_t z);
 	} context;
 	
 	void apply_group_allocation_map(const group_allocation_map &map);

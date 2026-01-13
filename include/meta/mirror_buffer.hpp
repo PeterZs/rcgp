@@ -125,8 +125,8 @@ struct resource_translator <UniformBuffer <T, L>> {
 	using element_type = std::nullptr_t;
 };
 
-template <reflected T, template <typename> typename L>
-struct resource_translator <StorageBuffer <T, L>> {
+template <reflected T, template <typename> typename L, GlobalResourceAccess A>
+struct resource_translator <StorageBuffer <T, L, A>> {
 	using type = StorageMirrorBuffer <T, L>;
 	using value_type = type::value_type;
 	using element_type = std::nullptr_t;

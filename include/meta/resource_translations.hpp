@@ -42,9 +42,9 @@ struct layout_engine <uniform_buffer_reflection <T, L>> {
 	using hint = scaffold_hint <ResourceType <UniformBuffer <T, L>>, 0>;
 };
 
-template <typename T, template <typename> typename L>
-struct layout_engine <storage_buffer_reflection <T, L>> {
-	using hint = scaffold_hint <ResourceType <StorageBuffer <T, L>>, 0>;
+template <typename T, template <typename> typename L, GlobalResourceAccess A>
+struct layout_engine <storage_buffer_reflection <T, L, A>> {
+	using hint = scaffold_hint <ResourceType <StorageBuffer <T, L, A>>, 0>;
 };
 
 template <typename T, size_t D>

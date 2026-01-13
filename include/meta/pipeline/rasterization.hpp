@@ -9,6 +9,7 @@
 #include "../index_buffer.hpp"
 
 // Compile-time stage flag lookup for a given resource reference within a sequence
+// TODO: function...
 template <auto &ref, typename Seq>
 struct stage_flags_for_seq;
 
@@ -20,7 +21,7 @@ struct stage_flags_for_seq <ref, Tlist <>> {
 template <auto &ref, auto &other, ShaderStage ...Ss, typename ...Rest>
 struct stage_flags_for_seq <
 	ref,
-	Tlist <stage_wrapper <reference <other>, Ss...>, Rest...>
+	Tlist <stage_wrapper <other, Ss...>, Rest...>
 > {
 	static constexpr vk::ShaderStageFlags value =
 		std::same_as <reference <other>, reference <ref>>
@@ -31,51 +32,34 @@ struct stage_flags_for_seq <
 template <auto &ref, typename Seq>
 constexpr vk::ShaderStageFlags stage_flags_for_v = stage_flags_for_seq <ref, Seq> ::value;
 
+// TODO: util?
 constexpr uint32_t align_up_u32(uint32_t value, uint32_t alignment)
 {
 	return (value + alignment - 1) / alignment * alignment;
 }
 
-template <typename SW>
-struct push_constant_info;
+// TODO: different header...
+template <auto &ref, typename ... Wrappers>
+consteval size_t push_constant_offset_for(Tlist <Wrappers...>)
+{
+	size_t offset = 0;
+	bool passed = false;
+	auto accum = [&] <typename W> () {
+		using R = W::type;
+		using T = ResourceTypeFor <W::reference::handle>;
 
-template <auto &ref, ShaderStage ...Ss>
-struct push_constant_info <stage_wrapper <reference <ref>, Ss...>> {
-	using data_t = ResourceTypeFor <ref>;
-	static constexpr uint32_t size = sizeof(data_t);
-	static constexpr uint32_t alignment = std::max<uint32_t>(4u, alignof(data_t));
-	static constexpr vk::ShaderStageFlags stage_flags = stage_flags_of <Ss...> ();
-	static constexpr void *addr = (void *) &ref;
+		if constexpr (std::same_as <typename W::reference, reference <ref>>)
+			passed = true;
+		if (not passed && is_push_constant_v <R>) {
+			offset = align_up_u32(offset, alignof(T));
+			offset += sizeof(T);
+		}
+	};
+	(accum.template operator() <Wrappers> (), ...);
+	return offset;
+}
 
-	static_assert(size % 4u == 0u, "push constant size must be a multiple of 4 bytes");
-};
-
-template <auto &ref, uint32_t Offset, typename Seq>
-struct push_constant_offset_accum;
-
-template <auto &ref, uint32_t Offset>
-struct push_constant_offset_accum <ref, Offset, Tlist <>> {
-	static constexpr bool found = false;
-	static constexpr uint32_t value = 0;
-};
-
-template <auto &ref, uint32_t Offset, typename Head, typename ... Rest>
-struct push_constant_offset_accum <ref, Offset, Tlist <Head, Rest...>> {
-	static constexpr uint32_t aligned = align_up_u32(Offset, push_constant_info <Head> ::alignment);
-	static constexpr bool matches = std::same_as <typename Head::type, reference <ref>>;
-	static constexpr uint32_t next_offset = aligned + push_constant_info <Head> ::size;
-	static constexpr bool found = matches || push_constant_offset_accum <ref, next_offset, Tlist <Rest...>> ::found;
-	static constexpr uint32_t value = matches
-		? aligned
-		: push_constant_offset_accum <ref, next_offset, Tlist <Rest...>> ::value;
-};
-
-template <auto &ref, typename Seq>
-constexpr bool push_constant_offset_found_v = push_constant_offset_accum <ref, 0, Seq> ::found;
-
-template <auto &ref, typename Seq>
-constexpr uint32_t push_constant_offset_for_v = push_constant_offset_accum <ref, 0, Seq> ::value;
-
+// TODO: different header...
 template <auto &ref, auto &... refs, size_t ... Is>
 constexpr auto set_index_for(const Tlist <group_allocation_record <refs, Is>...> &)
 {
@@ -95,21 +79,21 @@ constexpr auto set_index_for(const Tlist <group_allocation_record <refs, Is>...>
 	}
 }
 
-template <Topology T, typename AttributeStreams, typename GroupAllocation, typename GlobalResources>
-struct AnnotatedRasterizationPipeline {
-	static constexpr size_t Sets = GroupAllocation::size;
+template <Topology T, typename AS, typename GAMAP, typename GRCs>
+struct RasterizationPipeline {
+	static constexpr size_t Sets = GAMAP::size;
 
 	vk::Device device;
 	vk::Pipeline handle;
 	vk::PipelineLayout layout;
 	std::array <vk::DescriptorSetLayout, Sets> dsls;
 
-	using global_resources = GlobalResources;
-	using streams = AttributeStreams;
+	using global_resources = GRCs;
+	using streams = AS;
 
 	template <auto &ref>
 	auto new_descriptor(const DescriptorPool &pool) const {
-		constexpr auto set = set_index_for <ref> (GroupAllocation());
+		constexpr auto set = set_index_for <ref> (GAMAP());
 		
 		auto dset = device.allocateDescriptorSets(
 			vk::DescriptorSetAllocateInfo()

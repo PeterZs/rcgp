@@ -1,3 +1,4 @@
+#include <array>
 #include <fmt/format.h>
 
 #include "dsl/generators.hpp"
@@ -218,6 +219,9 @@ std::string reference(Context &ctx, GlobalIntrinsic gi)
 	switch (gi) {
 	case GlobalIntrinsic::eScreenPosition: return "gl_Position";
 	case GlobalIntrinsic::eInstanceIndex: return "gl_InstanceIndex";
+	case GlobalIntrinsic::eLocalInvocationID: return "gl_LocalInvocationID";
+	case GlobalIntrinsic::eWorkGroupID: return "gl_WorkGroupID";
+	case GlobalIntrinsic::eGlobalInvocationID: return "gl_GlobalInvocationID";
 	default:
 		return "?";
 	}
@@ -262,6 +266,8 @@ std::string reference(Context &ctx, Argument arg)
 	return fmt::format("arg{}", arg.argi);
 }
 
+std::string expression(Context &ctx, Reference expr);
+
 // TODO: rebrand to lvalue
 std::string reference(Context &ctx, Reference ref)
 {
@@ -269,6 +275,12 @@ std::string reference(Context &ctx, Reference ref)
 	vswitch (value) {
 	vcase(Local):
 		return reference_local(ctx, ref);
+	vcase(ArrayAccess):
+		return expression(ctx, ref);
+	vcase(FieldAccess):
+		return expression(ctx, ref);
+	vcase(Swizzle):
+		return expression(ctx, ref);
 	vcase(GlobalIntrinsic):
 		return reference(ctx, value.as <GlobalIntrinsic> ());
 	vcase(GlobalResource):
@@ -590,6 +602,15 @@ void emit_preamble(Context &ctx)
 	ctx.result = "// Preamble\n";
 	ctx.result += "#version 460\n\n";
 	ctx.result += "#extension GL_EXT_scalar_block_layout : require\n\n";
+	if (ctx.block.context.model == ShaderStage::eCompute) {
+		auto size = ctx.block.context.workgroup_size.value_or(
+			std::array <uint32_t, 3> { 1, 1, 1 }
+		);
+		ctx.result += fmt::format(
+			"layout (local_size_x = {}, local_size_y = {}, local_size_z = {}) in;\n\n",
+			size[0], size[1], size[2]
+		);
+	}
 }
 
 void emit_aggregate_decls(Context &ctx)
@@ -726,8 +747,8 @@ std::string resource_key(const GlobalResource &grsrc)
 
 	auto group = grsrc.group.value_or(0);
 	auto index = grsrc.index.value_or(0);
-	return fmt::format("buf:{}:{}:{}:{}",
-		(int) grsrc.kind, group, index, (int) grsrc.layout);
+	return fmt::format("buf:{}:{}:{}:{}:{}",
+		(int) grsrc.kind, group, index, (int) grsrc.layout, (int) grsrc.access);
 }
 
 std::string resource_instance_name(const GlobalResource &grsrc)
@@ -772,7 +793,14 @@ void emit_resource_decl(Context &ctx, GlobalResource &grsrc)
 	std::string modifier;
 	switch (grsrc.kind) {
 	case GlobalResourceKind::eUniformBuffer: modifier = "uniform"; break;
-	case GlobalResourceKind::eStorageBuffer: modifier = "readonly buffer"; break;
+	case GlobalResourceKind::eStorageBuffer:
+		switch (grsrc.access) {
+		case GlobalResourceAccess::eRead: modifier = "readonly buffer"; break;
+		case GlobalResourceAccess::eWrite: modifier = "writeonly buffer"; break;
+		case GlobalResourceAccess::eReadWrite: modifier = "buffer"; break;
+		default: modifier = "buffer"; break;
+		}
+		break;
 	default:
 		fatal("unsupported global resource kind");
 	}

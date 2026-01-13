@@ -26,10 +26,19 @@ enum class GlobalResourceLayout {
 	eStd430,
 };
 
+enum class GlobalResourceAccess {
+	eRead,
+	eWrite,
+	eReadWrite,
+};
+
 enum class GlobalIntrinsic {
 	eScreenPosition,
 	eInstanceIndex,
 	eVertexIndex,
+	eLocalInvocationID,
+	eWorkGroupID,
+	eGlobalInvocationID,
 };
 
 enum class RateProperties {

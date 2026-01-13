@@ -10,6 +10,7 @@ constexpr vk::ShaderStageFlags stage_to_flag(ShaderStage S)
 	switch (S) {
 	case ShaderStage::eVertex: return vk::ShaderStageFlagBits::eVertex;
 	case ShaderStage::eFragment: return vk::ShaderStageFlagBits::eFragment;
+	case ShaderStage::eCompute: return vk::ShaderStageFlagBits::eCompute;
 	default:
 		return vk::ShaderStageFlagBits::eAll;
 	}

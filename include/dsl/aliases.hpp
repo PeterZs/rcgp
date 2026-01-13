@@ -9,6 +9,7 @@ using vec3 = vector <float, 3>;
 using vec4 = vector <float, 4>;
 
 using ivec3 = vector <int32_t, 3>;
+using uvec3 = vector <uint32_t, 3>;
 
 using float2 = vector <float, 2>;
 using float3 = vector <float, 3>;

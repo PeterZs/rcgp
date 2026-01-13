@@ -21,3 +21,10 @@ vk::Pipeline compile_rasterization_pipeline(
 	const vk::ArrayProxy <vk::VertexInputAttributeDescription> &vertex_attributes,
 	const RasterizationOptions &options
 );
+
+vk::Pipeline compile_compute_pipeline(
+	const Device &device,
+	const vk::ShaderModule &compute_shader_module,
+	const char *compute_entry,
+	const vk::PipelineLayout &layout
+);

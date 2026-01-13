@@ -34,8 +34,8 @@ void inject_reference(PushConstant <T, L> &value, Reference ref)
 	return inject_reference(Tas <T &> (value), ref);
 }
 
-template <typename T, template <typename> typename L>
-void inject_reference(StorageBuffer <T, L> &value, Reference ref)
+template <typename T, template <typename> typename L, GlobalResourceAccess A>
+void inject_reference(StorageBuffer <T, L, A> &value, Reference ref)
 {
 	return inject_reference(Tas <T &> (value), ref);
 }

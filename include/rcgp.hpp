@@ -2,7 +2,9 @@
 
 #include "dsl/branching.hpp"
 #include "dsl/looping.hpp"
+#include "meta/combinator/compute.hpp"
 #include "meta/combinator/rasterization.hpp"
+#include "meta/pipeline/compute.hpp"
 #include "meta/commands.hpp"
 #include "meta/descriptor.hpp"
 #include "meta/function_construction.hpp"

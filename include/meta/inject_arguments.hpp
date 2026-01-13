@@ -8,6 +8,7 @@
 #include "reference.hpp"
 #include "reflection.hpp"
 #include "shader_stage.hpp"
+#include "stage_intrinsics.hpp"
 #include "static_string.hpp"
 
 struct InjectionCounters {
@@ -21,6 +22,13 @@ void inject_one_argument(T &value, InjectionCounters &counters)
 {
 	// TODO: also ss for ShaderStage
 	static_assert(false, ($ss("argument injector not implemented for ") + $ss_type(T)).view());
+}
+
+template <ShaderStage S, uint32_t X, uint32_t Y, uint32_t Z>
+void inject_one_argument(WorkGroup <X, Y, Z> &, InjectionCounters &)
+{
+	static_assert(S == ShaderStage::eCompute, "WorkGroup is only valid for compute shaders");
+	$tsb.context.set_workgroup_size(X, Y, Z);
 }
 
 // Nothing to do for the implicit context

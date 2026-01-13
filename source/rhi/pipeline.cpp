@@ -105,3 +105,27 @@ vk::Pipeline compile_rasterization_pipeline(
 
 	return pipeline;
 }
+
+vk::Pipeline compile_compute_pipeline(
+	const Device &device,
+	const vk::ShaderModule &compute_shader_module,
+	const char *compute_entry,
+	const vk::PipelineLayout &layout
+)
+{
+	TSCOPE("compile compute pipeline");
+
+	auto stage = vk::PipelineShaderStageCreateInfo()
+		.setStage(vk::ShaderStageFlagBits::eCompute)
+		.setModule(compute_shader_module)
+		.setPName(compute_entry);
+
+	auto pipeline_info = vk::ComputePipelineCreateInfo()
+		.setStage(stage)
+		.setLayout(layout);
+
+	auto [result, pipeline] = device.logical.createComputePipeline(nullptr, pipeline_info, nullptr);
+	assertion(result == vk::Result::eSuccess, "failed to compile pipeline");
+
+	return pipeline;
+}
