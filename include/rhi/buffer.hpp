@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include <vulkan/vulkan.hpp>
 
 #include "device.hpp"
@@ -18,10 +19,21 @@ struct Buffer {
 		size_t bytes,
 		vk::DeviceSize relative_offset = 0
 	) const -> const Buffer &;
+
+	auto read(
+		void *data,
+		size_t bytes,
+		vk::DeviceSize relative_offset = 0
+	) const -> const Buffer &;
 	
 	template <typename U>
 	auto &write(std::span <const U> memory, vk::DeviceSize offset = 0) const {
 		return write(memory.data(), memory.size_bytes(), offset);
+	}
+
+	template <typename U>
+	auto &read(std::span <U> memory, vk::DeviceSize offset = 0) const {
+		return read(memory.data(), memory.size_bytes(), offset);
 	}
 
 	vk::DescriptorBufferInfo descriptor_info() const {

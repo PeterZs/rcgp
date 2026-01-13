@@ -34,6 +34,14 @@ struct alignas(AlignTopLevel ? Align : 0) scaffold_fundamental {
 	template <typename U>
 	requires (std::is_trivially_constructible_v <T, U>)
 	constexpr scaffold_fundamental(const U &value_) : value(value_) {}
+
+	operator const T &() const {
+		return value;
+	}
+	
+	operator T &() {
+		return value;
+	}
 };
 
 // Scaffold for structual types with fields

@@ -9,6 +9,7 @@
 #include "matrix.hpp"
 #include "array.hpp"
 #include "arithmetic.hpp"
+#include "boolean.hpp"
 #include "relational.hpp"
 #include "intrinsics.hpp"
 #include "aliases.hpp"

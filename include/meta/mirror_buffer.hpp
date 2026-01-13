@@ -29,10 +29,21 @@ struct MirrorBuffer <T, L, F> : Buffer {
 		Buffer::write(&data, sizeof(value_type), 0);
 		return *this;
 	}
+
+	auto &read(value_type &data) const {
+		Buffer::read((void *) &data, sizeof(value_type), 0);
+		return *this;
+	}
 	
 	template <typename U>
 	auto &write_unsafe(std::span <const U> memory, size_t offset = 0) const {
 		Buffer::write <U> (memory, offset);
+		return *this;
+	}
+
+	template <typename U>
+	auto &read_unsafe(std::span <U> memory, size_t offset = 0) const {
+		Buffer::read <U> (memory, offset);
 		return *this;
 	}
 
@@ -75,10 +86,25 @@ struct MirrorBuffer <T, L, F> : Buffer {
 		Buffer::write(dyn.data(), std::span(dyn).size_bytes(), offset);
 		return *this;
 	}
+
+	auto &read(value_type &data) const {
+		auto [dyn, offset] = dynamic_part <T> (data);
+		if (offset > 0)
+			Buffer::read((void *) &data, offset, 0);
+
+		Buffer::read((void *) dyn.data(), std::span(dyn).size_bytes(), offset);
+		return *this;
+	}
 	
 	template <typename U>
 	auto &write_unsafe(std::span <const U> memory, size_t offset = 0) const {
 		Buffer::write <U> (memory, offset);
+		return *this;
+	}
+
+	template <typename U>
+	auto &read_unsafe(std::span <U> memory, size_t offset = 0) const {
+		Buffer::read <U> (memory, offset);
 		return *this;
 	}
 

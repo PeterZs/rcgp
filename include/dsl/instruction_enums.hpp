@@ -11,6 +11,10 @@ enum class OperationCode {
 	eLessEqual,
 	eGreater,
 	eGreaterEqual,
+	eLogicalAnd,
+	eLogicalOr,
+	eLogicalXor,
+	eLogicalNot,
 };
 
 enum class GlobalResourceKind {

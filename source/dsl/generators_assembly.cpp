@@ -140,6 +140,11 @@ std::string stringify(Context &ctx, Operation x, Reference ref)
 	case OperationCode::eLessEqual: op = "lte"; break;
 	case OperationCode::eGreater: op = "gt"; break;
 	case OperationCode::eGreaterEqual: op = "gte"; break;
+	case OperationCode::eLogicalAnd: op = "and"; break;
+	case OperationCode::eLogicalOr: op = "or"; break;
+	case OperationCode::eLogicalXor: op = "xor"; break;
+	case OperationCode::eLogicalNot:
+		return $assign fmt::format("not({})", stringify(ctx, x.a));
 	default:
 		break;
 	}

@@ -18,6 +18,21 @@ auto Buffer::write(const void *data, size_t bytes, vk::DeviceSize relative_offse
 	return *this;
 }
 
+auto Buffer::read(void *data, size_t bytes, vk::DeviceSize relative_offset) const
+	-> const Buffer &
+{
+	if (relative_offset + bytes > size) {
+		fatal("buffer read exceeds allocation (%lu + %lu > %lu)",
+			relative_offset, bytes, size);
+	}
+
+	auto mapped = device.mapMemory(backing, offset + relative_offset, bytes);
+	std::memcpy(data, mapped, bytes);
+	device.unmapMemory(backing);
+
+	return *this;
+}
+
 void Buffer::destroy()
 {
 	if (handle) {

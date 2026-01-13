@@ -316,6 +316,10 @@ std::string expression(Context &ctx, Reference expr)
 	}
 	vcase(Operation): {
 		auto &op = value.as <Operation> ();
+		if (op.code == OperationCode::eLogicalNot) {
+			return fmt::format("(!{})", expression(ctx, op.a));
+		}
+
 		std::string op_name = "?";
 		switch (op.code) {
 		case OperationCode::eAdd: op_name = "+"; break;
@@ -328,6 +332,9 @@ std::string expression(Context &ctx, Reference expr)
 		case OperationCode::eLessEqual: op_name = "<="; break;
 		case OperationCode::eGreater: op_name = ">"; break;
 		case OperationCode::eGreaterEqual: op_name = ">="; break;
+		case OperationCode::eLogicalAnd: op_name = "&&"; break;
+		case OperationCode::eLogicalOr: op_name = "||"; break;
+		case OperationCode::eLogicalXor: op_name = "^^"; break;
 		default:
 			break;
 		}
