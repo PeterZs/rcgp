@@ -4,23 +4,17 @@
 #include <functional>
 
 #include "../util/array.hpp"
+#include "../util/cti.hpp"
 #include "reference.hpp"
 
 template <auto & ... refs>
-struct implicit_context {
-	template <auto &ref>
-	using append = implicit_context <refs..., ref>;
-};
+struct implicit_context {};
 
-template <typename T>
-struct is_implicit_context : std::false_type {};
+TYPE_TRAIT(is_implicit_context);
+	template <auto &... refs>
+	TYPE_TRAIT_INCLUDES(is_implicit_context, implicit_context <refs...>);
 
-template <auto & ... refs>
-struct is_implicit_context <implicit_context <refs...>> : std::true_type {};
-
-template <typename T>
-constexpr bool is_implicit_context_v = is_implicit_context <T> ::value;
-
+// TODO: simplify this with consteval functions
 template <typename ... Ts>
 struct find_implicit_context {
 	static constexpr auto contexts = std::array { is_implicit_context_v <Ts>... };
@@ -35,7 +29,13 @@ struct filter_into_context {
 
 template <auto &... refs, auto &ref, typename ... Args>
 struct filter_into_context <implicit_context <refs...>, reference <ref>, Args...> {
-	using next = typename implicit_context <refs...> ::template append <ref>;
+	using next = implicit_context <refs..., ref>;
+	using type = typename filter_into_context <next, Args...> ::type;
+};
+
+template <auto &... refs1, auto &... refs2, typename ... Args>
+struct filter_into_context <implicit_context <refs1...>, implicit_context <refs2...>, Args...> {
+	using next = implicit_context <refs1..., refs2...>;
 	using type = typename filter_into_context <next, Args...> ::type;
 };
 
@@ -44,6 +44,7 @@ struct filter_into_context <Ctx, Arg, Args...> {
 	using type = typename filter_into_context <Ctx, Args...> ::type;
 };
 
+// TODO: use void (__VA_ARGS__)
 template <typename ... Args>
 auto new_implicit_context(std::function <void (Args ...)>)
 {
@@ -52,4 +53,3 @@ auto new_implicit_context(std::function <void (Args ...)>)
 }
 
 #define $context_capture(...) (decltype(new_implicit_context(std::function([](__VA_ARGS__) {}))) _ref_context __VA_OPT__(,) __VA_ARGS__)
-#define $context _ref_context

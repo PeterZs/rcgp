@@ -755,9 +755,17 @@ void emit_thread_outputs(Context &ctx)
 				continue;
 			}
 
-			if (!is_same_type(it->second.type, tout.type)
-				|| it->second.properties != tout.properties)
-				fatal("thread output mismatch for location %u", tout.argi);
+			if (not is_same_type(it->second.type, tout.type)) {
+				fatal("thread output type mismatch for location %u (%s vs %s)",
+					tout.argi,
+					it->second.type->repr().c_str(),
+					tout.type->repr().c_str());
+			}
+
+			if (it->second.properties != tout.properties) {
+				fatal("thread output properties mismatch for lcoation %u (%d vs %d)",
+					tout.argi, it->second.properties, tout.properties);
+			}
 		}
 	}
 

@@ -5,7 +5,7 @@
 #include "implicit_context.hpp"
 #include "reconstruct_type.hpp"
 
-constexpr vk::ShaderStageFlags stage_to_flag(ShaderStage S)
+consteval vk::ShaderStageFlags stage_to_flag(ShaderStage S)
 {
 	switch (S) {
 	case ShaderStage::eVertex: return vk::ShaderStageFlagBits::eVertex;
@@ -112,23 +112,13 @@ auto filtered_invocable() -> decltype(filter_real_parameters(
 template <typename ... Args>
 using filtered_invocable_t = decltype(filtered_invocable <Args...> ());
 
-template <typename R, typename ... Args>
-struct shader_stage <ShaderStage::eSubroutine, R, Args...> : filtered_invocable_t <R, Args...> {
-	using filter_result = decltype(filter_real_parameters(
-		Tlist <R> {},
-		Tlist <Args...> {}
-	));
+template <auto &... refs, typename R, typename ... Args>
+auto context_unlock(implicit_context <refs...>, const shader_stage <ShaderStage::eSubroutine, R, Args...> &stage)
+{
+	// TODO: grab the implicit context and check that refs contains everything
+	return filtered_invocable_t <R, Args...> (stage);
+}
 
-	shader_stage(const SharedBlockReference &sbr)
-		: filtered_invocable_t <R, Args...> (sbr) {}
-
-	static shader_stage alloc() {
-		return std::make_shared <Block> ();
-	}
-};
-
-// TODO: eventually with $context(ftn)(...)
-// it will return the invocable instead of ftn being an
-// invocable from the start. This will force users to go through $context.
-// The exception should be subroutines which dont take any
+// TODO: The exception should be subroutines which dont take any
 // resource references/have no context should just be direct though
+#define $use(...) context_unlock(_ref_context, __VA_ARGS__)

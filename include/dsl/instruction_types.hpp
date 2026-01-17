@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "../util/variant.hpp"
@@ -66,7 +67,5 @@ struct Type : variant <
 > {
 	using variant_self::variant;
 
-	std::string repr() const {
-		return "Type";
-	}
+	std::string repr() const;
 };
