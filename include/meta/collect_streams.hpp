@@ -6,7 +6,7 @@
 template <auto &ref, typename ... Ts>
 auto add_stream(const Tlist <Ts...> &in)
 {
-	using base = reference <ref> ::base;
+	using base = reference_base_t <ref>;
 	if constexpr (!is_attribute_stream_v <base>) {
 		return in;
 	} else {

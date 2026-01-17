@@ -3,24 +3,14 @@
 #include <array>
 #include <functional>
 
-#include "../util/timer.hpp"
 #include "../rhi/command_buffer.hpp"
+#include "../util/runtime_type_registry.hpp"
+#include "../util/timer.hpp"
+#include "barrier.hpp"
 #include "pipeline/compute.hpp"
 #include "pipeline/mesh_shading.hpp"
 #include "pipeline/rasterization.hpp"
-#include "barrier.hpp"
 #include "vertex_buffer_for.hpp"
-
-// TODO: we can id refs as well with reference <ref>
-struct RuntimeTypeRegistry {
-	static inline size_t counter = 0;
-
-	template <typename T>
-	static size_t id() {
-		static size_t value = counter++;
-		return value;
-	}
-};
 
 struct PipelineMappings {
 	vk::PipelineLayout layout;
@@ -305,7 +295,7 @@ auto bind_push_constants(const ResourceTypeFor <refs> &... constants)
 {
 	static_assert((is_push_constant_v <reference_base_t <refs>> && ...));
 
-	auto binder = [constants...](const CommandBuffer &cmd, SerializationContext &sctx) {
+	auto binder = [=](const CommandBuffer &cmd, SerializationContext &sctx) {
 		auto &cid = PipelineMappings::cache.at(sctx.pplid);
 		auto &pc_stages = cid.pc_stages;
 		auto &pc_offsets = cid.pc_offsets;
@@ -440,7 +430,7 @@ inline auto foreach(const std::vector <T> &container, F &&ftn)
 {
 	using C = std::invoke_result_t <F, T>;
 
-	auto binder = [&](const CommandBuffer &cmd, SerializationContext &sctx) {
+	auto binder = [=](const CommandBuffer &cmd, SerializationContext &sctx) {
 		TSCOPE("foreach serialization");
 		TNOTE("container size of {}", container.size());
 

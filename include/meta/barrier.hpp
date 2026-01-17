@@ -5,6 +5,8 @@
 #include <vulkan/vulkan.hpp>
 
 #include "resources.hpp"
+#include "reference.hpp"
+#include "reference_introspection.hpp"
 
 enum class ResourceAccess {
 	eNone,

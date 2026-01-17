@@ -18,6 +18,7 @@ enum class Key : int {
 	D = GLFW_KEY_D,
 	Q = GLFW_KEY_Q,
 	E = GLFW_KEY_E,
+	R = GLFW_KEY_R,
 	Space = GLFW_KEY_SPACE,
 	Escape = GLFW_KEY_ESCAPE,
 	Up = GLFW_KEY_UP,
@@ -33,6 +34,7 @@ enum class Key : int {
 	Tab = GLFW_KEY_TAB,
 	Enter = GLFW_KEY_ENTER,
 	Backspace = GLFW_KEY_BACKSPACE,
+	F12 = GLFW_KEY_F12,
 };
 
 enum class MouseButton : int {

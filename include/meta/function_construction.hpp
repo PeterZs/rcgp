@@ -20,12 +20,29 @@ template <ShaderStage S, typename R, typename Rt, typename ... Args>
 struct shader_signature <S, R, std::function <Rt (Args...)>>
 	: shader_signature <S, R, Args...> {};
 
+template <typename T>
+struct has_position_return : std::false_type {};
+
+template <>
+struct has_position_return <Position> : std::true_type {};
+
+template <typename ... Ts>
+struct has_position_return <std::tuple <Ts...>>
+	: std::bool_constant <(has_position_return <Ts>::value || ...)> {};
+
 template <ShaderStage S, typename R, typename F>
 auto trace(F ftn)
 {
-	// TODO: profile this; should be able to name blocks
 	using function = decltype(std::function(ftn));
 	using signature = shader_signature <S, R, function>;
+
+	// TODO: should be a static_assert (false) and dump the received signature...
+	// TODO: separate method for stage-specific module checks
+	// (i.e. what parameters/returns can and cant be used)
+	static_assert(
+		(S != ShaderStage::eVertex) || has_position_return <R> ::value,
+		"vertex shaders must return Position (gl_Position) in their return type"
+	);
 
 	auto result = signature::type::alloc();
 
@@ -35,6 +52,7 @@ auto trace(F ftn)
 	{
 		TSCOPE("JIT tracing DSL code");
 		result->context.model = S;
+		Tracer::singleton.type_cache.clear();
 		if (auto s = jems::scope(result)) {
 			TSCOPE("primary trace");
 			typename signature::args args;

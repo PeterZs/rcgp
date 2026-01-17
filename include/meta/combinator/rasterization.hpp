@@ -127,7 +127,7 @@ auto reference_sequence_to_push_constant_ranges(const Tlist <Wrappers...> &)
 		size_t index = 0;
 
 		auto populate = [&] <typename W> () {
-			using T = ResourceTypeFor <W::reference::handle>;
+			using T = ResourceTypeFor <W::handle>;
 
 			info("push constant range offset=%d, size=%d", offset, sizeof(T));
 			offset = align_up_u32(offset, alignof(T));
@@ -153,7 +153,7 @@ auto reference_sequence_to_push_constant_allocation_map(const Tlist <Wrappers...
 		uint32_t index = 0;
 
 		auto allocate = [&] <typename W> () {
-			using T = ResourceTypeFor <W::reference::handle>;
+			using T = ResourceTypeFor <W::handle>;
 			offset = align_up_u32(offset, alignof(T));
 			map.emplace(W::reference::address, PushConstantAllocation { index++, offset });
 			offset += sizeof(T);
@@ -230,7 +230,7 @@ struct RasterizationCombinator {
 
 		// Compile the shaders
 		auto vshader = generate_glsl(vertex);
-		// info("vertex shader:\n%s", vshader.c_str());
+		info("vertex shader:\n%s", vshader.c_str());
 
 		auto fshader = generate_glsl(fragment);
 		info("fragment shader:\n%s", fshader.c_str());

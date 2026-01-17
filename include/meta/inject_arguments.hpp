@@ -100,17 +100,26 @@ void inject_one_argument(reference <ref> &value, InjectionCounters &counters)
 {
 	using R = reference_base_t <ref>;
 
-	if constexpr (S == ShaderStage::eVertex && is_attribute_stream_v <R>) {
-		// Attribute streams for vertex shaders
+	if constexpr (is_attribute_stream_v <R>) {
+		// TODO: move to the else branch with a false static assert
+		static_assert(S == ShaderStage::eVertex || S == ShaderStage::eSubroutine);
+
+		// Attribute streams for vertex shaders or subroutines
 		using reflection = R::reflection;
 		using T = reflection::value_type;
 
 		auto type = reconstruct_type <T> ();
 
 		// TODO: this can be a method; similar for argument, if its used many times
-		auto tin = ThreadInput(type, counters.threadidx++);
-		$tsb.context.add_thread_input(tin);
-		inject_reference(Tas <T &> (value), jems::thread_input(tin));
+		if constexpr (S == ShaderStage::eSubroutine) {
+			auto arg = Argument(type, counters.argidx++);
+			$tsb.context.add_argument(arg);
+			inject_reference(Tas <T &> (value), jems::argument(arg));
+		} else {
+			auto tin = ThreadInput(type, counters.threadidx++);
+			$tsb.context.add_thread_input(tin);
+			inject_reference(Tas <T &> (value), jems::thread_input(tin));
+		}
 	} else {
 		// Regular case
 		inject_resource_reference(value);

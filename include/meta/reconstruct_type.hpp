@@ -68,7 +68,7 @@ struct reconstructor_t <field_trace <T, Is...>> {
 template <typename T>
 jems::handle reconstruct_type($location)
 {
-	// TODO: check if it already exists...
+	// TODO: use a more direct generator...
 	using R = expand_reflection <T> ::type;
 	return reconstructor_t <R> ::main(loc);
 }

@@ -4,6 +4,7 @@
 
 #include "../dsl/array.hpp"
 #include "stage_intrinsics.hpp"
+#include "shader_stage.hpp"
 
 template <typename T>
 void return_handler(const T &ret, size_t &argi) {}
@@ -52,6 +53,18 @@ void return_handler(const T &ret, size_t &argi)
 	$tsb.context.add_thread_output(tout);
 
 	jems::store(jems::thread_output(tout), ret);
+}
+
+template <reflected T>
+requires (not primitive <T>)
+void return_handler(const T &ret, size_t &argi)
+{
+	auto type = reconstruct_type <T> ();
+	auto tout = ThreadOutput(type, argi++, RateProperties::eNone);
+	$tsb.context.add_thread_output(tout);
+
+	// TODO: merge up and this; constexpr if to differentiate
+	jems::store(jems::thread_output(tout), coerce_to_handle(ret));
 }
 
 template <typename ... Args>

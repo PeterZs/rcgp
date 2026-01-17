@@ -7,10 +7,9 @@
 
 // TODO: refactor...
 template <auto &ref, ShaderStage ... Ss>
-struct stage_wrapper {
+struct stage_wrapper : reference <ref> {
 	using stages = std::integer_sequence <ShaderStage, Ss...>;
 	using type = reference_base_t <ref>;
-	using reference = reference <ref>;
 
 	// TODO: get rid of this...?
 	template <ShaderStage S>
@@ -26,16 +25,16 @@ struct stage_wrapper {
 template <ShaderStage S, auto &ref, typename ... Ts>
 auto add_gvr(const Tlist <Ts...> &in)
 {
-	using base = reference <ref> ::base;
+	using base = reference_base_t <ref>;
 	if constexpr (not is_global_resource_v <base>) {
 		return in;
 	} else {
-		constexpr auto exists = (std::same_as <typename Ts::reference, reference <ref>> || ...);
+		constexpr auto exists = (std::same_as <reference <Ts::handle>, reference <ref>> || ...);
 
 		if constexpr (exists) {
 			return Tlist <
 				std::conditional_t <
-					std::same_as <typename Ts::reference, reference <ref>>,
+					std::same_as <reference <Ts::handle>, reference <ref>>,
 					typename Ts::template append_stage <S>,
 					Ts
 				> ...

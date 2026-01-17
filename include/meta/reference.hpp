@@ -13,9 +13,9 @@ struct reference : reference_base_t <ref> {
 	static inline auto address = &ref;
 	static constexpr auto &handle = ref;
 
-	using base = reference_base_t <ref>;
-	static_assert(has_reflection <base> ());
-	using reflection = reference_reflection <ref, typename base::reflection>;
+	using reflection = reference_reflection <
+		ref, typename reference_base_t <ref> ::reflection
+	>;
 };
 
 TYPE_TRAIT(is_reference);
