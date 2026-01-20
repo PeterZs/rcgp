@@ -66,20 +66,22 @@ inline auto coerce_to_handle(std::nullptr_t value)
 template <aggregate T>
 auto coerce_to_handle(const T &value)
 {
+	auto field_handler = [&] <size_t I> () {
+		using field_t = typename T::reflection::template field_type <I>;
+		if constexpr (std::is_same_v <field_t, std::nullptr_t>) {
+			return std::tuple <> ();
+		} else {
+			return std::tuple {
+				coerce_to_handle(value
+					.template _rcgp_get <I> ()
+				)
+			};
+		}
+	};
+
 	auto args = constexpr_for(Is, T::reflection::field_count,
 		return std::tuple_cat(
-			([](const T &v) {
-				using field_t = typename T::reflection::template field_type <Is>;
-				if constexpr (std::is_same_v <field_t, std::nullptr_t>) {
-					return std::tuple <> ();
-				} else {
-					return std::tuple {
-						coerce_to_handle(v
-							.template _rcgp_get <Is> ()
-						)
-					};
-				}
-			} (value))...
+			field_handler.template operator() <Is> ()...
 		)
 	);
 

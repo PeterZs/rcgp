@@ -40,7 +40,7 @@ struct ComputeCombinator {
 		// info("compute shader:\n%s", cshader.c_str());
 
 		auto cspv = compiler.glsl_to_spirv(cshader, EShLangCompute);
-		auto compute_shader_module = compiler.spirv_to_shader_module(cspv);
+		auto compute_shader_module = device.new_shader_module(cspv);
 
 		// Generate the pipeline and descriptor set layouts
 		auto dsls = reference_sequence_to_descriptor_set_layouts(device, descriptor_gvrs);

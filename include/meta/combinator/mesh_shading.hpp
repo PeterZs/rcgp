@@ -56,9 +56,9 @@ struct MeshShadingCombinator {
 		auto mspv = compiler.glsl_to_spirv(mshader, EShLangMesh);
 		auto fspv = compiler.glsl_to_spirv(fshader, EShLangFragment);
 
-		auto task_shader_module = compiler.spirv_to_shader_module(tspv);
-		auto mesh_shader_module = compiler.spirv_to_shader_module(mspv);
-		auto fragment_shader_module = compiler.spirv_to_shader_module(fspv);
+		auto task_shader_module = device.new_shader_module(tspv);
+		auto mesh_shader_module = device.new_shader_module(mspv);
+		auto fragment_shader_module = device.new_shader_module(fspv);
 
 		auto dsls = reference_sequence_to_descriptor_set_layouts(device, descriptor_gvrs);
 		auto pcrs = reference_sequence_to_push_constant_ranges(push_constant_gvrs);

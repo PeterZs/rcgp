@@ -54,18 +54,8 @@ std::vector <uint32_t> ShaderCompiler::glsl_to_spirv(const std::string &glsl, co
 	return spirv;
 }
 
-vk::ShaderModule ShaderCompiler::spirv_to_shader_module(const std::vector <uint32_t> &spirv) const
+ShaderCompiler ShaderCompiler::from(const Options &options)
 {
-	TSCOPE("spirv to shader module");
-
-	vk::ShaderModuleCreateInfo info;
-	info.setCodeSize(spirv.size() * sizeof(uint32_t));
-	info.setPCode(spirv.data());
-
-	return device.createShaderModule(info);
-}
-
-ShaderCompiler ShaderCompiler::from(const Device &device, const Options &options)
-{
-	return ShaderCompiler(device.logical);
+	// TODO: handle options
+	return ShaderCompiler();
 }

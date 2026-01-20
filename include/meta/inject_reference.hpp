@@ -19,11 +19,20 @@ void inject_reference(T &value, Reference ref)
 template <aggregate T>
 void inject_reference(T &value, Reference ref)
 {
+	size_t field_counter = 0;
+
+	auto field_handler = [&] <size_t I> () {
+		using field_t = typename T::reflection::template field_type <I>;
+		if constexpr (not std::is_same_v <field_t, std::nullptr_t>) {
+			inject_reference(
+				value.template _rcgp_get <I> (),
+				jems::field_access(ref, field_counter++)
+			);
+		}
+	};
+
 	constexpr_for(Is, T::reflection::field_count,
-		(inject_reference(
-			value.template _rcgp_get <Is> (),
-			jems::field_access(ref, Is)
-		), ...)
+		(field_handler.template operator() <Is> (), ...)
 	);
 }
 

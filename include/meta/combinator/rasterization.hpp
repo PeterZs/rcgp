@@ -238,8 +238,8 @@ struct RasterizationCombinator {
 		auto vspv = compiler.glsl_to_spirv(vshader, EShLangVertex);
 		auto fspv = compiler.glsl_to_spirv(fshader, EShLangFragment);
 
-		auto vertex_shader_module = compiler.spirv_to_shader_module(vspv);
-		auto fragment_shader_module = compiler.spirv_to_shader_module(fspv);
+		auto vertex_shader_module = device.new_shader_module(vspv);
+		auto fragment_shader_module = device.new_shader_module(fspv);
 
 		// Generate the pipeline and descriptor set layouts
 		auto dsls = reference_sequence_to_descriptor_set_layouts(device, descriptor_gvrs);
