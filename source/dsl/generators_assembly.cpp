@@ -145,6 +145,13 @@ std::string stringify(Context &ctx, Operation x, Reference ref)
 	case OperationCode::eLogicalXor: op = "xor"; break;
 	case OperationCode::eLogicalNot:
 		return $assign fmt::format("not({})", stringify(ctx, x.a));
+	case OperationCode::eBitAnd: op = "band"; break;
+	case OperationCode::eBitOr: op = "bor"; break;
+	case OperationCode::eBitXor: op = "bxor"; break;
+	case OperationCode::eBitNot:
+		return $assign fmt::format("bnot({})", stringify(ctx, x.a));
+	case OperationCode::eShiftLeft: op = "shl"; break;
+	case OperationCode::eShiftRight: op = "shr"; break;
 	default:
 		break;
 	}
@@ -285,6 +292,9 @@ std::string stringify(Context &ctx, BuiltinIntrinsic x, Reference ref)
 	case BuiltinIntrinsicCode::eDFdyFine: ftn = "dFdyFine"; break;
 	case BuiltinIntrinsicCode::eSample: ftn = "sample"; break;
 	case BuiltinIntrinsicCode::eDot: ftn = "dot"; break;
+	case BuiltinIntrinsicCode::eLength: ftn = "length"; break;
+	case BuiltinIntrinsicCode::eSin: ftn = "sin"; break;
+	case BuiltinIntrinsicCode::eToFloat: ftn = "float"; break;
 	case BuiltinIntrinsicCode::eNormalize: ftn = "normalize"; break;
 	case BuiltinIntrinsicCode::eMax: ftn = "max"; break;
 	case BuiltinIntrinsicCode::ePow: ftn = "pow"; break;

@@ -10,6 +10,7 @@
 #include "array.hpp"
 #include "arithmetic.hpp"
 #include "boolean.hpp"
+#include "bitwise.hpp"
 #include "relational.hpp"
 #include "intrinsics.hpp"
 #include "aliases.hpp"

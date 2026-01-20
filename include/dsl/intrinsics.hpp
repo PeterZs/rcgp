@@ -61,6 +61,28 @@ auto pow(const T &a, const U &b)
 	);
 }
 
+inline f32 to_float(const u32 &v)
+{
+	return f32::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eToFloat, v));
+}
+
+inline f32 to_float(const i32 &v)
+{
+	return f32::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eToFloat, v));
+}
+
+template <native_float_scalar T>
+scalar <T> sin(const scalar <T> &v)
+{
+	return scalar <T> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eSin, v));
+}
+
+template <native_float_scalar T, size_t N>
+vector <T, N> sin(const vector <T, N> &v)
+{
+	return vector <T, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eSin, v));
+}
+
 template <native_scalar T, size_t D>
 scalar <T> dot(const vector <T, D> &a, const vector <T, D> &b)
 {
@@ -71,6 +93,12 @@ template <native_float_scalar T, size_t N>
 vector <T, N> normalize(const vector <T, N> &v)
 {
 	return vector <T, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eNormalize, v));
+}
+
+template <native_float_scalar T, size_t N>
+scalar <T> length(const vector <T, N> &v)
+{
+	return scalar <T> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eLength, v));
 }
 
 template <native_float_scalar T>

@@ -15,6 +15,12 @@ enum class OperationCode {
 	eLogicalOr,
 	eLogicalXor,
 	eLogicalNot,
+	eBitAnd,
+	eBitOr,
+	eBitXor,
+	eBitNot,
+	eShiftLeft,
+	eShiftRight,
 };
 
 enum class GlobalResourceKind {
@@ -68,8 +74,10 @@ enum class BuiltinIntrinsicCode {
 	eDFdyFine,
 	eDot,
 	eInverse,
+	eLength,
 	eMax,
 	ePow,
+	eToFloat,
 	eMin,
 	eNormalize,
 	eSample,

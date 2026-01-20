@@ -328,6 +328,9 @@ std::string expression(Context &ctx, Reference expr)
 		if (op.code == OperationCode::eLogicalNot) {
 			return fmt::format("(!{})", expression(ctx, op.a));
 		}
+		if (op.code == OperationCode::eBitNot) {
+			return fmt::format("(~{})", expression(ctx, op.a));
+		}
 
 		std::string op_name = "?";
 		switch (op.code) {
@@ -344,6 +347,11 @@ std::string expression(Context &ctx, Reference expr)
 		case OperationCode::eLogicalAnd: op_name = "&&"; break;
 		case OperationCode::eLogicalOr: op_name = "||"; break;
 		case OperationCode::eLogicalXor: op_name = "^^"; break;
+		case OperationCode::eBitAnd: op_name = "&"; break;
+		case OperationCode::eBitOr: op_name = "|"; break;
+		case OperationCode::eBitXor: op_name = "^"; break;
+		case OperationCode::eShiftLeft: op_name = "<<"; break;
+		case OperationCode::eShiftRight: op_name = ">>"; break;
 		default:
 			break;
 		}
@@ -435,6 +443,9 @@ std::string expression(Context &ctx, Reference expr)
 		case BuiltinIntrinsicCode::eDFdy: out = "dFdy"; break;
 		case BuiltinIntrinsicCode::eDFdyFine: out = "dFdyFine"; break;
 		case BuiltinIntrinsicCode::eDot: out = "dot"; break;
+		case BuiltinIntrinsicCode::eLength: out = "length"; break;
+		case BuiltinIntrinsicCode::eSin: out = "sin"; break;
+		case BuiltinIntrinsicCode::eToFloat: out = "float"; break;
 		case BuiltinIntrinsicCode::eInverse: out = "inverse"; break;
 		case BuiltinIntrinsicCode::eMax: out = "max"; break;
 		case BuiltinIntrinsicCode::ePow: out = "pow"; break;

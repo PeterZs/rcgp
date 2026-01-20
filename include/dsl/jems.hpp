@@ -22,6 +22,10 @@ struct handle {
 	operator const Reference &() const {
 		return _ref;
 	}
+
+	operator bool() const {
+		return _ref.get() != nullptr;
+	}
 };
 
 struct scope {
