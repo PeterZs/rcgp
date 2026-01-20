@@ -6,6 +6,7 @@
 #include "../dsl/optimizer.hpp"
 #include "../util/timer.hpp"
 #include "inject_arguments.hpp"
+#include "macro_hell.hpp"
 #include "shader_stage.hpp"
 
 template <ShaderStage S, typename R, typename ... Args>
@@ -77,5 +78,9 @@ auto operator<<(_fn_tag <S>, auto lambda)
 #define $shader(type, ...)	rcgp_##type << [__VA_ARGS__] rcgp_build_context
 #define $subroutine(name, ...)	(_fn_tag <ShaderStage::eSubroutine> (#name)) << [__VA_ARGS__] rcgp_build_context
 
-#define REFERENCE_GENERATOR(ctx, name) , reference <name> name
+#define RCGP_REFERENCE_FROM_NAME(name) , reference <name> name
+#define RCGP_REFERENCE_FROM_TUPLE(name, ref) , reference <(ref)> name
+#define RCGP_REFERENCE_FROM_ARG(arg) \
+	MACRO_IF(MACRO_IS_PAREN(arg))(RCGP_REFERENCE_FROM_TUPLE arg, RCGP_REFERENCE_FROM_NAME(arg))
+#define REFERENCE_GENERATOR(ctx, arg) RCGP_REFERENCE_FROM_ARG(arg)
 #define $contracts(...) std::nullptr_t MAP(REFERENCE_GENERATOR, /* N/A */, __VA_ARGS__)

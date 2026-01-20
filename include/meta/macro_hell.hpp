@@ -10,6 +10,19 @@
 #define MACRO_EMPTY()
 #define MACRO_DEFER(id) id MACRO_EMPTY()
 
+#define MACRO_CAT(a, b) MACRO_CAT_I(a, b)
+#define MACRO_CAT_I(a, b) a##b
+
+#define MACRO_PROBE() ~, 1
+#define MACRO_CHECK_N(x, n, ...) n
+#define MACRO_CHECK(...) MACRO_CHECK_N(__VA_ARGS__, 0)
+#define MACRO_IS_PAREN(x) MACRO_CHECK(MACRO_IS_PAREN_PROBE x)
+#define MACRO_IS_PAREN_PROBE(...) MACRO_PROBE()
+
+#define MACRO_IF(c) MACRO_CAT(MACRO_IF_, c)
+#define MACRO_IF_1(t, f) t
+#define MACRO_IF_0(t, f) f
+
 #define MAP_END(...)
 #define MAP_OUT
 #define MAP_GET_END2() 0, MAP_END
