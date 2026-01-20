@@ -44,5 +44,5 @@ void inject_reference(StorageBuffer <T, L, A> &value, Reference ref)
 template <typename T>
 void inject_reference(T &value, Reference ref)
 {
-	static_assert(false, ($ss("failed to inject reference into item of type ") + $ss_type(T)).view());
+	static_error("failed to inject reference into item of type "_ss + $ss_type(T));
 }

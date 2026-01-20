@@ -4,12 +4,14 @@
 #include "mirror.hpp"
 #include "mirror_buffer.hpp"
 #include "resources.hpp"
+#include "static_string.hpp"
+#include "../util/cti.hpp"
 
 namespace resource_layout {
 
 template <typename T>
 struct layout_engine {
-	static_assert(false, ($ss("resource_layout::layout_engine not implemented for type ") + $ss_type(T)).view());
+	static_error("resource_layout::layout_engine not implemented for type "_ss + $ss_type(T));
 };
 
 template <typename Original, typename ... Ts>

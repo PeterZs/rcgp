@@ -1,8 +1,10 @@
 #pragma once
 
 #include "../rhi/device.hpp"
+#include "../util/cti.hpp"
 #include "reference_introspection.hpp"
 #include "resources.hpp"
+#include "static_string.hpp"
 
 template <auto &ref, bool resolved = true>
 struct DescriptorFor {
@@ -53,9 +55,7 @@ void set_descriptor_write_and_union(
 			.setDescriptorType(eStorageBuffer)
 			.setBufferInfo(info.buffer = dinfo);
 	} else {
-		static_assert(false,
-			($ss("unsupported resource type ")
-			 + $ss_type(T)).view());
+		static_error("unsupported resource type "_ss + $ss_type(T));
 	}
 }
 

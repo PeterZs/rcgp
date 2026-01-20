@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../dsl/jems.hpp"
+#include "../util/cti.hpp"
 #include "../util/tlist.hpp"
 #include "implicit_context.hpp"
 #include "reconstruct_type.hpp"
@@ -39,11 +40,11 @@ struct shader_stage : SharedBlockReference {
 template <typename T>
 jems::handle coerce_to_handle(const T &value)
 {
-	static_assert(false, (
-		$ss("unable to coerce value of type ")
+	static_error(
+		"unable to coerce value of type "_ss
 		+ $ss_type(T)
-		+ $ss(" into a jems::handle")
-	).view());
+		+ " into a jems::handle"_ss
+	);
 }
 
 template <typename T>

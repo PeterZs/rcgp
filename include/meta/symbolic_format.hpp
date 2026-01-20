@@ -1,11 +1,13 @@
 #pragma once
 
 #include "reflection.hpp"
+#include "static_string.hpp"
 #include "../dsl/primitives.hpp"
+#include "../util/cti.hpp"
 
 template <reflected T>
 struct symbolic_format {
-	static_assert(false, "bad");
+	static_error("bad"_ss);
 };
 
 template <>

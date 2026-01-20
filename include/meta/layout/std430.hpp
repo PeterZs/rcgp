@@ -2,9 +2,10 @@
 
 #include <glm/glm.hpp>
 
+#include "../../dsl/matrix.hpp"
 #include "../../dsl/scalar.hpp"
 #include "../../dsl/vector.hpp"
-#include "../../dsl/matrix.hpp"
+#include "../../util/cti.hpp"
 #include "../reflection.hpp"
 #include "../scaffold.hpp"
 #include "../static_string.hpp"
@@ -13,7 +14,7 @@ namespace std430_layout {
 
 template <typename T>
 struct layout_engine {
-	static_assert(false, ($ss("s::layout_engine not implemented for type ") + $ss_type(T)).view());
+	static_error("s::layout_engine not implemented for type "_ss + $ss_type(T));
 };
 
 template <typename Original, typename ... Ts>

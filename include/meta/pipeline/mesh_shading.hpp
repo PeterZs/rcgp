@@ -3,8 +3,10 @@
 #include <array>
 
 #include "../../rhi/descriptor_pool.hpp"
+#include "../../util/cti.hpp"
 #include "../descriptor.hpp"
 #include "../group_allocation.hpp"
+#include "../static_string.hpp"
 
 template <auto &ref, auto &... refs, size_t ... Is>
 constexpr auto set_index_for_mesh(const Tlist <group_allocation_record <refs, Is>...> &)
@@ -18,7 +20,7 @@ constexpr auto set_index_for_mesh(const Tlist <group_allocation_record <refs, Is
 
 	constexpr auto index = first_on(matches);
 	if constexpr (index < 0) {
-		static_assert(false, "reference not in group allocation");
+		static_error("reference not in group allocation"_ss);
 		return 0;
 	} else {
 		return Is...[index];

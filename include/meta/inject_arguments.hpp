@@ -21,7 +21,7 @@ template <ShaderStage S, typename T>
 void inject_one_argument(T &value, InjectionCounters &counters)
 {
 	// TODO: also ss for ShaderStage
-	static_assert(false, ($ss("argument injector not implemented for ") + $ss_type(T)).view());
+	static_error("argument injector not implemented for "_ss + $ss_type(T));
 }
 
 template <ShaderStage S, uint32_t X, uint32_t Y, uint32_t Z>
@@ -44,6 +44,13 @@ void inject_one_argument(TaskGroup <X, Y, Z> &, InjectionCounters &)
 	);
 	$tsb.context.set_workgroup_size(X, Y, Z);
 }
+
+// TODO: check stage compatibility
+template <ShaderStage S, GlobalIntrinsic G, primitive T>
+void inject_one_argument(read_only_intrinsic <G, T> &value, InjectionCounters &counters) {}
+
+template <ShaderStage S, GlobalIntrinsic G, primitive T>
+void inject_one_argument(write_only_intrinsic <G, T> &value, InjectionCounters &counters) {}
 
 // Nothing to do for the implicit context
 template <ShaderStage S, auto &... refs>
@@ -90,7 +97,7 @@ void inject_resource_reference(reference <ref> &value)
 		inject_reference(Tas <T &> (value), grsrc);
 	} else {
 		// Unknown cases
-		static_assert(false, ($ss("resource reference injector not implemented for ") + $ss_type(T)).view());
+		static_error("resource reference injector not implemented for "_ss + $ss_type(T));
 	}
 }
 
@@ -143,11 +150,11 @@ void inject_one_argument(T &value, InjectionCounters &counters)
 		inject_reference(value, jems::argument(arg));
 	} else {
 		// Not supported
-		static_assert(false, (
-			$ss("argument type ")
+		static_error(
+			"argument type "_ss
 			+ $ss_type(T)
-			+ $ss(" is not supported in Stage X")
-		).view());
+			+ " is not supported in Stage X"_ss
+		);
 	}
 }
 

@@ -3,10 +3,12 @@
 #include <algorithm>
 
 #include "../../rhi/descriptor_pool.hpp"
+#include "../../util/cti.hpp"
 #include "../collect_gvrs.hpp"
 #include "../descriptor.hpp"
 #include "../group_allocation.hpp"
 #include "../index_buffer.hpp"
+#include "../static_string.hpp"
 
 // Compile-time stage flag lookup for a given resource reference within a sequence
 // TODO: function...
@@ -72,7 +74,7 @@ constexpr auto set_index_for(const Tlist <group_allocation_record <refs, Is>...>
 
 	constexpr auto index = first_on(matches);
 	if constexpr (index < 0) {
-		static_assert(false, "reference not in group allocation");
+		static_error("reference not in group allocation"_ss);
 		return 0;
 	} else {
 		return Is...[index];

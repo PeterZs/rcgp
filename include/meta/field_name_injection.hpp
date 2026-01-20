@@ -36,7 +36,7 @@ void adl_lever();
 	inline static const field_name_injection::Writer <		\
 		field_name_injection::field_ref <			\
 			T, decltype(field_counter::field)::value	\
-		>, $ss(#field)						\
+		>, #field##_ss						\
 	> _##field##_name_injector;
 
 #define $field_name(T, index) 						\

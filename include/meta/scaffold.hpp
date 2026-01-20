@@ -3,6 +3,7 @@
 #include "reflection.hpp"
 #include "static_string.hpp"
 #include "../util/tlist.hpp"
+#include "../util/cti.hpp"
 
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
@@ -64,10 +65,9 @@ struct alignas(AlignTopLevel ? Align : 0) scaffold_structural : T {
 // Scaffold lookup procedure
 template <typename Hint, typename View, bool AlignTopLevel = false>
 struct scaffold_lookup {
-	static_assert(false,
-	       ($ss("no scaffold_lookup registered for hint { ")
-		+ $ss_type(Hint) + $ss(" } and view { ")
-		+ $ss_type(View) + $ss(" }")).view());
+	static_error("no scaffold_lookup registered for hint { "_ss
+		+ $ss_type(Hint) + " } and view { "_ss
+		+ $ss_type(View) + " }"_ss);
 };
 
 // Structural types
@@ -140,9 +140,8 @@ struct scaffold_lookup <
 		if constexpr (false) {}						\
 		MAP(GEN_SCAFFOLD_FIELD_GET, /* NA */, __VA_ARGS__)		\
 		else {								\
-			static_assert(false,					\
-			($ss("out of bounds scaffold access of ")		\
-				 + $ss_type(This)).view());			\
+			static_error("out of bounds scaffold access of "_ss	\
+				+ $ss_type(This));				\
 		}								\
 	}
 
@@ -153,9 +152,8 @@ struct scaffold_lookup <
 		if constexpr (false) {}						\
 		MAP(GEN_SCAFFOLD_FIELD_OFFSET, /* NA */, __VA_ARGS__)		\
 		else {								\
-			static_assert(false,					\
-			($ss("out of bounds scaffold offset of ")		\
-				 + $ss_type(This)).view());			\
+			static_error("out of bounds scaffold offset of "_ss	\
+				+ $ss_type(This));				\
 			return 0;						\
 		}								\
 	}

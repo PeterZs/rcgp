@@ -5,6 +5,7 @@
 #include "reflection.hpp"
 #include "field_access.hpp"
 #include "static_string.hpp"
+#include "../util/cti.hpp"
 
 // TODO: get rid of the mains!
 // TODO: use type cache to avoid redefining things...
@@ -12,7 +13,7 @@
 template <typename T>
 struct reconstructor_t {
 	static jems::handle main($location) {
-		static_assert(false, ($ss("type reconstructor for ") + $ss_type(T) + $ss(" has not been implemented yet")).view());
+		static_error("type reconstructor for "_ss + $ss_type(T) + " has not been implemented yet"_ss);
 	}
 };
 

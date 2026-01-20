@@ -9,7 +9,11 @@
 // Shorthand for casting
 #define Tas static_cast
 
+// Compile time errors messages
+#define static_error(sstring) static_assert(false, (sstring).view())
+
 // Defining type traits
+// TODO: lower case
 #define TYPE_TRAIT(name) 						\
 	template <typename T> struct name : std::false_type {};		\
 	template <typename T> constexpr bool name##_v = name <T> ::value

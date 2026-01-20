@@ -14,16 +14,22 @@
 #include "inject_reference.hpp"
 #include "reflection_builder.hpp"
 
-// TODO: also the associated stage...
-template <GlobalIntrinsic G, reflected T>
+// TODO: move intrinsics definition to a dedicated header
+// TODO: should also mark the stage so that we check at shader module definion...
+template <GlobalIntrinsic G, primitive T>
 struct read_only_intrinsic {
 	// NOTE: for aggregates, we may need to inject...
 	operator T() const {
 		return T::reinterpret(jems::global_intrinsic(G));
 	}
+};
 
-	void override_reference(const Reference &ref) {
-		fatal("bad override");
+template <GlobalIntrinsic G, primitive T>
+struct write_only_intrinsic {
+	auto &operator=(const T &value) {
+		auto self = jems::global_intrinsic(G);
+		jems::store(self, value);
+		return value;
 	}
 };
 
@@ -37,6 +43,9 @@ using VertexIndex = read_only_intrinsic <GlobalIntrinsic::eVertexIndex, i32>;
 using LocalInvocationID = read_only_intrinsic <GlobalIntrinsic::eLocalInvocationID, uvec3>;
 using WorkGroupID = read_only_intrinsic <GlobalIntrinsic::eWorkGroupID, uvec3>;
 using GlobalInvocationID = read_only_intrinsic <GlobalIntrinsic::eGlobalInvocationID, uvec3>;
+
+// TODO: refactor screen position to ClipPosition
+using ClipPosition = write_only_intrinsic <GlobalIntrinsic::eScreenPosition, vec4>;
 
 template <uint32_t X, uint32_t Y = 1, uint32_t Z = 1>
 struct WorkGroup {
@@ -57,22 +66,6 @@ struct TaskGroup : WorkGroup <X, Y, Z> {
 			BuiltinIntrinsicCode::eEmitMeshTasksEXT,
 			x, y, z
 		);
-	}
-};
-
-// Required result of the vertex shader
-struct Position {
-	Position() = default;
-
-	Position(const vec4 &value, $location) {
-		jems::store_loc(loc,
-			jems::global_intrinsic_loc(loc, GlobalIntrinsic::eScreenPosition),
-			value
-		);
-	}
-
-	void override_reference(const Reference &ref) {
-		fatal("bad override");
 	}
 };
 

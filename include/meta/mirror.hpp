@@ -3,6 +3,8 @@
 #include "layout/all.hpp"
 #include "reflection.hpp"
 #include "expand_reflection.hpp"
+#include "static_string.hpp"
+#include "../util/cti.hpp"
 
 // Type mirrors
 template <reflected T, template <typename> typename L = layouts::std430>
@@ -17,7 +19,7 @@ using TypeMirror = decltype([] {
 // Resource mirrors
 template <typename T>
 struct resource_translator {
-	static_assert(false, ($ss("resource translator not implemented for type ") + $ss_type(T)).view());
+	static_error("resource translator not implemented for type "_ss + $ss_type(T));
 	using type = std::nullptr_t;
 	using value_type = std::nullptr_t;
 	using elment_type = std::nullptr_t;
@@ -30,7 +32,7 @@ template <typename T>
 using DataType = decltype([] {
 	using RMT = resource_translator <T> ::value_type;
 	static_assert(not std::same_as <RMT, std::nullptr_t>,
-	       ($ss("no canonical type for resource of type ") + $ss_type(T)).view());
+	       ("no canonical type for resource of type "_ss + $ss_type(T)).view());
 	return RMT();
 } ());
 
@@ -38,6 +40,6 @@ template <typename T>
 using DynamicElementType = decltype([] {
 	using RME = resource_translator <T> ::element_type;
 	static_assert(not std::same_as <RME, std::nullptr_t>,
-	       ($ss("no dynamic element for resource of type ") + $ss_type(T)).view());
+	       ("no dynamic element for resource of type "_ss + $ss_type(T)).view());
 	return RME();
 } ());

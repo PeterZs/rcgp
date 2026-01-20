@@ -1,11 +1,13 @@
 #pragma once
 
 #include "mirror_buffer.hpp"
+#include "static_string.hpp"
+#include "../util/cti.hpp"
 
 // Reference to vertex buffer
 template <auto &ref>
 struct VertexBufferFor {
-	static_assert(false, "not a stream");
+	static_error("not a stream"_ss);
 };
 
 template <reflected T, template <typename> typename L, vk::VertexInputRate R, AttributeStream <T, L, R> &ref>

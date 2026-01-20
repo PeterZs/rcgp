@@ -30,19 +30,18 @@
 #define GEN_AGGREGATE_FIELD_REFERENCE(T, field)	\
 	else if constexpr (D == ((__COUNTER__ - 1) - counter_base)) { return field; }
 
-#define DEFINE_FIELD_REFERENCE(R, ...)						\
-	template <size_t D>							\
-	auto &_rcgp_get() R {							\
-		static constexpr size_t counter_base = __COUNTER__;		\
-		if constexpr (false) {}						\
-		MAP(GEN_AGGREGATE_FIELD_REFERENCE, /* NA */, __VA_ARGS__)	\
-		else {								\
-			static_assert(false,					\
-				($ss("out of bounds field reference access of ")\
-				+ $ss_type(This)).view());			\
-			return _rcgp_get_fallback;				\
-		}								\
-	}									\
+#define DEFINE_FIELD_REFERENCE(R, ...)							\
+	template <size_t D>								\
+	auto &_rcgp_get() R {								\
+		static constexpr size_t counter_base = __COUNTER__;			\
+		if constexpr (false) {}							\
+		MAP(GEN_AGGREGATE_FIELD_REFERENCE, /* NA */, __VA_ARGS__)		\
+		else {									\
+			static_error("out of bounds field reference access of "_ss	\
+				+ $ss_type(This));					\
+			return _rcgp_get_fallback;					\
+		}									\
+	}										\
 
 // Generating the override reference method
 #define GEN_OVERRIDE_FIELD_REFERENCE(T, field)	\

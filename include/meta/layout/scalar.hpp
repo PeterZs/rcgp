@@ -4,9 +4,10 @@
 
 #include <glm/glm.hpp>
 
+#include "../../dsl/matrix.hpp"
 #include "../../dsl/scalar.hpp"
 #include "../../dsl/vector.hpp"
-#include "../../dsl/matrix.hpp"
+#include "../../util/cti.hpp"
 #include "../reflection.hpp"
 #include "../scaffold.hpp"
 #include "../static_string.hpp"
@@ -18,7 +19,7 @@ namespace scalar_layout {
 // vectors/matrices up to 16 bytes the way std430 does.
 template <typename T>
 struct layout_engine {
-	static_assert(false, ($ss("scalar_layout::layout_engine not implemented for type ") + $ss_type(T)).view());
+	static_error("scalar_layout::layout_engine not implemented for type "_ss + $ss_type(T));
 };
 
 template <typename Original, typename ... Ts>

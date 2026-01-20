@@ -3,6 +3,7 @@
 // TODO: eventually move this to util...
 #include <cstdlib>
 #include <string_view>
+#include <type_traits>
 
 template <size_t N>
 struct static_string {
@@ -27,7 +28,25 @@ struct static_string {
 	}
 };
 
-#define $ss(str) static_string <sizeof(str) - 1> (str)
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wgnu-string-literal-operator-template"
+#endif
+
+template <typename T, T... Cs>
+requires std::is_same_v <T, char>
+consteval auto operator""_ss()
+{
+	static_string <sizeof...(Cs)> result;
+	constexpr char data[] = { Cs... };
+	for (size_t i = 0; i < sizeof...(Cs); i++)
+		result.elements[i] = data[i];
+	return result;
+}
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 template <size_t N, size_t M>
 constexpr static_string <N + M> operator+(static_string <N> A, static_string <M> B)

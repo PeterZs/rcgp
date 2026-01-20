@@ -9,7 +9,7 @@ template <size_t Indentation, bool Newline, size_t I, typename T, typename ... A
 consteval auto enumerated_type_strings()
 {
 	constexpr auto main = static_string <Indentation> ('\t')
-		+ $ss_ulong_decimal(I) + $ss(": ") + $ss_type_indented(T, Indentation)
+		+ $ss_ulong_decimal(I) + ": "_ss + $ss_type_indented(T, Indentation)
 		+ static_string <Newline> ('\n');
 
 	if constexpr (sizeof...(Args)) {
@@ -30,7 +30,7 @@ template <size_t Indentation, bool Newline, size_t I, typename Original, typenam
 consteval auto enumerated_field_strings()
 {
 	constexpr auto main = static_string <Indentation> ('\t')
-		+ $field_name(Original, I) + $ss(": ") + $ss_type_indented(T, Indentation)
+		+ $field_name(Original, I) + ": "_ss + $ss_type_indented(T, Indentation)
 		+ static_string <Newline> ('\n');
 
 	if constexpr (sizeof...(Args)) {
@@ -54,9 +54,9 @@ struct type_string <sequence <Ts...>> {
 	template <size_t I>
 	static consteval auto eval() {
 		constexpr auto tabs = static_string <I> ('\t');
-		return $ss("sequence {\n")
+		return "sequence {\n"_ss
 			+ enumerated_type_strings <I + 1, true, 0, Ts...> ()
-			+ tabs + $ss("}");
+			+ tabs + "}"_ss;
 	}
 };
 
@@ -65,9 +65,9 @@ struct type_string <std::tuple <Ts...>> {
 	template <size_t I>
 	static consteval auto eval() {
 		constexpr auto tabs = static_string <I> ('\t');
-		return $ss("std::tuple {\n")
+		return "std::tuple {\n"_ss
 			+ enumerated_type_strings <I + 1, true, 0, Ts...> ()
-			+ tabs + $ss("}");
+			+ tabs + "}"_ss;
 	}
 };
 
@@ -77,9 +77,9 @@ struct type_string <aggregate_reflection <Original, Args...>> {
 	template <size_t I>
 	static consteval auto eval() {
 		constexpr auto tabs = static_string <I> ('\t');
-		return $ss_type_indented(Original, I) + $ss(" {\n")
+		return $ss_type_indented(Original, I) + " {\n"_ss
 			+ enumerated_field_strings <I + 1, true, 0, Original, Args...> ()
-			+ tabs + $ss("}");
+			+ tabs + "}"_ss;
 	}
 };
 
@@ -87,7 +87,7 @@ template <typename T>
 struct type_string <resource_group_reflection <T>> {
 	template <size_t I>
 	static consteval auto eval() {
-		return $ss("resource group of ") + $ss_type_indented(T, I);
+		return "resource group of "_ss + $ss_type_indented(T, I);
 	}
 };
 
@@ -98,9 +98,9 @@ struct type_string <reference_reflection <ref, T>> {
 	template <size_t I>
 	static consteval auto eval() {
 		constexpr size_t id = 0;
-		return $ss("reference (hash: ")
+		return "reference (hash: "_ss
 			+ $ss_ulong_hex(type_hash_v <inner>)
-			+ $ss(") to ")
+			+ ") to "_ss
 			+ $ss_type_indented(T, I);
 	}
 };
@@ -110,11 +110,11 @@ struct type_string <function_reflection <R, Args...>> {
 	template <size_t I>
 	static consteval auto eval() {
 		constexpr auto tabs = static_string <I> ('\t');
-		return $ss("function {\n")
-			+ tabs + $ss("\treturn: ") + $ss_type_indented(R, I + 1) + $ss("\n")
-			+ tabs + $ss("\targs: {\n")
+		return "function {\n"_ss
+			+ tabs + "\treturn: "_ss + $ss_type_indented(R, I + 1) + "\n"_ss
+			+ tabs + "\targs: {\n"_ss
 			+ enumerated_type_strings <I + 2, true, 0, Args...> ()
-			+ tabs + $ss("\t}\n")
-			+ tabs + $ss("}");
+			+ tabs + "\t}\n"_ss
+			+ tabs + "}"_ss;
 	}
 };

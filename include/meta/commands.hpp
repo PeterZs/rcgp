@@ -4,12 +4,14 @@
 #include <functional>
 
 #include "../rhi/command_buffer.hpp"
+#include "../util/cti.hpp"
 #include "../util/runtime_type_registry.hpp"
 #include "../util/timer.hpp"
 #include "barrier.hpp"
 #include "pipeline/compute.hpp"
 #include "pipeline/mesh_shading.hpp"
 #include "pipeline/rasterization.hpp"
+#include "static_string.hpp"
 #include "vertex_buffer_for.hpp"
 
 struct PipelineMappings {
@@ -339,7 +341,7 @@ inline auto bind_index_buffer(const IndexBuffer <T, I> &ibuffer)
 		else if constexpr (std::same_as <I, uint16_t>)
 			cmd.bindIndexBuffer(ibuffer.handle, 0, vk::IndexType::eUint16);
 		else
-			static_assert(false, "unsupported index buffer scalar type");
+			static_error("unsupported index buffer scalar type"_ss);
 	};
 
 	return Commands <ResolvantForIndexBuffer <T>> { binder };
