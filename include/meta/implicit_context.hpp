@@ -52,4 +52,4 @@ auto new_implicit_context(std::function <void (Args ...)>)
 	return type();
 }
 
-#define $context_capture(...) (decltype(new_implicit_context(std::function([](__VA_ARGS__) {}))) _ref_context __VA_OPT__(,) __VA_ARGS__)
+#define rcgp_build_context(...) (decltype(new_implicit_context(std::function([](__VA_ARGS__) {}))) _ref_context __VA_OPT__(,) __VA_ARGS__)

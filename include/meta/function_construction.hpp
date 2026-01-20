@@ -58,33 +58,22 @@ auto trace(auto ftn)
 	return result;
 }
 
-template <ShaderStage, int>
-struct _fn_operator {};
+template <ShaderStage S>
+struct _fn_tag {
+	std::string name;
+};
 
-template <ShaderStage>
-struct _stage_operator {};
-
-#define $stage(S) _stage_operator <ShaderStage::S> () *
-
-#define $vertex		$stage(eVertex)
-#define $fragment	$stage(eFragment)
-#define $compute	$stage(eCompute)
-#define $task		$stage(eTask)
-#define $mesh		$stage(eMesh)
-
-#define $fn (_fn_operator <ShaderStage::eSubroutine, __COUNTER__ + 2> ()) \
-	<< [] $context_capture
-#define $cafn(...) (_fn_operator <ShaderStage::eSubroutine, __COUNTER__ + 2> ()) \
-	<< [__VA_ARGS__ __VA_OPT__(,)] $context_capture
-
-template <ShaderStage S, int I>
-auto operator<<(_fn_operator <S, I>, auto lambda)
+template <ShaderStage S>
+auto operator<<(_fn_tag <S>, auto lambda)
 {
 	return trace <S> (lambda);
 }
 
-template <ShaderStage S, int I>
-auto operator*(_stage_operator <S>, _fn_operator <ShaderStage::eSubroutine, I>)
-{
-	return _fn_operator <S, I> ();
-}
+#define rcgp_vertex	(_fn_tag <ShaderStage::eVertex> ("main"))
+#define rcgp_fragment	(_fn_tag <ShaderStage::eFragment> ("main"))
+#define rcgp_compute	(_fn_tag <ShaderStage::eCompute> ("main"))
+#define rcgp_mesh	(_fn_tag <ShaderStage::eMesh> ("main"))
+#define rcgp_task	(_fn_tag <ShaderStage::eTask> ("main"))
+
+#define $shader(type, ...)	rcgp_##type << [__VA_ARGS__] rcgp_build_context
+#define $subroutine(name, ...)	(_fn_tag <ShaderStage::eSubroutine> (#name)) << [__VA_ARGS__] rcgp_build_context
