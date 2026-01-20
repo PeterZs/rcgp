@@ -16,7 +16,7 @@
 
 // TODO: move intrinsics definition to a dedicated header
 // TODO: should also mark the stage so that we check at shader module definion...
-template <GlobalIntrinsic G, primitive T>
+template <GlobalIntrinsic G, ShaderStage S, primitive T>
 struct read_only_intrinsic {
 	// NOTE: for aggregates, we may need to inject...
 	operator T() const {
@@ -24,7 +24,7 @@ struct read_only_intrinsic {
 	}
 };
 
-template <GlobalIntrinsic G, primitive T>
+template <GlobalIntrinsic G, ShaderStage S, primitive T>
 struct write_only_intrinsic {
 	auto &operator=(const T &value) {
 		auto self = jems::global_intrinsic(G);
@@ -33,19 +33,19 @@ struct write_only_intrinsic {
 	}
 };
 
-template <GlobalIntrinsic G, reflected T>
-struct projection <read_only_intrinsic <G, T>> {
+template <GlobalIntrinsic G, ShaderStage S, reflected T>
+struct projection <read_only_intrinsic <G, S, T>> {
 	using type = T;
 };
 
-using InstanceIndex = read_only_intrinsic <GlobalIntrinsic::eInstanceIndex, i32>;
-using VertexIndex = read_only_intrinsic <GlobalIntrinsic::eVertexIndex, i32>;
-using LocalInvocationID = read_only_intrinsic <GlobalIntrinsic::eLocalInvocationID, uvec3>;
-using WorkGroupID = read_only_intrinsic <GlobalIntrinsic::eWorkGroupID, uvec3>;
-using GlobalInvocationID = read_only_intrinsic <GlobalIntrinsic::eGlobalInvocationID, uvec3>;
+using InstanceIndex = read_only_intrinsic <GlobalIntrinsic::eInstanceIndex, ShaderStage::eVertex, i32>;
+using VertexIndex = read_only_intrinsic <GlobalIntrinsic::eVertexIndex, ShaderStage::eVertex, i32>;
+using ClipPosition = write_only_intrinsic <GlobalIntrinsic::eClipPosition, ShaderStage::eVertex, vec4>;
 
-// TODO: refactor screen position to ClipPosition
-using ClipPosition = write_only_intrinsic <GlobalIntrinsic::eScreenPosition, vec4>;
+// TODO: should also support mesh, task...
+using LocalInvocationID = read_only_intrinsic <GlobalIntrinsic::eLocalInvocationID, ShaderStage::eCompute, uvec3>;
+using WorkGroupID = read_only_intrinsic <GlobalIntrinsic::eWorkGroupID, ShaderStage::eCompute, uvec3>;
+using GlobalInvocationID = read_only_intrinsic <GlobalIntrinsic::eGlobalInvocationID, ShaderStage::eCompute, uvec3>;
 
 template <uint32_t X, uint32_t Y = 1, uint32_t Z = 1>
 struct WorkGroup {

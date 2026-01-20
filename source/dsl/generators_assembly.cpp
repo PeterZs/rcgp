@@ -238,7 +238,7 @@ std::string stringify(Context &ctx, ThreadOutput x, Reference ref)
 std::string stringify(Context &ctx, GlobalIntrinsic x, Reference ref)
 {
 	switch (x) {
-	case GlobalIntrinsic::eScreenPosition:
+	case GlobalIntrinsic::eClipPosition:
 		return $assign "SVPosition";
 	case GlobalIntrinsic::eLocalInvocationID:
 		return $assign "LocalInvocationID";

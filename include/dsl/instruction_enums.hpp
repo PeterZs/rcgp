@@ -37,7 +37,7 @@ enum class GlobalResourceAccess {
 };
 
 enum class GlobalIntrinsic {
-	eScreenPosition,
+	eClipPosition,
 	eInstanceIndex,
 	eVertexIndex,
 	eLocalInvocationID,

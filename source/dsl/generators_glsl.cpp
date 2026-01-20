@@ -223,7 +223,7 @@ std::string resource_base_name(const GlobalResource &grsrc)
 std::string reference(Context &ctx, GlobalIntrinsic gi)
 {
 	switch (gi) {
-	case GlobalIntrinsic::eScreenPosition: return "gl_Position";
+	case GlobalIntrinsic::eClipPosition: return "gl_Position";
 	case GlobalIntrinsic::eInstanceIndex: return "gl_InstanceIndex";
 	case GlobalIntrinsic::eLocalInvocationID: return "gl_LocalInvocationID";
 	case GlobalIntrinsic::eWorkGroupID: return "gl_WorkGroupID";

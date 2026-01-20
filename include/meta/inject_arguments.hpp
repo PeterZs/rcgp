@@ -20,13 +20,14 @@ struct InjectionCounters {
 template <ShaderStage S, typename T>
 void inject_one_argument(T &value, InjectionCounters &counters)
 {
-	// TODO: also ss for ShaderStage
+	// TODO: static strings for ShaderStage
 	static_error("argument injector not implemented for "_ss + $ss_type(T));
 }
 
 template <ShaderStage S, uint32_t X, uint32_t Y, uint32_t Z>
 void inject_one_argument(WorkGroup <X, Y, Z> &, InjectionCounters &)
 {
+	// TODO: use if not constexpr...
 	static_assert(
 		S == ShaderStage::eCompute
 		|| S == ShaderStage::eMesh,
@@ -46,11 +47,21 @@ void inject_one_argument(TaskGroup <X, Y, Z> &, InjectionCounters &)
 }
 
 // TODO: check stage compatibility
-template <ShaderStage S, GlobalIntrinsic G, primitive T>
-void inject_one_argument(read_only_intrinsic <G, T> &value, InjectionCounters &counters) {}
+template <ShaderStage S1, GlobalIntrinsic G, ShaderStage S2, primitive T>
+void inject_one_argument(read_only_intrinsic <G, S2, T> &value, InjectionCounters &counters)
+{
+	if constexpr (S1 != S2) {
+		// TODO: static string for global intrinsics...
+		static_error("unsupported intrinsic"_ss);
+	}
+}
 
-template <ShaderStage S, GlobalIntrinsic G, primitive T>
-void inject_one_argument(write_only_intrinsic <G, T> &value, InjectionCounters &counters) {}
+template <ShaderStage S1, GlobalIntrinsic G, ShaderStage S2, primitive T>
+void inject_one_argument(write_only_intrinsic <G, S2, T> &value, InjectionCounters &counters)
+{
+	if constexpr (S1 != S2)
+		static_error("unsupported intrinsic"_ss);
+}
 
 // Nothing to do for the implicit context
 template <ShaderStage S, auto &... refs>
@@ -139,6 +150,7 @@ void inject_one_argument(T &value, InjectionCounters &counters)
 {
 	auto type = reconstruct_type <T> ();
 	if constexpr (S == ShaderStage::eFragment) {
+		// TODO: aggregate case is a bit different
 		// Varying attribute
 		auto tin = ThreadInput(type, counters.threadidx++);
 		$tsb.context.add_thread_input(tin);
@@ -150,11 +162,8 @@ void inject_one_argument(T &value, InjectionCounters &counters)
 		inject_reference(value, jems::argument(arg));
 	} else {
 		// Not supported
-		static_error(
-			"argument type "_ss
-			+ $ss_type(T)
-			+ " is not supported in Stage X"_ss
-		);
+		static_error("argument type "_ss + $ss_type(T)
+			+ " is not supported in Stage X"_ss);
 	}
 }
 
