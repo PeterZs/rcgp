@@ -25,9 +25,9 @@ struct MeshShadingCombinator {
 	) const {
 		TSCOPE("mesh shading combinator");
 
-		using task_icontext = find_implicit_context <Ts...> ::type;
-		using mesh_icontext = find_implicit_context <Ms...> ::type;
-		using fragment_icontext = find_implicit_context <Fs...> ::type;
+		using task_icontext = icontext_from_args_t <Ts...>;
+		using mesh_icontext = icontext_from_args_t <Ms...>;
+		using fragment_icontext = icontext_from_args_t <Fs...>;
 
 		auto gvrs0 = Tlist <> {};
 		auto gvrs1 = add_gvr_from_implicit_context <ShaderStage::eTask> (gvrs0, task_icontext());

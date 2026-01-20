@@ -122,5 +122,4 @@ auto context_unlock(implicit_context <refs...>, const shader_stage <ShaderStage:
 
 // TODO: The exception should be subroutines which dont take any
 // resource references/have no context should just be direct though
-// #define $use(...) context_unlock(_ref_context, __VA_ARGS__)
-#define $use(subroutine) context_unlock(implicit_context <> (), subroutine)
+#define $use(subroutine) context_unlock(_ctx, subroutine)

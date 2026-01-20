@@ -19,7 +19,7 @@ struct ComputeCombinator {
 	auto operator()(shader_stage <ShaderStage::eCompute, Ret, As...> &compute) const {
 		TSCOPE("compute combinator");
 
-		using icontext = find_implicit_context <As...> ::type;
+		using icontext = icontext_from_args_t <As...>;
 
 		// Collect global resources
 		auto gvrs0 = Tlist <> {};

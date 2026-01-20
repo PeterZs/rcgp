@@ -200,8 +200,8 @@ struct RasterizationCombinator {
 
 		// TODO: check between vshader output and fshader input
 		// TODO: store # of attachments required from # of fshader outputs
-		using vertex_icontext = find_implicit_context <As...> ::type;
-		using fragment_icontext = find_implicit_context <Bs...> ::type;
+		using vertex_icontext = icontext_from_args_t <As...>;
+		using fragment_icontext = icontext_from_args_t <Bs...>;
 
 		// Collect vertex attribute streams
 		auto streams0 = Tlist <> {};

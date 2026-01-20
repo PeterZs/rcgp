@@ -75,8 +75,10 @@ auto operator<<(_fn_tag <S>, auto lambda)
 #define rcgp_mesh	(_fn_tag <ShaderStage::eMesh> ("main"))
 #define rcgp_task	(_fn_tag <ShaderStage::eTask> ("main"))
 
-#define $shader(type, ...)	rcgp_##type << [__VA_ARGS__] rcgp_build_context
-#define $subroutine(name, ...)	(_fn_tag <ShaderStage::eSubroutine> (#name)) << [__VA_ARGS__] rcgp_build_context
+#define rcgp_context(...)	_ctx = icontext_from_vptr((void (*)(__VA_ARGS__)) nullptr)] (__VA_ARGS__)
+
+#define $shader(type, ...)	rcgp_##type << [__VA_ARGS__ __VA_OPT__(,) rcgp_context
+#define $subroutine(name, ...)	(_fn_tag <ShaderStage::eSubroutine> (#name)) << [__VA_ARGS__ __VA_OPT__(,) rcgp_context
 
 #define RCGP_REFERENCE_FROM_NAME(name) , reference <name> name
 #define RCGP_REFERENCE_FROM_TUPLE(name, ref) , reference <(ref)> name
