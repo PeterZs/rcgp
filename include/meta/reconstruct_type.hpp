@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "../dsl/jems.hpp"
 #include "expand_reflection.hpp"
 #include "reflection.hpp"
@@ -62,6 +64,7 @@ struct reconstructor_t <aggregate_reflection <Original, Args...>> {
 
 	static jems::handle main($location) {
 		AggregateType aggregate;
+		aggregate.name = std::string($ss_type(Original).view());
 		(collect(aggregate, reconstructor_t <Args> ::main(loc)), ...);
 		return jems::type_loc(loc, aggregate);
 	}

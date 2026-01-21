@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 #include "tracer.hpp"
 #include "instructions.hpp"
 
@@ -78,6 +80,10 @@ inline size_t type_cache_key_for(const Type &type)
 	auto hash_combine = [](size_t &seed, size_t v) {
 		seed ^= v + 0x9e3779b97f4a7c15ull + (seed << 6) + (seed >> 2);
 	};
+	auto hash_string = [&](size_t &seed, const std::string &value) {
+		for (unsigned char c : value)
+			hash_combine(seed, c);
+	};
 
 	size_t key = 0;
 	vswitch (type) {
@@ -90,6 +96,7 @@ inline size_t type_cache_key_for(const Type &type)
 	vcase(AggregateType): {
 		auto &agg = type.as <AggregateType> ();
 		key = RuntimeTypeRegistry::id <AggregateType> ();
+		hash_string(key, agg.name);
 		hash_combine(key, agg.size());
 		for (auto &field : agg)
 			hash_combine(key, reinterpret_cast <size_t> (field.get()));
@@ -116,6 +123,9 @@ struct type : handle {
 		auto &cache = Tracer::singleton.type_cache;
 		if (auto it = cache.find(key); it != cache.end()) {
 			_ref = it->second;
+			auto &blk = Tracer::singleton.active();
+			if (std::find(blk.begin(), blk.end(), _ref) == blk.end())
+				blk.insert(blk.begin(), _ref);
 			return;
 		}
 		_ref = Tracer::singleton.active().add(t, Debug(loc));
@@ -131,6 +141,9 @@ struct type_loc : handle {
 		auto &cache = Tracer::singleton.type_cache;
 		if (auto it = cache.find(key); it != cache.end()) {
 			_ref = it->second;
+			auto &blk = Tracer::singleton.active();
+			if (std::find(blk.begin(), blk.end(), _ref) == blk.end())
+				blk.insert(blk.begin(), _ref);
 			return;
 		}
 		_ref = Tracer::singleton.active().add(t, Debug(loc));

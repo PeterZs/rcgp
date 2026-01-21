@@ -53,7 +53,9 @@ struct PrimitiveType : variant <
 	using variant_self::variant;
 };
 
-struct AggregateType : std::vector <Reference> {};
+struct AggregateType : std::vector <Reference> {
+	std::string name;
+};
 
 struct ArrayType {
 	Reference base;

@@ -110,6 +110,9 @@ std::string stringify_type(Context &ctx, AggregateType x, Reference ref)
 			result += ", ";
 	}
 
+	if (!x.name.empty())
+		return x.name + "(" + result + ")";
+
 	return "aggregate(" + result + ")";
 }
 
@@ -374,7 +377,12 @@ std::string stringify(Context &ctx, Local x, Reference ref)
 
 std::string stringify(Context &ctx, Invocation x, Reference ref)
 {
-	std::string result = fmt::format("@{}(", (void *) x.sbr.get());
+	std::string result;
+	if (!x.sbr->context.name.empty())
+		result = fmt::format("@{}(", x.sbr->context.name);
+	else
+		result = fmt::format("@{}(", (void *) x.sbr.get());
+	
 	for (size_t i = 0; i < x.args.size(); i++) {
 		result += stringify(ctx, x.args[i]);
 		if (i + 1 < x.args.size())
@@ -491,6 +499,8 @@ std::string generate(Context &ctx, size_t tabs, bool emit_branches)
 	result += "  context {\n";
 	result += fmt::format("    blkid: {},\n", (void *) ctx.sbr.get());
 	result += "    model: " + stringify(ctx.sbr->context.model) + ",\n";
+	if (!ctx.sbr->context.name.empty())
+		result += fmt::format("    name: {},\n", ctx.sbr->context.name);
 
 	for (auto arg : ctx.sbr->context.arguments) {
 		result += fmt::format("    argument {}: {},\n",

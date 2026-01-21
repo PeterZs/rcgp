@@ -24,6 +24,7 @@ struct Block : std::vector <Reference> {
 	// TODO: un-inner this struct
 	struct Context {
 		ShaderStage model = ShaderStage::eSubroutine;
+		std::string name;
 
 		std::vector <Argument> arguments;
 		std::vector <ThreadInput> thread_inputs;

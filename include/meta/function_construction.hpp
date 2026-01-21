@@ -35,7 +35,6 @@ auto trace(auto ftn)
 	{
 		TSCOPE("JIT tracing DSL code");
 		result->context.model = S;
-		Tracer::singleton.type_cache.clear();
 		if (auto s = jems::scope(result)) {
 			TSCOPE("primary trace");
 			typename F::args args;
@@ -65,9 +64,11 @@ struct _fn_tag {
 };
 
 template <ShaderStage S>
-auto operator<<(_fn_tag <S>, auto lambda)
+auto operator<<(_fn_tag <S> tag, auto lambda)
 {
-	return trace <S> (lambda);
+	auto result = trace <S> (lambda);
+	result->context.name = tag.name;
+	return result;
 }
 
 template <bool B, typename T>

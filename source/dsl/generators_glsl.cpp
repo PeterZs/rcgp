@@ -1,4 +1,6 @@
 #include <array>
+#include <cctype>
+#include <string_view>
 #include <fmt/format.h>
 
 #include "dsl/generators.hpp"
@@ -23,6 +25,49 @@ struct Context {
 	std::string result;
 	std::string indent = "    ";
 };
+
+std::string sanitize_identifier(std::string_view name)
+{
+	std::string out;
+	out.reserve(name.size());
+	for (size_t i = 0; i < name.size(); i++) {
+		unsigned char c = static_cast<unsigned char>(name[i]);
+		if (c == ':' && i + 1 < name.size() && name[i + 1] == ':') {
+			out.push_back('x');
+			i++;
+			continue;
+		}
+		if ((c >= 'a' && c <= 'z')
+			|| (c >= 'A' && c <= 'Z')
+			|| (c >= '0' && c <= '9')
+			|| c == '_') {
+			out.push_back(static_cast<char>(c));
+		} else {
+			out.push_back('_');
+		}
+	}
+
+	if (out.empty())
+		out = "AGG";
+
+	if (out[0] >= '0' && out[0] <= '9')
+		out.insert(out.begin(), 'T'), out.insert(out.begin() + 1, '_');
+
+	return out;
+}
+
+std::string subroutine_name(Context &ctx, const Block *blk)
+{
+	auto it = ctx.subroutine_names.find(blk);
+	if (it != ctx.subroutine_names.end())
+		return it->second;
+
+	std::string name = blk->context.name.empty()
+		? fmt::format("fn_{}", (void *) blk)
+		: blk->context.name;
+	ctx.subroutine_names.emplace(blk, name);
+	return name;
+}
 
 bool is_same_type(const Reference &a, const Reference &b)
 {
@@ -417,10 +462,7 @@ std::string expression(Context &ctx, Reference expr)
 	vcase(Invocation): {
 		auto &invocation = value.as <Invocation> ();
 		const Block *callee = invocation.sbr.get();
-		auto it = ctx.subroutine_names.find(callee);
-		std::string name = (it != ctx.subroutine_names.end())
-			? it->second
-			: fmt::format("fn_{}", (void *) callee);
+		std::string name = subroutine_name(ctx, callee);
 
 		std::string out = name + "(";
 		auto nargs = invocation.args.size();
@@ -690,6 +732,8 @@ void emit_aggregate_decls(Context &ctx)
 	collect_blocks(ctx, blocks);
 
 	size_t aggregate_counter = 0;
+	std::map <std::string, size_t> name_counts;
+	std::set <const AggregateType *> emitted;
 	for (auto *blk : blocks) {
 		for (auto &instr : *blk) {
 			if (not instr->is <Type> ())
@@ -700,10 +744,19 @@ void emit_aggregate_decls(Context &ctx)
 				continue;
 
 			auto &agg = type.as <AggregateType> ();
+			if (emitted.contains(&agg))
+				continue;
 			if (contains_unsized_array(agg))
 				continue;
 
-			ctx.result += fmt::format("struct AGG{} {{\n", aggregate_counter++);
+			auto base = agg.name.empty()
+				? fmt::format("AGG{}", aggregate_counter)
+				: sanitize_identifier(agg.name);
+			auto &count = name_counts[base];
+			auto name = (count == 0) ? base : fmt::format("{}_{}", base, count);
+			count++;
+
+			ctx.result += fmt::format("struct {} {{\n", name);
 
 			size_t field_counter = 0;
 			for (auto &field : agg) {
@@ -714,7 +767,9 @@ void emit_aggregate_decls(Context &ctx)
 
 			ctx.result += "};\n\n";
 
-			ctx.aggregate_names.emplace(&agg, fmt::format("AGG{}", aggregate_counter - 1));
+			ctx.aggregate_names.emplace(&agg, name);
+			aggregate_counter++;
+			emitted.emplace(&agg);
 		}
 	}
 
@@ -1031,17 +1086,13 @@ void emit_subroutine_functions(Context &ctx)
 		if (callee->context.model != ShaderStage::eSubroutine)
 			continue;
 
-		auto it = ctx.subroutine_names.find(callee);
-		if (it == ctx.subroutine_names.end()) {
-			auto name = fmt::format("fn_{}", (void *) callee);
-			it = ctx.subroutine_names.emplace(callee, name).first;
-		}
+		auto name = subroutine_name(ctx, callee);
 
 		if (ctx.emitted_subroutines.contains(callee))
 			continue;
 
 		ctx.emitted_subroutines.emplace(callee);
-		emit_subroutine_function(ctx, *callee, it->second);
+		emit_subroutine_function(ctx, *callee, name);
 	}
 }
 
@@ -1062,8 +1113,7 @@ std::string generate(Context &ctx, size_t tabs)
 
 	if (ctx.block.context.model == ShaderStage::eSubroutine) {
 		emit_aggregate_decls(ctx);
-		auto name = fmt::format("fn_{}", (void *) &ctx.block);
-		ctx.subroutine_names.emplace(&ctx.block, name);
+		auto name = subroutine_name(ctx, &ctx.block);
 		emit_subroutine_function(ctx, ctx.block, name);
 		return ctx.result;
 	}
