@@ -8,7 +8,18 @@ enum class Topology {
 	eTriangleFan,
 };
 
-// Index buffer type helpers
+consteval vk::PrimitiveTopology translate_topology(Topology T)
+{
+	using enum vk::PrimitiveTopology;
+
+	switch (T) {
+	case Topology::eTriangleList: return eTriangleList;
+	case Topology::eTriangleFan: return eTriangleFan;
+	}
+
+	return vk::PrimitiveTopology::eTriangleList;
+}
+
 template <Topology T, typename I>
 using topology_element_t = std::conditional_t <
 	T == Topology::eTriangleList,

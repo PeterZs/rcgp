@@ -3,11 +3,13 @@
 #include <tuple>
 
 #include "../dsl/jems.hpp"
+#include "../rhi/shader_compiler.hpp"
 #include "../util/cti.hpp"
 #include "../util/tlist.hpp"
 #include "implicit_context.hpp"
 #include "reconstruct_type.hpp"
 
+//  TODO: move these to some other file
 consteval vk::ShaderStageFlags stage_to_flag(ShaderStage S)
 {
 	switch (S) {
@@ -21,6 +23,19 @@ consteval vk::ShaderStageFlags stage_to_flag(ShaderStage S)
 	}
 }
 
+consteval EShLanguage stage_to_esh(ShaderStage S)
+{
+	switch (S) {
+	case ShaderStage::eVertex: return EShLangVertex;
+	case ShaderStage::eFragment: return EShLangFragment;
+	case ShaderStage::eCompute: return EShLangCompute;
+	case ShaderStage::eTask: return EShLangTask;
+	case ShaderStage::eMesh: return EShLangMesh;
+	default:
+		return EShLangCompute;
+	}
+}
+
 template <ShaderStage ... Ss>
 consteval vk::ShaderStageFlags stage_flags_of()
 {
@@ -30,6 +45,8 @@ consteval vk::ShaderStageFlags stage_flags_of()
 // Entrypoint stages
 template <ShaderStage S, typename R, typename ... Args>
 struct shader_stage : SharedBlockReference {
+	static constexpr auto stage = S;
+	
 	using icontext = icontext_from_args_t <Args...>;
 
 	shader_stage(const SharedBlockReference &sbr)

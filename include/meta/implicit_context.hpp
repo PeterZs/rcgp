@@ -1,10 +1,13 @@
 #pragma once
 
 #include "../util/cti.hpp"
+#include "../util/tlist.hpp"
 #include "reference.hpp"
 
 template <auto &... refs>
-struct implicit_context {};
+struct implicit_context {
+	using tlist = Tlist <reference <refs>...>;
+};
 
 TYPE_TRAIT(is_implicit_context);
 	template <auto &... refs>

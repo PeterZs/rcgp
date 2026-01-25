@@ -7,6 +7,7 @@
 #include "../../rhi/timestamp_pool.hpp"
 #include "../../util/runtime_type_registry.hpp"
 #include "../barrier.hpp"
+#include "../descriptor.hpp"
 #include "../static_string.hpp"
 #include "command_effects.hpp"
 #include "commands.hpp"

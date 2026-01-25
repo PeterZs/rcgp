@@ -2,9 +2,8 @@
 
 #include <map>
 
-#include "../pipeline/compute.hpp"
-#include "../pipeline/mesh_shading.hpp"
-#include "../pipeline/rasterization.hpp"
+#include "../pipelines.hpp"
+#include "../process_wrappers.hpp"
 
 struct PipelineMappings {
 	vk::PipelineLayout layout;
@@ -22,6 +21,29 @@ void write_vb_offsets(PipelineMappings &dst, Tlist <reference <refs>...>)
 	size_t counter = 0;
 	(dst.vb_offsets.emplace(&refs, counter++), ...);
 }
+
+// TODO: function...
+template <auto &ref, typename Seq>
+struct stage_flags_for_seq;
+
+template <auto &ref>
+struct stage_flags_for_seq <ref, Tlist <>> {
+	static constexpr vk::ShaderStageFlags value = {};
+};
+
+template <auto &ref, auto &other, ShaderStage ...Ss, typename ...Rest>
+struct stage_flags_for_seq <
+	ref,
+	Tlist <stage_wrapper <other, Ss...>, Rest...>
+> {
+	static constexpr vk::ShaderStageFlags value =
+		std::same_as <reference <other>, reference <ref>>
+			? stage_flags_of <Ss...> ()
+			: stage_flags_for_seq <ref, Tlist <Rest...>> ::value;
+};
+
+template <auto &ref, typename Seq>
+constexpr vk::ShaderStageFlags stage_flags_for_v = stage_flags_for_seq <ref, Seq> ::value;
 
 template <typename ... Wrappers>
 void write_pb_infos(PipelineMappings &dst, Tlist <Wrappers...>)

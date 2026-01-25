@@ -1,8 +1,6 @@
 #pragma once
 
-#include "../pipeline/compute.hpp"
-#include "../pipeline/mesh_shading.hpp"
-#include "../pipeline/rasterization.hpp"
+#include "../pipelines.hpp"
 
 // We have a dependency on ref
 template <auto &ref>
