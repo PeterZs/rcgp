@@ -1,13 +1,11 @@
 #pragma once
 
-#include "../dsl/instructions.hpp"
 #include "../dsl/jems.hpp"
 #include "implicit_context.hpp"
 #include "inject_reference.hpp"
 #include "reconstruct_type.hpp"
 #include "reference.hpp"
 #include "reflection.hpp"
-#include "shader_stage.hpp"
 #include "stage_intrinsics.hpp"
 #include "static_string.hpp"
 
@@ -96,16 +94,10 @@ template <typename T, T &ref>
 void inject_resource_reference(reference <ref> &value)
 {
 	if constexpr (is_resource_group_v <T>) {
-		// Resource groups
-		using U = T::reflection::value_type;
-		using R = expand_reflection_t <U>;
-
-		// TODO: defer to overloads to handle tuple vs aggregates
-		static_assert(is_aggregate_reflection_v <R>);
-		using V = R::original_type;
-
-		constexpr_for(Is, R::field_count,
-			(inject_resource_group_element <V, Is> (&ref, value), ...)
+		// TODO: assert that its an aggregate
+		using U = T::value_type;
+		constexpr_for(Is, U::field_count,
+			(inject_resource_group_element <U, Is> (&ref, value), ...)
 		);
 	} else if constexpr (is_global_resource_v <T>) {
 		// Global resources

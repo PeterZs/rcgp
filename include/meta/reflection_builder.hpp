@@ -1,36 +1,26 @@
 #pragma once
 
-#include "field_name_injection.hpp"
 #include "macro_hell.hpp"
-#include "reflection.hpp"
 #include "scaffold.hpp"
 #include "this_injection.hpp"
 
-namespace rcgp {
+template <int X, typename T>
+using _counter_field = T;
 
 // Building the reflection for aggregates
-#define GEN_AGGREGATE_FIELD(T, field)	\
-	, decltype(field)
+#define GEN_AGGREGATE_FIELD(T, field)	, _counter_field <__COUNTER__, decltype(field)>
 
-#define DEFINE_REFLECTION(...)						\
-	using reflection = aggregate_reflection <This			\
-		MAP(GEN_AGGREGATE_FIELD, /* NA */ , __VA_ARGS__)	\
-	>;
-
-// Mapping each field to a unique (local) index
-#define GEN_AGGREGATE_FIELD_COUNTER(T, field)	\
-	std::integral_constant <size_t, __COUNTER__ - counter_base - 1> field;
-	
-#define DEFINE_FIELDS(...)							\
-	struct field_counter {							\
-		static constexpr size_t counter_base = __COUNTER__;		\
-		MAP(GEN_AGGREGATE_FIELD_COUNTER, This, __VA_ARGS__)		\
-	};									\
-	MAP(FIELD_NAME_INJECTION, This, __VA_ARGS__)				\
+// TODO: use a tlist
+#define DEFINE_REFLECTION(...)								\
+	static constexpr size_t _field_counter_start = __COUNTER__;			\
+	using reflection = aggregate_reflection <This					\
+		MAP(GEN_AGGREGATE_FIELD, /* NA */ , __VA_ARGS__)			\
+	>;										\
+	static constexpr size_t field_count = (__COUNTER__ - _field_counter_start - 1);
 
 // Generating a tuple-like get method
 #define GEN_AGGREGATE_FIELD_REFERENCE(T, field)	\
-	else if constexpr (D == ((__COUNTER__ - 1) - counter_base)) { return field; }
+	else if constexpr (D == (__COUNTER__ - counter_base - 1)) { return field; }
 
 #define DEFINE_FIELD_REFERENCE(R, ...)							\
 	template <size_t D>								\
@@ -65,7 +55,6 @@ namespace rcgp {
 	DEFINE_REFLECTION_STAMP();				\
 								\
 	DEFINE_REFLECTION(__VA_ARGS__);				\
-	DEFINE_FIELDS(__VA_ARGS__);				\
 	DEFINE_SCAFFOLD(__VA_ARGS__);				\
 								\
 	static inline std::nullptr_t _rcgp_get_fallback {};	\
@@ -73,5 +62,3 @@ namespace rcgp {
 	DEFINE_FIELD_REFERENCE(const, __VA_ARGS__);		\
 								\
 	DEFINE_OVERRIDE_REFERENCE(__VA_ARGS__);
-
-} // namespace rcgp
