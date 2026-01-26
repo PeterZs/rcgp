@@ -4,6 +4,8 @@
 #include "../util/tlist.hpp"
 #include "reference.hpp"
 
+namespace rcgp {
+
 template <auto &... refs>
 struct implicit_context {
 	using tlist = Tlist <reference <refs>...>;
@@ -55,3 +57,5 @@ consteval auto icontext_from_vptr(void (*)(Ts ...))
 
 template <typename ... Ts>
 using icontext_from_args_t = decltype(icontext_from_args(Ts()...));
+
+} // namespace rcgp

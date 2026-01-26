@@ -2,6 +2,8 @@
 
 #include <utility>
 
+namespace rcgp {
+
 struct HandlerTable {
 	int dragging_button = -1;
 	bool cursor_initialized = false;
@@ -220,3 +222,5 @@ Window Window::from(const Session &session, const Device &device, const Options 
 
 	return result;
 }
+
+} // namespace rcgp

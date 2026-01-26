@@ -3,6 +3,8 @@
 #include "util/logging.hpp"
 #include "rhi/buffer.hpp"
 
+namespace rcgp {
+
 auto Buffer::write(const void *data, size_t bytes, vk::DeviceSize relative_offset) const
 	-> const Buffer &
 {
@@ -81,3 +83,5 @@ auto Buffer::from(
 
 	return result;
 }
+
+} // namespace rcgp

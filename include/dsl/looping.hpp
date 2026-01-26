@@ -6,6 +6,8 @@
 #include "scalar.hpp"
 #include "instructions.hpp"
 
+namespace rcgp {
+
 using _loop_body = std::function <void ()>;
 using _loop_cond = std::function <boolean ()>;
 
@@ -87,3 +89,5 @@ inline _loop_holder operator*(_for_noinit a, const auto &ftn)
 #define $for(init, cond, step) if (bool __for_once = true) \
 	for (init; __for_once; __for_once = false) \
 		_for_noinit([&] { return (cond); }, [&] { step; }) * [&]
+
+} // namespace rcgp

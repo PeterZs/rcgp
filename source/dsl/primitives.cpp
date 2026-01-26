@@ -2,6 +2,8 @@
 #include "dsl/vector.hpp"
 #include "dsl/matrix.hpp"
 
+namespace rcgp {
+
 // Explicit instantiations for common DSL primitives.
 template class scalar <int32_t>;
 template class scalar <uint32_t>;
@@ -26,3 +28,5 @@ template class matrix <uint32_t, 4, 4>;
 template class matrix <float, 2, 2>;
 template class matrix <float, 3, 3>;
 template class matrix <float, 4, 4>;
+
+} // namespace rcgp

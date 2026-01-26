@@ -2,6 +2,8 @@
 #include "util/logging.hpp"
 #include "util/timer.hpp"
 
+namespace rcgp {
+
 vk::Pipeline compile_rasterization_pipeline(
 	const Device &device,
 	const vk::RenderPass &render_pass,
@@ -232,3 +234,5 @@ vk::Pipeline compile_mesh_shading_pipeline(
 
 	return pipeline;
 }
+
+} // namespace rcgp

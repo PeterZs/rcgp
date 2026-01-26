@@ -7,6 +7,8 @@
 #include "reflection_builder.hpp"
 #include "layouts.hpp"
 
+namespace rcgp {
+
 // Corresponds to vertex buffes
 template <reflected T, template <typename> typename L = layouts::scalar, vk::VertexInputRate R = vk::VertexInputRate::eVertex>
 struct AttributeStream : T {
@@ -114,3 +116,5 @@ TYPE_TRAIT(is_global_resource);
 	
 	template <typename T, size_t D>
 	TYPE_TRAIT_INCLUDES(is_global_resource, Sampler <T, D>);
+
+} // namespace rcgp

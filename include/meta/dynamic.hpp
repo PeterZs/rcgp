@@ -5,6 +5,8 @@
 #include "reflection.hpp"
 #include "field_access.hpp"
 
+namespace rcgp {
+
 template <typename T>
 requires is_dynamic_reflection_v <T>
 struct field_trace_of_dynamic {};
@@ -82,3 +84,5 @@ auto dynamic_part(const auto &value)
 
 	return std::tuple <decltype(dyn), size_t> (dyn, offset);
 }
+
+} // namespace rcgp

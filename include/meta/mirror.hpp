@@ -6,6 +6,8 @@
 #include "static_string.hpp"
 #include "../util/cti.hpp"
 
+namespace rcgp {
+
 // Type mirrors
 template <reflected T, template <typename> typename L = layouts::std430>
 using TypeMirror = decltype([] {
@@ -43,3 +45,5 @@ using DynamicElementType = decltype([] {
 	       ("no dynamic element for resource of type "_ss + $ss_type(T)).view());
 	return RME();
 } ());
+
+} // namespace rcgp

@@ -3,6 +3,8 @@
 #include "layouts.hpp"
 #include "mirror_buffer.hpp"
 
+namespace rcgp {
+
 enum class Topology {
 	eTriangleList,
 	eTriangleFan,
@@ -32,3 +34,5 @@ using IndexBuffer = IndexMirrorBuffer <
 	array <topology_element_t <T, I>>,
 	layouts::scalar
 >;
+
+} // namespace rcgp

@@ -3,6 +3,8 @@
 #include <tuple>
 #include <vulkan/vulkan.hpp>
 
+namespace rcgp {
+
 struct Session {
 	vk::Instance handle;
 	vk::DebugUtilsMessengerEXT debugger;
@@ -21,3 +23,5 @@ struct Session {
 
 	static std::tuple <Session, vk::detail::DispatchLoaderDynamic> from(const Options &info);
 };
+
+} // namespace rcgp

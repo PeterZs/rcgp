@@ -6,6 +6,8 @@
 #include "scaffold.hpp"
 #include "this_injection.hpp"
 
+namespace rcgp {
+
 // Building the reflection for aggregates
 #define GEN_AGGREGATE_FIELD(T, field)	\
 	, decltype(field)
@@ -71,3 +73,5 @@
 	DEFINE_FIELD_REFERENCE(const, __VA_ARGS__);		\
 								\
 	DEFINE_OVERRIDE_REFERENCE(__VA_ARGS__);
+
+} // namespace rcgp

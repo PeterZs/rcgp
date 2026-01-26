@@ -1,5 +1,7 @@
 #include "dsl/instructions.hpp"
 
+namespace rcgp {
+
 std::string swizzle_string(SwizzleCode code)
 {
 	static constexpr char letters[] = "xyzw";
@@ -138,3 +140,5 @@ template Reference Block::add <Swizzle> (const Swizzle &sub, Debug aux);
 template Reference Block::add <ThreadInput> (const ThreadInput &sub, Debug aux);
 template Reference Block::add <ThreadOutput> (const ThreadOutput &sub, Debug aux);
 template Reference Block::add <Type> (const Type &sub, Debug aux);
+
+} // namespace rcgp

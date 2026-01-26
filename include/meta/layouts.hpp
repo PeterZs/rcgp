@@ -2,16 +2,16 @@
 
 #include <algorithm>
 
-#include "pod.hpp"
-
 #include "../dsl/matrix.hpp"
 #include "../dsl/scalar.hpp"
 #include "../dsl/vector.hpp"
 #include "../util/cti.hpp"
+#include "pod.hpp"
 #include "reflection.hpp"
 #include "scaffold.hpp"
 #include "static_string.hpp"
 
+namespace rcgp {
 namespace layouts {
 
 namespace detail {
@@ -131,3 +131,4 @@ template <typename T>
 using scalar = detail::layout_rules <detail::scalar_policy, T>;
 
 } // namespace layouts
+} // namespace rcgp

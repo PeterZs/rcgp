@@ -7,6 +7,8 @@
 #include "rhi/shader_compiler.hpp"
 #include "util/timer.hpp"
 
+namespace rcgp {
+
 std::vector <uint32_t> ShaderCompiler::glsl_to_spirv(const std::string &glsl, const EShLanguage &stage) const
 {
 	auto defaults = GetDefaultResources();
@@ -59,3 +61,5 @@ ShaderCompiler ShaderCompiler::from(const Options &options)
 	// TODO: handle options
 	return ShaderCompiler();
 }
+
+} // namespace rcgp

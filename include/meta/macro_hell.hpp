@@ -1,5 +1,7 @@
 #pragma once
 
+namespace rcgp {
+
 // Adapted from LuisaCompute: https://github.com/LuisaGroup/LuisaCompute/blob/stable/include/luisa/core/macro.h
 #define MACRO_EVAL0(...) __VA_ARGS__
 #define MACRO_EVAL1(...) MACRO_EVAL0(MACRO_EVAL0(MACRO_EVAL0(__VA_ARGS__)))
@@ -39,3 +41,5 @@
 #define MAP(f, context, ...) MACRO_EVAL(MAP1(f, context, __VA_ARGS__, ()()(), ()()(), ()()(), 0))
 #define MAP0(f, context, x, peek, ...) f(context, x) MACRO_DEFER(MAP_NEXT(peek, MAP1))(f, context, peek, __VA_ARGS__)
 #define MAP1(f, context, x, peek, ...) f(context, x) MACRO_DEFER(MAP_NEXT(peek, MAP0))(f, context, peek, __VA_ARGS__)
+
+} // namespace rcgp

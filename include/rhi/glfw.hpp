@@ -4,6 +4,8 @@
 
 #include <GLFW/glfw3.h>
 
+namespace rcgp {
+
 namespace glfw {
 
 void boot();
@@ -11,3 +13,5 @@ void boot();
 void load_extensions(std::vector <const char *> &list);
 
 } // namespace glfw
+
+} // namespace rcgp

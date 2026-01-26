@@ -3,6 +3,8 @@
 #include <cstdlib>
 #include <string_view>
 
+namespace rcgp {
+
 namespace detail {
 
 consteval size_t hash_string(std::string_view str)
@@ -36,3 +38,4 @@ consteval size_t compute_type_hash()
 template <typename T>
 inline constexpr size_t type_hash_v = detail::compute_type_hash <T> ();
 
+} // namespace rcgp

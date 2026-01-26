@@ -2,6 +2,8 @@
 
 #include "jems.hpp"
 
+namespace rcgp {
+
 inline void init_local_if_tracing(jems::handle &self, const Reference &type_ref)
 {
 	if (!Tracer::singleton.records.empty())
@@ -33,3 +35,5 @@ inline void assign_or_store(jems::handle &self, const jems::handle &rhs, const R
 
 	self_ref = rhs_ref;
 }
+
+} // namespace rcgp

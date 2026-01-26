@@ -1,5 +1,7 @@
 #include "dsl/instructions.hpp"
 
+namespace rcgp {
+
 std::string Type::repr() const
 {
 	vswitch ((*this)) {
@@ -53,3 +55,5 @@ std::string Type::repr() const
 
 	return "Type(unknown)";
 }
+
+} // namespace rcgp

@@ -9,6 +9,8 @@
 #include "static_string.hpp"
 #include "../util/cti.hpp"
 
+namespace rcgp {
+
 // TODO: get rid of the mains!
 // TODO: use type cache to avoid redefining things...
 // also need a DCE pass...
@@ -84,3 +86,5 @@ jems::handle reconstruct_type($location)
 	using R = expand_reflection <T> ::type;
 	return reconstructor_t <R> ::main(loc);
 }
+
+} // namespace rcgp

@@ -4,6 +4,8 @@
 #include "buffer.hpp"
 #include "../util/logging.hpp"
 
+namespace rcgp {
+
 constexpr auto layout_to_stage_and_access(vk::ImageLayout layout)
 	-> std::pair <vk::PipelineStageFlagBits2, vk::AccessFlags2>
 {
@@ -106,3 +108,5 @@ struct CommandBuffer : vk::CommandBuffer {
 		return *this;
 	}
 };
+
+} // namespace rcgp

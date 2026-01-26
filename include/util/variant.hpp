@@ -2,6 +2,8 @@
 
 #include <variant>
 
+namespace rcgp {
+
 template <typename T, typename U, typename ... Args>
 constexpr int variant_index(int i)
 {
@@ -44,3 +46,5 @@ struct variant : std::variant <Args...> {
 	switch (value.index())
 
 #define vcase(...) case T::type_index <__VA_ARGS__> ()
+
+} // namespace rcgp

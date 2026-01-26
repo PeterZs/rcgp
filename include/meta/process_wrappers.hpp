@@ -10,6 +10,8 @@
 #include "resources.hpp"
 #include "resources_collect.hpp"
 
+namespace rcgp {
+
 template <auto &ref, typename ... Wrappers>
 consteval size_t push_constant_offset_for(Tlist <Wrappers...>)
 {
@@ -134,3 +136,5 @@ auto wrappers_to_pcs(const Tlist <Wrappers...> &)
 		return std::tuple { ranges, map };
 	}
 }
+
+} // namespace rcgp

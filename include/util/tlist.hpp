@@ -2,6 +2,8 @@
 
 #include <tuple>
 
+namespace rcgp {
+
 // Tuples without the baggage
 template <typename ... Args>
 struct Tlist {
@@ -100,3 +102,5 @@ using tlist_transform_t = typename tlist_transform <List, Transform> ::type;
 
 template <typename ... Lists>
 using tlist_concat_t = decltype(tlist_concat(Lists {}...));
+
+} // namespace rcgp

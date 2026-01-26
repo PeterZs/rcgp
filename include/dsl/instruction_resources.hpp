@@ -6,6 +6,8 @@
 #include "instruction_enums.hpp"
 #include "instruction_types.hpp"
 
+namespace rcgp {
+
 struct GlobalResource {
 	Reference type;
 	using Kind = GlobalResourceKind;
@@ -48,3 +50,5 @@ struct ThreadOutput {
 		return "ThreadOutput";
 	}
 };
+
+} // namespace rcgp

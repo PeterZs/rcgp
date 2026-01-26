@@ -10,6 +10,8 @@
 #include "util/logging.hpp"
 #include "util/timer.hpp"
 
+namespace rcgp {
+
 static size_t display_width(const std::string &text)
 {
 	size_t width = 0;
@@ -246,3 +248,5 @@ void TimerToken::clear_callbacks()
 {
 	payload_callbacks.clear();
 }
+
+} // namespace rcgp

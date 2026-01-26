@@ -5,6 +5,8 @@
 #include "primitives_concepts.hpp"
 #include "scalar.hpp"
 
+namespace rcgp {
+
 template <typename T>
 struct is_scalar : std::false_type {};
 
@@ -47,3 +49,5 @@ concept projectively_int_scalar = projectively_scalar <T>
 	&& native_int_scalar <
 		typename projection_t <T> ::native_scalar_type
 	>;
+
+} // namespace rcgp

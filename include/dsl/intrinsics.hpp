@@ -4,6 +4,8 @@
 #include "vector.hpp"
 #include "matrix.hpp"
 
+namespace rcgp {
+
 // TODO: move to builtin
 
 template <typename T, typename U>
@@ -166,5 +168,7 @@ vector <T, N> dFdyFine(const vector <T, N> &v)
 {
 	return vector <T, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eDFdyFine, v));
 }
+
+} // namespace rcgp
 
 #include "pygen_intrinsics_instantiations.hpp"

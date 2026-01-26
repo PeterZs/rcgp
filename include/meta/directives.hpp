@@ -13,6 +13,8 @@
 #include "commands.hpp"
 #include "pipeline_mappings.hpp"
 
+namespace rcgp {
+
 // TODO: later encode the number of attachments, and subpass progression
 inline auto begin_render_pass(
 	const vk::RenderPass &render_pass,
@@ -263,3 +265,5 @@ inline auto foreach(const std::vector <T> &container, F &&ftn)
 
 	return C { binder };
 }
+
+} // namespace rcgp

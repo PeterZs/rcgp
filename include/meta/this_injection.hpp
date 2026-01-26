@@ -2,6 +2,8 @@
 
 #include <type_traits>
 
+namespace rcgp {
+
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-template-friend"
@@ -41,3 +43,5 @@ using Read = std::remove_pointer_t <decltype(adl_lever(Reader <T> {}))>;
 		> {}, void()				\
 	);						\
 	using This = this_injection::Read <_injection_tag>;
+
+} // namespace rcgp

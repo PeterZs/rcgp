@@ -5,6 +5,8 @@
 #include "../dsl/primitives.hpp"
 #include "../util/cti.hpp"
 
+namespace rcgp {
+
 template <reflected T>
 struct symbolic_format {
 	static_error("bad"_ss);
@@ -18,3 +20,5 @@ struct symbolic_format <vec3> : std::integral_constant <vk::Format, vk::Format::
 
 template <>
 struct symbolic_format <vec4> : std::integral_constant <vk::Format, vk::Format::eR32G32B32A32Sfloat> {};
+
+} // namespace rcgp

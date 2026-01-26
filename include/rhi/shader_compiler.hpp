@@ -6,6 +6,8 @@
 #include <vulkan/vulkan.hpp>
 #include <glslang/Public/ShaderLang.h>
 
+namespace rcgp {
+
 struct ShaderCompiler {
 	std::vector <uint32_t> glsl_to_spirv(const std::string &glsl, const EShLanguage &stage) const;
 
@@ -15,3 +17,5 @@ struct ShaderCompiler {
 
 	static ShaderCompiler from(const Options &info);
 };
+
+} // namespace rcgp

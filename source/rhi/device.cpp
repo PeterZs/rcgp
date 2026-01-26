@@ -11,6 +11,8 @@
 #include "util/logging.hpp"
 #include "util/cti.hpp"
 
+namespace rcgp {
+
 auto Device::find_memory_type(uint32_t filter, vk::MemoryPropertyFlags flags) const
 	-> uint32_t
 {
@@ -206,3 +208,5 @@ Device Device::from(
 
 	return device;
 }
+
+} // namespace rcgp

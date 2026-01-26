@@ -8,6 +8,8 @@
 
 #include "scalar.hpp"
 
+namespace rcgp {
+
 using _branch_body = std::function <void ()>;
 
 struct _if {
@@ -71,3 +73,5 @@ _branch_holder operator+(_branch_holder &&a, _else b);
 #define $if(cond)	_if(cond) * [&]
 #define $elif(cond)	+ _elif(cond) * [&]
 #define $else		+ _else() * [&]
+
+} // namespace rcgp

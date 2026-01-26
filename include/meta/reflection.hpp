@@ -2,9 +2,11 @@
 
 // Forward declarations
 namespace vk { enum class VertexInputRate; }
-namespace jems { class handle; }
 
 #include "../dsl/instruction_enums.hpp"
+
+namespace rcgp {
+namespace jems { class handle; }
 
 // Reflection types
 template <typename T>
@@ -137,3 +139,5 @@ concept aggregate = has_aggregate_reflection <T> ();
 
 template <typename T>
 concept primitive = has_primitive_reflection <T> ();
+
+} // namespace rcgp

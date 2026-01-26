@@ -5,6 +5,8 @@
 #include "instruction_resources.hpp"
 #include "instruction_types.hpp"
 
+namespace rcgp {
+
 struct Instruction : variant <
 	Argument,
 	ArrayAccess,
@@ -40,3 +42,5 @@ struct Instruction : variant <
 		}, *this);
 	}
 };
+
+} // namespace rcgp

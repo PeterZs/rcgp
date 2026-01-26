@@ -1,5 +1,7 @@
 #pragma once
 
+namespace rcgp {
+
 enum class OperationCode {
 	eAdd,
 	eSubtract,
@@ -139,3 +141,5 @@ enum class LoopKind {
 	eWhile,
 	eFor,
 };
+
+} // namespace rcgp

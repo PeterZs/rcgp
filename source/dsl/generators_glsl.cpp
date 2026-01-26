@@ -7,6 +7,8 @@
 #include "util/logging.hpp"
 #include "util/timer.hpp"
 
+namespace rcgp {
+
 struct Context {
 	const Block &block;
 
@@ -1137,3 +1139,5 @@ std::string generate_glsl(const SharedBlockReference &sbr, size_t tabs)
 	Context ctx { *sbr.get() };
 	return generate(ctx, tabs);
 }
+
+} // namespace rcgp

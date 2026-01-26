@@ -2,6 +2,8 @@
 
 #include "reflection.hpp"
 
+namespace rcgp {
+
 template <typename T>
 struct expand_reflection {
 	using type = T;
@@ -38,3 +40,5 @@ constexpr bool is_dynamic_v = is_dynamic_reflection <expand_reflection_t <T>> ::
 
 template <reflected T>
 constexpr bool is_static_v = !is_dynamic_reflection <expand_reflection_t <T>> ::value;
+
+} // namespace rcgp

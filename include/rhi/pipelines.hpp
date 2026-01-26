@@ -2,6 +2,8 @@
 
 #include "device.hpp"
 
+namespace rcgp {
+
 struct RasterizationOptions {
 	// TODO: dynamic extent or fixed extent
 	const vk::Extent2D &extent;
@@ -41,3 +43,5 @@ vk::Pipeline compile_compute_pipeline(
 	const char *compute_entry,
 	const vk::PipelineLayout &layout
 );
+
+} // namespace rcgp

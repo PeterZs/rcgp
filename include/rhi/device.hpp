@@ -7,6 +7,8 @@
 #include "render_pass.hpp"
 #include "queue.hpp"
 
+namespace rcgp {
+
 // Forward declarations
 struct CommandPool;
 struct DescriptorPool;
@@ -94,3 +96,5 @@ struct Device {
 		const Options &info
 	);
 };
+
+} // namespace rcgp

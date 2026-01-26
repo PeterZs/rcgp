@@ -2,6 +2,8 @@
 
 #include "pipelines.hpp"
 
+namespace rcgp {
+
 // We have a dependency on ref
 template <auto &ref>
 struct Dependency {};
@@ -67,3 +69,5 @@ consteval auto command_effects(const MeshShadingPipeline <GAMAP, GRCs> &pipeline
 	auto grcs = command_effects_for_grcs(GRCs());
 	return grcs;
 }
+
+} // namespace rcgp

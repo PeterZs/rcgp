@@ -8,6 +8,8 @@
 
 #include "../util/variant.hpp"
 
+namespace rcgp {
+
 struct Block;
 struct Instruction;
 
@@ -71,3 +73,5 @@ struct Type : variant <
 
 	std::string repr() const;
 };
+
+} // namespace rcgp

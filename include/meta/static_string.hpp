@@ -5,6 +5,8 @@
 #include <string_view>
 #include <type_traits>
 
+namespace rcgp {
+
 template <size_t N>
 struct static_string {
 	static constexpr size_t length = N;
@@ -230,3 +232,5 @@ consteval auto static_string_format()
 }
 
 #define $ss_format(fmt, ...)	static_string_format <fmt __VA_OPT__(,) __VA_ARGS__> ()
+
+} // namespace rcgp

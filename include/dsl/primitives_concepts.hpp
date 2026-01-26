@@ -3,6 +3,8 @@
 #include <type_traits>
 #include <cstdint>
 
+namespace rcgp {
+
 // Classifying host primitive types
 template <typename T>
 concept native_scalar = bool(false
@@ -20,3 +22,5 @@ concept native_int_scalar = bool(false
 template <typename T>
 concept native_float_scalar = bool(false
 	| std::same_as <T, float>);
+
+} // namespace rcgp

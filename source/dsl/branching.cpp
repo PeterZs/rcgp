@@ -1,5 +1,7 @@
 #include "dsl/branching.hpp"
 
+namespace rcgp {
+
 _branch_holder::~_branch_holder()
 {
 	if (not ifs.has_value())
@@ -51,3 +53,5 @@ _branch_holder operator+(_branch_holder &&a, _else b)
 	result.elses = b;
 	return result;
 }
+
+} // namespace rcgp

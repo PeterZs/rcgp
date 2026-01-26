@@ -9,6 +9,8 @@
 #include "instruction_enums.hpp"
 #include "instruction_types.hpp"
 
+namespace rcgp {
+
 struct Constant : variant <
 	bool,
 	int32_t,
@@ -172,3 +174,5 @@ struct Return {
 		return "Return";
 	}
 };
+
+} // namespace rcgp

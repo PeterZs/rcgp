@@ -1,5 +1,7 @@
 #include "rhi/queue.hpp"
 
+namespace rcgp {
+
 void Queue::submit(
 	const vk::ArrayProxy <vk::CommandBuffer> &cmds,
 	const vk::ArrayProxy <vk::Semaphore> &wait,
@@ -33,3 +35,5 @@ vk::Result Queue::present(
 
 	return presentKHR(info);
 }
+
+} // namespace rcgp

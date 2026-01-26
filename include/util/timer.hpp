@@ -9,6 +9,8 @@
 
 #include <fmt/format.h>
 
+namespace rcgp {
+
 struct TimerToken {
 	using clock = std::chrono::system_clock;
 
@@ -59,3 +61,5 @@ struct ScopedTimerToken {
 #define TEND(id) (id).end()
 #define TNOTE(...) TimerToken::note(fmt::format(__VA_ARGS__))
 #define TENTRY(str, t) TimerToken::entry(str, t)
+
+} // namespace rcgp

@@ -8,6 +8,8 @@
 #include "../util/cti.hpp"
 #include "../util/timer.hpp"
 
+namespace rcgp {
+
 struct SerializationContext {
 	size_t pplid;
 };
@@ -59,3 +61,5 @@ struct Commands : std::vector <command_operator> {
 TYPE_TRAIT(is_commands);
 	template <typename ... Effects>
 	TYPE_TRAIT_INCLUDES(is_commands, Commands <Effects...>);
+
+} // namespace rcgp

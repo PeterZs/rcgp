@@ -2,6 +2,8 @@
 
 #include "scalar.hpp"
 
+namespace rcgp {
+
 template <native_int_scalar T>
 inline scalar <T> operator&(const scalar <T> &a, const scalar <T> &b)
 {
@@ -37,3 +39,5 @@ inline scalar <T> operator>>(const scalar <T> &a, const scalar <T> &b)
 {
 	return scalar <T> ::reinterpret(jems::operation(OperationCode::eShiftRight, a, b));
 }
+
+} // namespace rcgp

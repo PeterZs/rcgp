@@ -8,6 +8,8 @@
 
 #include "util/logging.hpp"
 
+namespace rcgp {
+
 std::string format_with_va_list(const char *fmt_str, va_list args)
 {
 	va_list copy;
@@ -96,3 +98,5 @@ void assertion_impl(
 		"    at {}:{}\n", loc.file_name(), loc.line());
 	__builtin_trap();
 }
+
+} // namespace rcgp

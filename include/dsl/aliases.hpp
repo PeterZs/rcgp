@@ -3,6 +3,8 @@
 #include "vector.hpp"
 #include "matrix.hpp"
 
+namespace rcgp {
+
 // GLSL style aliases
 using vec2 = vector <float, 2>;
 using vec3 = vector <float, 3>;
@@ -27,3 +29,5 @@ using mat3 = matrix <float, 3, 3>;
 using mat4 = matrix <float, 4, 4>;
 
 // TODO: float2, float3, etc. style
+
+} // namespace rcgp

@@ -7,6 +7,8 @@
 #include "scalar.hpp"
 #include "local.hpp"
 
+namespace rcgp {
+
 auto wrap_in_local(auto loc, auto type, auto ... cargs)
 {
 	auto c = jems::construct_loc(loc, type, cargs...);
@@ -138,3 +140,5 @@ public:
 			x, y, z, w
 		)) {}
 };
+
+} // namespace rcgp

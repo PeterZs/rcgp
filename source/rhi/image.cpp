@@ -1,5 +1,7 @@
 #include "rhi/image.hpp"
 
+namespace rcgp {
+
 void Image::destroy()
 {
 	if (view) {
@@ -65,3 +67,5 @@ Image Image::from(
 
 	return result;
 }
+
+} // namespace rcgp

@@ -2,6 +2,8 @@
 
 #include "../util/cti.hpp"
 #include "reflection.hpp"
+namespace rcgp {
+
 // #include "resources.hpp"
 
 template <auto &ref>
@@ -21,3 +23,5 @@ struct reference : reference_base_t <ref> {
 TYPE_TRAIT(is_reference);
 	template <auto &ref>
 	TYPE_TRAIT_INCLUDES(is_reference, reference <ref>);
+
+} // namespace rcgp

@@ -5,6 +5,8 @@
 #include "pipelines.hpp"
 #include "process_wrappers.hpp"
 
+namespace rcgp {
+
 struct PipelineMappings {
 	vk::PipelineLayout layout;
 	vk::PipelineBindPoint bind_point;
@@ -93,3 +95,5 @@ auto pipeline_mappings(const MeshShadingPipeline <GAMAP, GRCs> &pipeline)
 	write_pb_infos(result, GRCs());
 	return result;
 }
+
+} // namespace rcgp

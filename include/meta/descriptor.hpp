@@ -6,6 +6,8 @@
 #include "resources.hpp"
 #include "static_string.hpp"
 
+namespace rcgp {
+
 template <auto &ref, bool resolved = true>
 struct DescriptorFor {
 	vk::DescriptorSet handle;
@@ -138,3 +140,5 @@ template <auto &...refs, bool ... rs>
 		)...);
 	}
 }
+
+} // namespace rcgp

@@ -5,6 +5,8 @@
 
 #include "device.hpp"
 
+namespace rcgp {
+
 struct Buffer {
 	vk::Device device;
 	vk::Buffer handle;
@@ -54,3 +56,5 @@ struct Buffer {
 };
 
 // TODO: arena allocator for buffers
+
+} // namespace rcgp

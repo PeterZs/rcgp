@@ -4,6 +4,8 @@
 
 #include "vector_base.hpp"
 
+namespace rcgp {
+
 template <native_scalar T, size_t N>
 struct vector : public vector_base <T, N> {
 	using vector_base <T, N> ::vector_base;
@@ -113,3 +115,5 @@ extern template struct vector <uint32_t, 4>;
 extern template struct vector <float, 2>;
 extern template struct vector <float, 3>;
 extern template struct vector <float, 4>;
+
+} // namespace rcgp

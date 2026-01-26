@@ -5,6 +5,8 @@
 #include "scalar.hpp"
 #include "local.hpp"
 
+namespace rcgp {
+
 template <native_scalar T, size_t N, size_t M>
 class matrix : public jems::handle {
 	explicit matrix(const jems::handle &h) : handle(h) {}
@@ -64,3 +66,5 @@ extern template class matrix <uint32_t, 4, 4>;
 extern template class matrix <float, 2, 2>;
 extern template class matrix <float, 3, 3>;
 extern template class matrix <float, 4, 4>;
+
+} // namespace rcgp

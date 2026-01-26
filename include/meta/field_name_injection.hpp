@@ -2,6 +2,8 @@
 
 #include "static_string.hpp"
 
+namespace rcgp {
+
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-template-friend"
@@ -45,3 +47,5 @@ void adl_lever();
 			field_name_injection::field_ref <T, index>	\
 		> {}							\
 	)
+
+} // namespace rcgp

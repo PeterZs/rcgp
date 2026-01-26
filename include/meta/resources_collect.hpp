@@ -5,6 +5,8 @@
 #include "resources.hpp"
 #include "shader_stage.hpp"
 
+namespace rcgp {
+
 template <auto &ref, ShaderStage ... Ss>
 struct stage_wrapper : reference <ref> {
 	using stages = std::integer_sequence <ShaderStage, Ss...>;
@@ -110,3 +112,5 @@ consteval auto merge_stage_wrappers(Tlist <stage_wrapper <ref, S>, Rest...>)
 	auto merged = merge_stage_wrappers(Tlist <Rest...> {});
 	return merge_stage_wrapper <ref, S> (merged);
 }
+
+} // namespace rcgp

@@ -12,6 +12,8 @@
 #include "resources_collect.hpp"
 #include "shader_stage.hpp"
 
+namespace rcgp {
+
 template <typename ... Stage>
 auto shaders_to_modules(const Device &device, const ShaderCompiler &compiler, Stage &&... shaders)
 {
@@ -164,3 +166,5 @@ struct MeshShadingCombinator {
 		> (device.logical, pipeline, layout, dsls);
 	}
 };
+
+} // namespace rcgp

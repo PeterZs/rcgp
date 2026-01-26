@@ -8,6 +8,8 @@
 #include "reflection.hpp"
 #include "layouts.hpp"
 
+namespace rcgp {
+
 // Layout detection
 template <template <typename> typename L>
 consteval GlobalResourceLayout layout_of()
@@ -72,3 +74,5 @@ jems::handle resource_intrinsic(const Sampler <T, D> &, uint32_t binding)
 		binding
 	);
 }
+
+} // namespace rcgp

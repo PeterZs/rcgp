@@ -4,6 +4,8 @@
 #include "../meta/reflection.hpp"
 #include "../meta/reflection_builder.hpp"
 
+namespace rcgp {
+
 template <reflected T, int64_t N = -1>
 struct array : public jems::handle {
 	using reflection = array_reflection <T, N>;
@@ -17,3 +19,5 @@ struct array : public jems::handle {
 		return result;
 	}
 };
+
+} // namespace rcgp

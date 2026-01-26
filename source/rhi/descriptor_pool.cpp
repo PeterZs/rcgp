@@ -2,6 +2,8 @@
 
 #include <vector>
 
+namespace rcgp {
+
 DescriptorPool DescriptorPool::from(const Device &device, const Options &info)
 {
 	std::vector <vk::DescriptorPoolSize> sizes;
@@ -32,3 +34,5 @@ DescriptorPool DescriptorPool::from(const Device &device, const Options &info)
 
 	return DescriptorPool(device.logical.createDescriptorPool(pool_info));
 }
+
+} // namespace rcgp

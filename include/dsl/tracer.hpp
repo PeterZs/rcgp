@@ -7,6 +7,8 @@
 #include "../util/logging.hpp"
 #include "../util/runtime_type_registry.hpp"
 
+namespace rcgp {
+
 struct Tracer {
 	std::stack <SharedBlockReference> records;
 	std::unordered_map <size_t, Reference> type_cache;
@@ -23,3 +25,5 @@ struct Tracer {
 inline thread_local Tracer Tracer::singleton;
 
 #define $tsb Tracer::singleton.active()
+
+} // namespace rcgp

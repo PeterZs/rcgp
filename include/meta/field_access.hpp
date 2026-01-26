@@ -3,6 +3,8 @@
 #include "reflection.hpp"
 #include "resources.hpp"
 
+namespace rcgp {
+
 template <typename T, size_t ... Is>
 struct field_trace {
 	using value_type = T;
@@ -53,3 +55,5 @@ auto &field_access(T &value)
 {
 	return value;
 }
+
+} // namespace rcgp

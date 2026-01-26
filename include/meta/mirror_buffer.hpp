@@ -5,6 +5,8 @@
 #include "mirror.hpp"
 #include "resources.hpp"
 
+namespace rcgp {
+
 template <reflected T, template <typename> typename L>
 using dynamic_element_of_mirror = decltype([] {
 	TypeMirror <T, L> data;
@@ -157,3 +159,5 @@ struct resource_translator <StorageBuffer <T, L, A>> {
 	using value_type = type::value_type;
 	using element_type = std::nullptr_t;
 };
+
+} // namespace rcgp

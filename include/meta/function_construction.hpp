@@ -8,7 +8,10 @@
 #include "../util/timer.hpp"
 #include "inject_arguments.hpp"
 #include "macro_hell.hpp"
+#include "return_handler.hpp"
 #include "shader_stage.hpp"
+
+namespace rcgp {
 
 template <ShaderStage S, typename R, typename ... Args>
 struct shader_signature {
@@ -134,3 +137,5 @@ using enable_if = std::conditional_t <B, T, std::nullptr_t>;
 #define REFERENCE_GENERATOR(ctx, arg) RCGP_REFERENCE_FROM_ARG(arg)
 
 #define $contracts(...) std::nullptr_t MAP(REFERENCE_GENERATOR, /* N/A */, __VA_ARGS__)
+
+} // namespace rcgp

@@ -2,6 +2,8 @@
 
 #include <array>
 
+namespace rcgp {
+
 template <size_t N>
 constexpr int64_t first_on(const std::array <bool, N> &x)
 {
@@ -9,3 +11,5 @@ constexpr int64_t first_on(const std::array <bool, N> &x)
 		if (x[i]) return i;
 	return -1;
 }
+
+} // namespace rcgp

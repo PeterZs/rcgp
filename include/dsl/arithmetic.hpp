@@ -3,6 +3,8 @@
 #include "vector.hpp"
 #include "matrix.hpp"
 
+namespace rcgp {
+
 // TODO: move to arithmetic
 template <native_scalar T, size_t N, size_t M>
 vector <T, M> operator*(const matrix <T, N, M> &m, const vector <T, N> &v)
@@ -15,5 +17,7 @@ matrix <T, N, M> operator*(const matrix <T, N, K> &a, const matrix <T, K, M> &b)
 {
 	return matrix <T, N, M> ::reinterpret(jems::operation(OperationCode::eMultiply, a, b));
 }
+
+} // namespace rcgp
 
 #include "pygen_arithmetic_instantiations.hpp"

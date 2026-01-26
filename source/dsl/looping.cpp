@@ -1,6 +1,8 @@
 #include "dsl/looping.hpp"
 #include "util/logging.hpp"
 
+namespace rcgp {
+
 _loop_holder::~_loop_holder()
 {
 	auto trace_body = [](const _loop_body &body) {
@@ -45,3 +47,5 @@ _loop_holder::~_loop_holder()
 		std::move(body_block),
 	}, Debug {});
 }
+
+} // namespace rcgp

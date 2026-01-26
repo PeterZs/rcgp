@@ -1,5 +1,7 @@
 #include "rhi/render_pass.hpp"
 
+namespace rcgp {
+
 vk::AttachmentDescription &Attachments::operator[](const std::string &key) &
 {
 	if (mapping.contains(key))
@@ -18,3 +20,5 @@ vk::AttachmentReference Attachments::reference(const std::string &key, vk::Image
 		.setAttachment(idx)
 		.setLayout(layout);
 }
+
+} // namespace rcgp

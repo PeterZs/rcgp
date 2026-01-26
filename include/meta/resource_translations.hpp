@@ -7,6 +7,8 @@
 #include "static_string.hpp"
 #include "../util/cti.hpp"
 
+namespace rcgp {
+
 namespace resource_layout {
 
 // TODO: laayout engine is a bad name... also need an alias for naturally
@@ -135,3 +137,5 @@ struct resource_translator <Sampler <T, D>> {
 	using value_type = type;
 	using element_type = std::nullptr_t;
 };
+
+} // namespace rcgp

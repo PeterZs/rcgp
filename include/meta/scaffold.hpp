@@ -5,6 +5,8 @@
 #include "../util/tlist.hpp"
 #include "../util/cti.hpp"
 
+namespace rcgp {
+
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wattributes"
@@ -171,3 +173,5 @@ struct scaffold_lookup <
 #if defined(__GNUC__) && !defined(__clang__)
 #define GCC diagnostic pop
 #endif
+
+} // namespace rcgp

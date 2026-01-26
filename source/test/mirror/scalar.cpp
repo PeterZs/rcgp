@@ -1,5 +1,7 @@
 #include <rcgp.hpp>
 
+namespace rcgp {
+
 // Plain POD fields should pack tightly with natural alignments (scalar layout keeps C++ rules).
 struct A {
 	i32 a;
@@ -101,3 +103,5 @@ static_assert(alignof(MRuntimeBuffer) == 8); // std::vector base typically 8 on 
 static_assert(offsetof(MRuntimeBuffer, count) == 0);
 static_assert(offsetof(MRuntimeBuffer, values) == 8);
 static_assert(alignof(typename decltype(MRuntimeBuffer::values)::value_type) == 4);
+
+} // namespace rcgp

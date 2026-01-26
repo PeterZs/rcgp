@@ -2,6 +2,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+namespace rcgp {
+
 struct Queue : vk::Queue {
 	uint32_t family_index;
 	uint32_t queue_index;
@@ -21,3 +23,5 @@ struct Queue : vk::Queue {
 		const vk::ArrayProxy <vk::Semaphore> &semaphores
 	) const;
 };
+
+} // namespace rcgp

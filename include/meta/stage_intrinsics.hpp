@@ -14,6 +14,8 @@
 #include "inject_reference.hpp"
 #include "reflection_builder.hpp"
 
+namespace rcgp {
+
 // TODO: move intrinsics definition to a dedicated header
 // TODO: should also mark the stage so that we check at shader module definion...
 template <GlobalIntrinsic G, ShaderStage S, primitive T>
@@ -280,3 +282,5 @@ struct MeshletPayload : T {
 		);
 	}
 };
+
+} // namespace rcgp

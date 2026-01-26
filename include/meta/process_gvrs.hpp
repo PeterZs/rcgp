@@ -3,6 +3,8 @@
 #include "process_wrappers.hpp"
 #include "group_allocation.hpp"
 
+namespace rcgp {
+
 template <typename ... Ts>
 auto wrappers_to_gamap(const Tlist <Ts...> &)
 {
@@ -45,3 +47,5 @@ auto apply_gvrs(const Device &device, const GVRs &, Blocks &... blocks)
 		alloc,
 	};
 }
+
+} // namespace rcgp

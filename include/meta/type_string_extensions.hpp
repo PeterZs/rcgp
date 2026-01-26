@@ -4,6 +4,8 @@
 #include "static_string.hpp"
 #include "type_hash.hpp"
 
+namespace rcgp {
+
 // Helpers for stringifying reflection data
 template <size_t Indentation, bool Newline, size_t I, typename T, typename ... Args>
 consteval auto enumerated_type_strings()
@@ -118,3 +120,5 @@ struct type_string <function_reflection <R, Args...>> {
 			+ tabs + "}"_ss;
 	}
 };
+
+} // namespace rcgp

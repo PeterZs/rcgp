@@ -3,6 +3,8 @@
 #include "reference.hpp"
 #include "mirror.hpp"
 
+namespace rcgp {
+
 // Reference to resource handle
 template <auto &rsrc>
 using ResourceTypeFor = ResourceType <reference_base_t <rsrc>>;
@@ -12,3 +14,5 @@ using DataTypeFor = DataType <reference_base_t <rsrc>>;
 
 template <auto &rsrc>
 using DynamicElementTypeFor = DynamicElementType <reference_base_t <rsrc>>;
+
+} // namespace rcgp

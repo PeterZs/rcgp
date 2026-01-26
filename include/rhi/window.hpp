@@ -11,6 +11,8 @@
 #include "device.hpp"
 #include "image.hpp"
 
+namespace rcgp {
+
 enum class Key : int {
 	W = GLFW_KEY_W,
 	A = GLFW_KEY_A,
@@ -101,3 +103,5 @@ struct Window {
 
 	static Window from(const Session &session, const Device &device, const Options &options);
 };
+
+} // namespace rcgp

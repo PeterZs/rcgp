@@ -4,6 +4,8 @@
 
 #include "device.hpp"
 
+namespace rcgp {
+
 struct DescriptorPool : vk::DescriptorPool {
 	struct Options {
 		uint32_t max_sets = 0;
@@ -24,3 +26,5 @@ struct DescriptorPool : vk::DescriptorPool {
 
 	static DescriptorPool from(const Device &device, const Options &info);
 };
+
+} // namespace rcgp

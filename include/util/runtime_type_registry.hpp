@@ -2,6 +2,8 @@
 
 #include <cstddef>
 
+namespace rcgp {
+
 // NOTE: runtime type IDs without RTTI; reset only on process restart.
 struct RuntimeTypeRegistry {
 	static inline size_t counter = 0;
@@ -12,3 +14,5 @@ struct RuntimeTypeRegistry {
 		return value;
 	}
 };
+
+} // namespace rcgp

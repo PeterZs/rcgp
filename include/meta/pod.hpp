@@ -6,6 +6,8 @@
 #include <glm/glm.hpp>
 #endif
 
+namespace rcgp {
+
 namespace pod {
 
 template <size_t D, typename T>
@@ -59,3 +61,5 @@ struct mat {
 };
 
 } // namespace pod
+
+} // namespace rcgp

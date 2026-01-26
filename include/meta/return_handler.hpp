@@ -6,6 +6,8 @@
 #include "stage_intrinsics.hpp"
 #include "shader_stage.hpp"
 
+namespace rcgp {
+
 template <typename T>
 void return_handler(const T &ret, size_t &argi) {}
 
@@ -76,3 +78,5 @@ void return_handler(const std::tuple <Args...> &ret, size_t &argi)
 		(return_handler(std::get <Is> (ret), argi), ...)
 	);
 }
+
+} // namespace rcgp

@@ -7,6 +7,8 @@
 #include "dsl/instructions.hpp"
 #include "util/timer.hpp"
 
+namespace rcgp {
+
 struct LocalInfo {
 	uint32_t read_count = 0;
 	uint32_t write_count = 0;
@@ -230,3 +232,5 @@ void optimize_block(const SharedBlockReference &sbr)
 		);
 	}
 }
+
+} // namespace rcgp

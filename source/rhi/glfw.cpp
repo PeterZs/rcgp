@@ -1,5 +1,7 @@
 #include "rhi/glfw.hpp"
 
+namespace rcgp {
+
 namespace glfw {
 
 void boot()
@@ -16,3 +18,5 @@ void load_extensions(std::vector <const char *> &list)
 }
 
 } // namespace glfw
+
+} // namespace rcgp

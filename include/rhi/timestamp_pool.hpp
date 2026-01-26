@@ -2,6 +2,8 @@
 
 #include "../util/logging.hpp"
 
+namespace rcgp {
+
 struct TimestampQueryResult {
 	std::vector <uint64_t> stamps;
 	vk::QueryResultFlags flags;
@@ -32,3 +34,5 @@ struct TimestampQueryPool {
 	double period;
 	size_t count;
 };
+
+} // namespace rcgp

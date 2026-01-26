@@ -5,6 +5,8 @@
 #include "resources.hpp"
 #include "symbolic_format.hpp"
 
+namespace rcgp {
+
 template <auto &... refs>
 constexpr auto sequence_to_vertex_bindings(const Tlist <reference <refs>...> &in)
 {
@@ -50,3 +52,5 @@ constexpr auto sequence_to_vertex_attributes(const Tlist <reference <refs>...> &
 		);
 	}
 }
+
+} // namespace rcgp

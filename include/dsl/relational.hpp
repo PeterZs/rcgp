@@ -4,6 +4,8 @@
 
 #include "projection.hpp"
 
+namespace rcgp {
+
 template <typename A, typename B>
 concept projectively_equivalent_dsl_scalar =
 	projectively_scalar <A>
@@ -57,3 +59,5 @@ scalar <bool> operator>=(const A &a, const B &b)
 {
 	return scalar <bool> ::reinterpret(jems::operation(OperationCode::eGreaterEqual, project(a), project(b)));
 }
+
+} // namespace rcgp

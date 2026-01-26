@@ -9,6 +9,8 @@
 #include "implicit_context.hpp"
 #include "reconstruct_type.hpp"
 
+namespace rcgp {
+
 //  TODO: move these to some other file
 consteval vk::ShaderStageFlags stage_to_flag(ShaderStage S)
 {
@@ -165,3 +167,5 @@ auto context_unlock(implicit_context <refs...>, const shader_stage <ShaderStage:
 // TODO: The exception should be subroutines which dont take any
 // resource references/have no context should just be direct though
 #define $use(subroutine) context_unlock(_ctx, subroutine)
+
+} // namespace rcgp

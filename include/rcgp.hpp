@@ -11,3 +11,6 @@
 #include "meta/resource_translations.hpp"
 #include "meta/return_handler.hpp"
 #include "rcgp-rhi.hpp"
+namespace rcgp {
+
+} // namespace rcgp

@@ -9,6 +9,7 @@
 #include "local.hpp"
 #include "primitives_concepts.hpp"
 
+namespace rcgp {
 
 // Scalars in GPU code
 template <native_scalar T>
@@ -105,3 +106,5 @@ using f32 = scalar <float>;
 extern template class scalar <int32_t>;
 extern template class scalar <uint32_t>;
 extern template class scalar <float>;
+
+} // namespace rcgp

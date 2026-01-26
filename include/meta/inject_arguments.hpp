@@ -11,6 +11,8 @@
 #include "stage_intrinsics.hpp"
 #include "static_string.hpp"
 
+namespace rcgp {
+
 struct InjectionCounters {
 	size_t argidx;
 	size_t threadidx;
@@ -180,3 +182,5 @@ void inject_arguments(std::tuple <Args...> &args)
 		(inject_one_argument <S> (std::get <Is> (args), counters), ...)
 	);
 }
+
+} // namespace rcgp

@@ -4,6 +4,8 @@
 
 #include "device.hpp"
 
+namespace rcgp {
+
 struct Image {
 	struct Description {
 		vk::Extent3D extent {};
@@ -53,3 +55,5 @@ struct Image {
 
 	static Image from(const Device &device, const Description &info);
 };
+
+} // namespace rcgp

@@ -6,6 +6,8 @@
 #include "rhi/session.hpp"
 #include "rhi/glfw.hpp"
 
+namespace rcgp {
+
 VKAPI_ATTR VKAPI_CALL
 vk::Bool32 validation_callback(
 	vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
@@ -120,3 +122,5 @@ std::tuple <Session, vk::detail::DispatchLoaderDynamic> Session::from(const Opti
 
 	return product;
 }
+
+} // namespace rcgp

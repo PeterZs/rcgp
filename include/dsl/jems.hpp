@@ -5,6 +5,8 @@
 #include "tracer.hpp"
 #include "instructions.hpp"
 
+namespace rcgp {
+
 // JIT Emitters
 namespace jems {
 
@@ -155,5 +157,6 @@ template <typename ... Args>
 type(Args ...) -> type <Args...>;
 
 } // namespace jems
+} // namespace rcgp
 
 #define $location const std::source_location &loc = std::source_location::current()

@@ -6,6 +6,8 @@
 #include "index_buffer.hpp"
 #include "reference.hpp"
 
+namespace rcgp {
+
 template <auto &ref, auto &... refs, size_t ... Is>
 constexpr auto set_index_for(const Tlist <group_allocation_record <refs, Is>...> &)
 {
@@ -70,3 +72,5 @@ template <typename GAMAP, typename GRCs>
 struct MeshShadingPipeline : GenericPipeline <GAMAP, GRCs> {
 	using GenericPipeline <GAMAP, GRCs> ::GenericPipeline;
 };
+
+} // namespace rcgp

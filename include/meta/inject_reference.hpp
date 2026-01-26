@@ -7,6 +7,8 @@
 #include "resources.hpp"
 #include "static_string.hpp"
 
+namespace rcgp {
+
 // DSL handles
 template <typename T>
 requires std::is_base_of_v <jems::handle, T>
@@ -61,3 +63,5 @@ void inject_reference(T &value, Reference ref)
 {
 	static_error("failed to inject reference into item of type "_ss + $ss_type(T));
 }
+
+} // namespace rcgp

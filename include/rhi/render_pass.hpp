@@ -8,6 +8,8 @@
 
 #include "../util/cti.hpp"
 
+namespace rcgp {
+
 struct Attachments {
 	std::vector <vk::AttachmentDescription> descriptions;
 	std::map <std::string, uint32_t> mapping;
@@ -106,3 +108,5 @@ auto subpass(
 
 template <typename ... Ts>
 struct RenderPass : vk::RenderPass {};
+
+} // namespace rcgp

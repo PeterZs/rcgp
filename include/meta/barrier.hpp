@@ -8,6 +8,8 @@
 #include "reference.hpp"
 #include "reference_introspection.hpp"
 
+namespace rcgp {
+
 enum class ResourceAccess {
 	eNone,
 	eRead,
@@ -231,3 +233,5 @@ auto barrier(
 {
 	return Barrier <ref, Phase <SS, SA>, Phase <DS, DA>> (resource);
 }
+
+} // namespace rcgp

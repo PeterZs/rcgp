@@ -7,6 +7,8 @@
 #include "dsl/generators.hpp"
 #include "util/logging.hpp"
 
+namespace rcgp {
+
 struct Context {
 	const SharedBlockReference &sbr;
 	std::map <intptr_t, uint32_t> ids;
@@ -636,3 +638,5 @@ std::string generate_assembly(const SharedBlockReference &sbr, size_t tabs)
 	Context ctx { sbr, {} };
 	return generate(ctx, tabs);
 }
+
+} // namespace rcgp
