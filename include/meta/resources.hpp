@@ -5,8 +5,7 @@
 #include "../util/cti.hpp"
 #include "reflection.hpp"
 #include "reflection_builder.hpp"
-#include "scalar.hpp"
-#include "std430.hpp"
+#include "layouts.hpp"
 
 // Corresponds to vertex buffes
 template <reflected T, template <typename> typename L = layouts::scalar, vk::VertexInputRate R = vk::VertexInputRate::eVertex>

@@ -6,8 +6,7 @@
 #include "../util/cti.hpp"
 #include "reconstruct_type.hpp"
 #include "reflection.hpp"
-#include "scalar.hpp"
-#include "std430.hpp"
+#include "layouts.hpp"
 
 // Layout detection
 template <template <typename> typename L>
