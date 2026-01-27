@@ -93,12 +93,6 @@ public:
 	}
 };
 
-// TODO: goes to aliases.hpp
-using boolean = scalar <bool>;
-using i32 = scalar <int32_t>;
-using u32 = scalar <uint32_t>;
-using f32 = scalar <float>;
-
 extern template class scalar <int32_t>;
 extern template class scalar <uint32_t>;
 extern template class scalar <float>;

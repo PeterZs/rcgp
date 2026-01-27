@@ -3,8 +3,7 @@
 #include <functional>
 #include <optional>
 
-#include "scalar.hpp"
-#include "instructions.hpp"
+#include "aliases.hpp"
 
 namespace rcgp {
 

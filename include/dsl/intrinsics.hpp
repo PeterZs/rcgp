@@ -3,6 +3,7 @@
 #include "projection.hpp"
 #include "vector.hpp"
 #include "matrix.hpp"
+#include "aliases.hpp"
 
 namespace rcgp {
 

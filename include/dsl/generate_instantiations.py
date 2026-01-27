@@ -30,6 +30,8 @@ def gen_jems_instantiations() -> tuple[list[str], list[str]]:
         '#include "vector.hpp"',
         '#include "matrix.hpp"',
         '',
+        'namespace rcgp {',
+        '',
     ])
 
     externs: list[str] = []
@@ -149,11 +151,17 @@ def gen_jems_instantiations() -> tuple[list[str], list[str]]:
     add_extern('store_loc', 'jems::handle, vector <float, 4>')
 
     header.extend(externs)
+    header.append('')
+    header.append('} // namespace rcgp')
 
     cpp = []
     cpp.append('#include "dsl/pygen_jems_instantiations.hpp"')
     cpp.append('')
+    cpp.append('namespace rcgp {')
+    cpp.append('')
     cpp.extend([line.replace('extern template', 'template') for line in externs])
+    cpp.append('')
+    cpp.append('} // namespace rcgp')
 
     return header, cpp
 
@@ -168,6 +176,8 @@ def gen_intrinsics_arithmetic_instantiations() -> tuple[list[str], list[str], li
     intrinsics_header.append('#include "scalar.hpp"')
     intrinsics_header.append('#include "vector.hpp"')
     intrinsics_header.append('#include "matrix.hpp"')
+    intrinsics_header.append('')
+    intrinsics_header.append('namespace rcgp {')
     intrinsics_header.append('')
 
     intrinsics_externs: list[str] = []
@@ -197,6 +207,8 @@ def gen_intrinsics_arithmetic_instantiations() -> tuple[list[str], list[str], li
             add_intr(f'extern template vector <float, {d}> {name}(const vector <float, {d}> &v);')
 
     intrinsics_header.extend(intrinsics_externs)
+    intrinsics_header.append('')
+    intrinsics_header.append('} // namespace rcgp')
 
     arithmetic_header = []
     arithmetic_header.append('#pragma once')
@@ -204,6 +216,8 @@ def gen_intrinsics_arithmetic_instantiations() -> tuple[list[str], list[str], li
     arithmetic_header.append('')
     arithmetic_header.append('#include "vector.hpp"')
     arithmetic_header.append('#include "matrix.hpp"')
+    arithmetic_header.append('')
+    arithmetic_header.append('namespace rcgp {')
     arithmetic_header.append('')
 
     arithmetic_externs: list[str] = []
@@ -226,13 +240,19 @@ def gen_intrinsics_arithmetic_instantiations() -> tuple[list[str], list[str], li
                     )
 
     arithmetic_header.extend(arithmetic_externs)
+    arithmetic_header.append('')
+    arithmetic_header.append('} // namespace rcgp')
 
     cpp = []
     cpp.append('#include "dsl/intrinsics.hpp"')
     cpp.append('#include "dsl/arithmetic.hpp"')
     cpp.append('')
+    cpp.append('namespace rcgp {')
+    cpp.append('')
     cpp.extend([line.replace('extern template', 'template') for line in intrinsics_externs])
     cpp.extend([line.replace('extern template', 'template') for line in arithmetic_externs])
+    cpp.append('')
+    cpp.append('} // namespace rcgp')
 
     return intrinsics_header, arithmetic_header, cpp
 

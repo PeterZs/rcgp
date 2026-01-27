@@ -50,18 +50,23 @@ struct alignas(AlignTopLevel ? Align : 0) scaffold_fundamental {
 // Scaffold for structual types with fields
 template <size_t Align, typename T, bool AlignTopLevel = false>
 struct alignas(AlignTopLevel ? Align : 0) scaffold_structural : T {
-	using T::T;
-
 	constexpr scaffold_structural() = default;
-	constexpr scaffold_structural(const T &rhs) : T(rhs) {}
-	constexpr scaffold_structural &operator=(const T &rhs) {
+
+	template <typename U>
+	requires (std::is_convertible_v <U, T>)
+	constexpr scaffold_structural(const U &rhs) : T(rhs) {}
+
+	template <typename U>
+	requires (std::is_convertible_v <U, T>)
+	constexpr scaffold_structural &operator=(const U &rhs) {
 		T::operator=(rhs);
 		return *this;
 	}
 
-	T cast() const {
-		return *this;
-	}
+	// // TODO: remove?
+	// T cast() const {
+	// 	return *this;
+	// }
 };
 
 // Scaffold lookup procedure

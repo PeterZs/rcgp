@@ -2,6 +2,8 @@
 
 #include <tuple>
 
+#include <glslang/Public/ShaderLang.h>
+
 #include "../dsl/jems.hpp"
 #include "../util/cti.hpp"
 #include "../util/tlist.hpp"

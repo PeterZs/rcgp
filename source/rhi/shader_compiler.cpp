@@ -18,7 +18,7 @@ std::vector <uint32_t> ShaderCompiler::glsl_to_spirv(const std::string &glsl, co
 	const char *cstr[] = { glsl.c_str() };
 
 	glslang::SpvOptions options;
-	options.generateDebugInfo = true;
+	options.generateDebugInfo = debug_info;
 	options.disableOptimizer = false;
 
 	glslang::TShader shader(stage);
@@ -36,7 +36,7 @@ std::vector <uint32_t> ShaderCompiler::glsl_to_spirv(const std::string &glsl, co
 		| EShMsgDebugInfo
 	};
 
-	if (!shader.parse(defaults, 460, false, messages)) {
+	if (!shader.parse(defaults, version, false, messages)) {
 		std::string log = shader.getInfoLog();
 		fmt::println("failed to compile to SPIRV:\n{}", log);
 		return {};
@@ -54,12 +54,6 @@ std::vector <uint32_t> ShaderCompiler::glsl_to_spirv(const std::string &glsl, co
 	std::vector <uint32_t> spirv;
 	glslang::GlslangToSpv(*program.getIntermediate(stage), spirv, &options);
 	return spirv;
-}
-
-ShaderCompiler ShaderCompiler::from(const Options &options)
-{
-	// TODO: handle options
-	return ShaderCompiler();
 }
 
 } // namespace rcgp

@@ -6,9 +6,7 @@
 #include <glm/glm.hpp>
 #endif
 
-namespace rcgp {
-
-namespace pod {
+namespace rcgp::pod {
 
 template <size_t D, typename T>
 struct vec {
@@ -17,15 +15,13 @@ struct vec {
 	constexpr vec() = default;
 
 #ifdef GLM_VERSION_MAJOR
-	template <glm::qualifier Q>
-	vec(const glm::vec <D, T, Q> &rhs) {
+	vec(const glm::vec <D, T> &rhs) {
 		for (size_t i = 0; i < D; ++i)
 			data[i] = rhs[i];
 	}
 
-	template <glm::qualifier Q>
-	operator glm::vec <D, T, Q>() const {
-		glm::vec <D, T, Q> out(0);
+	operator glm::vec <D, T> () const {
+		glm::vec <D, T> out(0);
 		for (size_t i = 0; i < D; ++i)
 			out[i] = data[i];
 		return out;
@@ -40,17 +36,15 @@ struct mat {
 	constexpr mat() = default;
 
 #ifdef GLM_VERSION_MAJOR
-	template <glm::qualifier Q>
-	mat(const glm::mat <C, R, T, Q> &rhs) {
+	mat(const glm::mat <C, R, T> &rhs) {
 		for (size_t c = 0; c < C; ++c) {
 			for (size_t r = 0; r < R; ++r)
 				data[c].data[r] = rhs[c][r];
 		}
 	}
 
-	template <glm::qualifier Q>
-	operator glm::mat <C, R, T, Q>() const {
-		glm::mat <C, R, T, Q> out(0);
+	operator glm::mat <C, R, T> () const {
+		glm::mat <C, R, T> out(0);
 		for (size_t c = 0; c < C; ++c) {
 			for (size_t r = 0; r < R; ++r)
 				out[c][r] = data[c].data[r];
@@ -60,6 +54,4 @@ struct mat {
 #endif
 };
 
-} // namespace pod
-
-} // namespace rcgp
+} // namespace rcgp::pod

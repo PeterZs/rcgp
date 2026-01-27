@@ -11,7 +11,7 @@ template <auto &ref, ShaderStage ... Ss>
 struct stage_wrapper : reference <ref> {
 	using stages = std::integer_sequence <ShaderStage, Ss...>;
 	using type = reference_base_t <ref>;
-	using reference = reference <ref>;
+	using reference = rcgp::reference <ref>;
 
 	template <ShaderStage S>
 	using append_stage = std::conditional_t <

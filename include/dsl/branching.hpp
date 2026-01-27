@@ -2,11 +2,9 @@
 
 #include <functional>
 #include <list>
-#include <memory>
 #include <optional>
-#include <vector>
 
-#include "scalar.hpp"
+#include "aliases.hpp"
 
 namespace rcgp {
 
