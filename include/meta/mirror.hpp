@@ -2,7 +2,6 @@
 
 #include "layouts.hpp"
 #include "reflection.hpp"
-#include "expand_reflection.hpp"
 #include "static_string.hpp"
 #include "../util/cti.hpp"
 
@@ -11,8 +10,7 @@ namespace rcgp {
 // Type mirrors
 template <reflected T, template <typename> typename L = layouts::std430>
 using TypeMirror = decltype([] {
-	using reflection = expand_reflection_t <T>;
-	using layout = L <reflection>;
+	using layout = L <T>;
 	using hint = layout::hint;
 	using type = scaffold_lookup <hint, T, true> ::type;
 	return type();

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <tuple>
-
 namespace rcgp {
 
 // Tuples without the baggage

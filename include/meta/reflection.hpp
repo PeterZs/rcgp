@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 // Forward declarations
 namespace vk { enum class VertexInputRate; }
 
@@ -135,7 +137,11 @@ template <typename T>
 concept reflected = has_reflection <T> ();
 
 template <typename T>
-concept aggregate = has_aggregate_reflection <T> ();
+concept aggregate = requires { typename T::_rcgp_aggregate; }
+	&& std::is_same_v <
+		typename T::_rcgp_aggregate,
+		std::type_identity <T>
+	>;
 
 template <typename T>
 concept primitive = has_primitive_reflection <T> ();

@@ -1,19 +1,23 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
 #include <string>
+#include <type_traits>
+#include <utility>
 
+#include "../dsl/array.hpp"
 #include "../dsl/jems.hpp"
-#include "expand_reflection.hpp"
-#include "reflection.hpp"
+#include "../dsl/matrix.hpp"
+#include "../dsl/scalar.hpp"
+#include "../dsl/vector.hpp"
 #include "field_access.hpp"
 #include "static_string.hpp"
 #include "../util/cti.hpp"
 
 namespace rcgp {
 
-// TODO: get rid of the mains!
-// TODO: use type cache to avoid redefining things...
-// also need a DCE pass...
+// TODO: try thread local handles? since its the same always...
 template <typename T>
 struct reconstructor_t {
 	static jems::handle main($location) {
@@ -22,30 +26,30 @@ struct reconstructor_t {
 };
 
 template <typename T>
-struct reconstructor_t <primitive_reflection <scalar <T>>> {
+struct reconstructor_t <scalar <T>> {
 	static jems::handle main($location) {
 		return jems::type_loc(loc, T());
 	}
 };
 
 template <typename T, size_t N>
-struct reconstructor_t <primitive_reflection <vector <T, N>>> {
+struct reconstructor_t <vector <T, N>> {
 	static jems::handle main($location) {
 		return jems::type_loc(loc, VectorType <T, N> ());
 	}
 };
 
 template <typename T, size_t N, size_t M>
-struct reconstructor_t <primitive_reflection <matrix <T, N, M>>> {
+struct reconstructor_t <matrix <T, N, M>> {
 	static jems::handle main($location) {
 		return jems::type_loc(loc, MatrixType <T, N, M> ());
 	}
 };
 
 template <typename T, int64_t N>
-struct reconstructor_t <array_reflection <T, N>> {
+struct reconstructor_t <array <T, N>> {
 	static jems::handle main($location) {
-		auto base = reconstructor_t <T> ::main();
+		auto base = reconstructor_t <T> ::main(loc);
 		return jems::type_loc(loc, ArrayType(base, N));
 	}
 };
@@ -57,17 +61,24 @@ struct reconstructor_t <std::nullptr_t> {
 	}
 };
 
-template <typename Original, typename ... Args>
-struct reconstructor_t <aggregate_reflection <Original, Args...>> {
-	static void collect(AggregateType &aggregate, jems::handle handle) {
+template <aggregate T>
+struct reconstructor_t <T> {
+	template <size_t I>
+	static void collect_field(AggregateType &aggregate, $location) {
+		using field_type = std::remove_cvref_t <
+			decltype(std::declval <T &> ().template _rcgp_get <I> ())
+		>;
+		auto handle = reconstructor_t <field_type> ::main(loc);
 		if (handle)
 			aggregate.emplace_back(handle);
 	}
 
 	static jems::handle main($location) {
 		AggregateType aggregate;
-		aggregate.name = std::string($ss_type(Original).view());
-		(collect(aggregate, reconstructor_t <Args> ::main(loc)), ...);
+		aggregate.name = std::string($ss_type(T).view());
+		constexpr_for(Is, T::field_count,
+			(collect_field <Is> (aggregate, loc), ...)
+		);
 		return jems::type_loc(loc, aggregate);
 	}
 };
@@ -82,9 +93,7 @@ struct reconstructor_t <field_trace <T, Is...>> {
 template <typename T>
 jems::handle reconstruct_type($location)
 {
-	// TODO: use a more direct generator...
-	using R = expand_reflection <T> ::type;
-	return reconstructor_t <R> ::main(loc);
+	return reconstructor_t <T> ::main(loc);
 }
 
 } // namespace rcgp

@@ -5,7 +5,6 @@
 #include "../dsl/jems.hpp"
 #include "../util/cti.hpp"
 #include "reconstruct_type.hpp"
-#include "reflection.hpp"
 #include "layouts.hpp"
 
 namespace rcgp {
@@ -14,7 +13,7 @@ namespace rcgp {
 template <template <typename> typename L>
 consteval GlobalResourceLayout layout_of()
 {
-	using sample = primitive_reflection <scalar <int>>;
+	using sample = vector <int, 3>;
 	if constexpr (std::is_same_v <L <sample>, layouts::std430 <sample>>)
 		return GlobalResourceLayout::eStd430;
 	else if constexpr (std::is_same_v <L <sample>, layouts::scalar <sample>>)
