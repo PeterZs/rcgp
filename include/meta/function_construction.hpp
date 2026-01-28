@@ -4,7 +4,6 @@
 #include <type_traits>
 
 #include "../dsl/jems.hpp"
-#include "../dsl/optimizer.hpp"
 #include "../util/timer.hpp"
 #include "inject_arguments.hpp"
 #include "macro_hell.hpp"
@@ -53,8 +52,6 @@ auto trace(auto ftn)
 				return_handler(returns, argi);
 			}
 		}
-
-		optimize_block(result);
 	}
 	TimerToken::remove_callback("default");
 
