@@ -1,0 +1,28 @@
+In file included from [01m[K/home/venki/projects/rcgp/include/meta/../rhi/render_pass.hpp:9[m[K,
+                 from [01m[K/home/venki/projects/rcgp/include/meta/../rhi/device.hpp:7[m[K,
+                 from [01m[K/home/venki/projects/rcgp/include/meta/combinators.hpp:4[m[K,
+                 from [01m[K/home/venki/projects/rcgp/include/rcgp.hpp:11[m[K,
+                 from [01m[K/home/venki/projects/rcgp/tests/cpp/compile/fail/vertex_fragment_interface_mismatch.cpp:1[m[K:
+/home/venki/projects/rcgp/include/meta/stage_interface.hpp: In instantiation of ‘[01m[Kconstexpr void rcgp::detail::[01;32m[Kvalidate_interface_types[m[K() [35m[K[with Outputs = rcgp::Tlist<rcgp::vector<float, 3> >; Inputs = rcgp::Tlist<rcgp::vector<float, 4> >; long unsigned int I = 0][m[K[m[K’:
+[01m[K/home/venki/projects/rcgp/include/meta/stage_interface.hpp:83:48:[m[K   required from ‘[01m[Kconstexpr const bool rcgp::vertex_fragment_interface<rcgp::Interpolant<rcgp::vector<float, 3>, rcgp::RateProperties::eSmooth>, rcgp::vector<float, 4> >::value[m[K’
+   83 |         [01;36m[Kvalidate_interface_types <Outputs, Inputs, 0> ()[m[K;
+      |         [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~[m[K
+[01m[K/home/venki/projects/rcgp/include/meta/combinators.hpp:48:46:[m[K   required from ‘[01m[Kauto rcgp::RasterizationCombinator<T>::[01;32m[Koperator()[m[K(rcgp::shader_stage<rcgp::ShaderStage::eVertex, VRet, As ...>&, rcgp::shader_stage<rcgp::ShaderStage::eFragment, FRet, Bs ...>&) const [35m[K[with VRet = rcgp::Interpolant<rcgp::vector<float, 3>, rcgp::RateProperties::eSmooth>; As = {std::nullptr_t, rcgp::reference<position>, rcgp::write_only_intrinsic<rcgp::GlobalIntrinsic::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4> >}; FRet = rcgp::vector<float, 4>; Bs = {rcgp::vector<float, 4>}; rcgp::Topology T = rcgp::Topology::eTriangleList][m[K[m[K’
+   48 |                         vertex_fragment_interface <VRet, Bs...> ::[01;36m[Kvalue[m[K;
+      |                                                                   [01;36m[K^~~~~[m[K
+[01m[K/home/venki/projects/rcgp/tests/cpp/compile/fail/vertex_fragment_interface_mismatch.cpp:38:6:[m[K   required from here
+   38 |         [01;36m[Kcomb(vs, fs)[m[K;
+      |         [01;36m[K~~~~^~~~~~~~[m[K
+[01m[K/home/venki/projects/rcgp/include/meta/stage_interface.hpp:93:93:[m[K   in ‘[01m[Kconstexpr[m[K’ expansion of ‘[01m[Krcgp::detail::validate_vertex_fragment_interface<rcgp::Tlist<rcgp::vector<float, 3> >, rcgp::Tlist<rcgp::vector<float, 4> > >()[m[K’
+[01m[K/home/venki/projects/rcgp/include/meta/../rhi/../util/cti.hpp:15:45:[m[K [01;31m[Kerror: [m[Kstatic assertion failed: vertex/fragment interface mismatch at location 0: vertex outputs vector<float, 3> but fragment expects vector<float, 4>
+   15 | #define static_error(sstring) static_assert([01;31m[Kfalse[m[K, (sstring).view())
+      |                                             [01;31m[K^~~~~[m[K
+[01m[K/home/venki/projects/rcgp/include/meta/stage_interface.hpp:58:25:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[Kstatic_error[m[K’
+   58 |                         [01;36m[Kstatic_error[m[K(
+      |                         [01;36m[K^~~~~~~~~~~~[m[K
+[01m[K/home/venki/projects/rcgp/include/meta/../rhi/../util/cti.hpp:15:45:[m[K [01;36m[Knote: [m[K‘[01m[Kfalse[m[K’ evaluates to false
+   15 | #define static_error(sstring) static_assert([01;36m[Kfalse[m[K, (sstring).view())
+      |                                             [01;36m[K^~~~~[m[K
+[01m[K/home/venki/projects/rcgp/include/meta/stage_interface.hpp:58:25:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[Kstatic_error[m[K’
+   58 |                         [01;36m[Kstatic_error[m[K(
+      |                         [01;36m[K^~~~~~~~~~~~[m[K

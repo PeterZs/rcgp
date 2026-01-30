@@ -1,0 +1,37 @@
+In file included from [01m[K/home/venki/projects/rcgp/include/meta/../rhi/render_pass.hpp:9[m[K,
+                 from [01m[K/home/venki/projects/rcgp/include/meta/../rhi/device.hpp:7[m[K,
+                 from [01m[K/home/venki/projects/rcgp/include/meta/combinators.hpp:4[m[K,
+                 from [01m[K/home/venki/projects/rcgp/include/rcgp.hpp:11[m[K,
+                 from [01m[K/home/venki/projects/rcgp/tests/cpp/compile/fail/command_missing_vertex_buffers.cpp:3[m[K:
+/home/venki/projects/rcgp/include/meta/command_normalization.hpp: In instantiation of ‘[01m[Kconsteval auto rcgp::detail::[01;32m[Knormalize_step[m[K(Map, Indicators, Effect) [35m[K[with Map = rcgp::Tlist<effect_entry<key_ref<position>, tag_dep, no_bar>, effect_entry<key_index<rcgp::Topology::eTriangleList>, tag_res, no_bar> >; Indicators = rcgp::Tlist<>; Effect = rcgp::DependencySentinel][m[K[m[K’:
+[01m[K/home/venki/projects/rcgp/include/meta/command_normalization.hpp:244:49:[m[K   required by substitution of ‘[01m[Ktemplate<class Map, class Indicators, class Effect> using rcgp::detail::normalize_step_t = decltype (rcgp::detail::normalize_step(Map(), Indicators(), Effect())) [35m[K[with Map = rcgp::Tlist<rcgp::detail::effect_entry<rcgp::detail::key_ref<position>, rcgp::detail::tag_dep, rcgp::detail::no_bar>, rcgp::detail::effect_entry<rcgp::detail::key_index<rcgp::Topology::eTriangleList>, rcgp::detail::tag_res, rcgp::detail::no_bar> >; Indicators = rcgp::Tlist<>; Effect = rcgp::DependencySentinel][m[K[m[K’
+  244 | using normalize_step_t = decltype([01;36m[Knormalize_step(Map(), Indicators(), Effect())[m[K);
+      |                                   [01;36m[K~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/venki/projects/rcgp/include/meta/command_normalization.hpp:260:8:[m[K   recursively required from ‘[01m[Kstruct rcgp::detail::normalize_fold<rcgp::Tlist<rcgp::detail::effect_entry<rcgp::detail::key_ref<position>, rcgp::detail::tag_dep, rcgp::detail::no_bar> >, rcgp::Tlist<>, rcgp::ResolvantForIndexBuffer<rcgp::Topology::eTriangleList>, rcgp::DependencyEnforcerForIndexBuffer, rcgp::DependencySentinel>[m[K’
+  260 |         using [01;36m[Kmap[m[K = typename normalize_fold <next_map, next_indicators, Tail...> ::map;
+      |               [01;36m[K^~~[m[K
+[01m[K/home/venki/projects/rcgp/include/meta/command_normalization.hpp:260:8:[m[K   required from ‘[01m[Kstruct rcgp::detail::normalize_fold<rcgp::Tlist<>, rcgp::Tlist<>, rcgp::Dependency<position>, rcgp::ResolvantForIndexBuffer<rcgp::Topology::eTriangleList>, rcgp::DependencyEnforcerForIndexBuffer, rcgp::DependencySentinel>[m[K’
+[01m[K/home/venki/projects/rcgp/include/meta/command_normalization.hpp:326:8:[m[K   required from ‘[01m[Kstruct rcgp::detail::normalize_effects<rcgp::Tlist<rcgp::Dependency<position>, rcgp::ResolvantForIndexBuffer<rcgp::Topology::eTriangleList>, rcgp::DependencyEnforcerForIndexBuffer, rcgp::DependencySentinel> >[m[K’
+  326 |         using [01;36m[Kmap[m[K = typename normalize_fold <Tlist <>, Tlist <>, Effects...> ::map;
+      |               [01;36m[K^~~[m[K
+[01m[K/home/venki/projects/rcgp/include/meta/command_normalization.hpp:331:7:[m[K   required by substitution of ‘[01m[Ktemplate<class List> using rcgp::detail::normalize_effects_t = typename rcgp::detail::normalize_effects::type [35m[K[with List = rcgp::Tlist<rcgp::Dependency<position>, rcgp::ResolvantForIndexBuffer<rcgp::Topology::eTriangleList>, rcgp::DependencyEnforcerForIndexBuffer, rcgp::DependencySentinel>][m[K[m[K’
+  331 | using [01;36m[Knormalize_effects_t[m[K = typename normalize_effects <List> ::type;
+      |       [01;36m[K^~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/venki/projects/rcgp/include/meta/commands.hpp:48:9:[m[K   required from ‘[01m[Kauto rcgp::[01;32m[Koperator|[m[K(const Commands<Effects>&, const Commands<Es ...>&) [35m[K[with Es = {DependencyEnforcerForIndexBuffer, DependencySentinel}; Effects = {Dependency<position>, ResolvantForIndexBuffer<rcgp::Topology::eTriangleList>}][m[K[m[K’
+   48 |                 using [01;36m[Knormalized[m[K = detail::normalize_effects_t <combined>;
+      |                       [01;36m[K^~~~~~~~~~[m[K
+[01m[K/home/venki/projects/rcgp/tests/cpp/compile/fail/command_missing_vertex_buffers.cpp:36:19:[m[K   required from here
+   36 |                 | draw_indexed(3[01;36m[K)[m[K;
+      |                                 [01;36m[K^[m[K
+[01m[K/home/venki/projects/rcgp/include/meta/../rhi/../util/cti.hpp:15:45:[m[K [01;31m[Kerror: [m[Kstatic assertion failed: command recording has unresolved dependencies
+   15 | #define static_error(sstring) static_assert([01;31m[Kfalse[m[K, (sstring).view())
+      |                                             [01;31m[K^~~~~[m[K
+[01m[K/home/venki/projects/rcgp/include/meta/command_normalization.hpp:198:25:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[Kstatic_error[m[K’
+  198 |                         [01;36m[Kstatic_error[m[K("command recording has unresolved dependencies"_ss);
+      |                         [01;36m[K^~~~~~~~~~~~[m[K
+[01m[K/home/venki/projects/rcgp/include/meta/../rhi/../util/cti.hpp:15:45:[m[K [01;36m[Knote: [m[K‘[01m[Kfalse[m[K’ evaluates to false
+   15 | #define static_error(sstring) static_assert([01;36m[Kfalse[m[K, (sstring).view())
+      |                                             [01;36m[K^~~~~[m[K
+[01m[K/home/venki/projects/rcgp/include/meta/command_normalization.hpp:198:25:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[Kstatic_error[m[K’
+  198 |                         [01;36m[Kstatic_error[m[K("command recording has unresolved dependencies"_ss);
+      |                         [01;36m[K^~~~~~~~~~~~[m[K

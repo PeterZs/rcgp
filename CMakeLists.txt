@@ -57,9 +57,9 @@ target_link_libraries(rcgp PUBLIC
 )
 
 add_executable(test EXCLUDE_FROM_ALL
-	source/test/main.cpp
-	source/test/mirror/std430.cpp
-	source/test/mirror/scalar.cpp
+	tests/cpp/main.cpp
+	tests/cpp/mirror/std430.cpp
+	tests/cpp/mirror/scalar.cpp
 )
 
 target_precompile_headers(test REUSE_FROM rcgp)
