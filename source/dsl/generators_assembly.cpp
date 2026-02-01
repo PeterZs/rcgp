@@ -1,11 +1,13 @@
 #include <filesystem>
+#include <cstdlib>
+#include <iostream>
+#include <print>
 #include <set>
 #include <vector>
 
 #include <fmt/format.h>
 
 #include "dsl/generators.hpp"
-#include "util/logging.hpp"
 
 namespace rcgp {
 
@@ -399,7 +401,8 @@ std::string stringify(Context &ctx, Invocation x, Reference ref)
 
 std::string stringify(Context &ctx, Block x, Reference ref)
 {
-	fatal("cannot generate assembly for block");
+	std::println(std::cerr, "cannot generate assembly for block");
+	std::abort();
 }
 
 std::string stringify(ShaderStage stage)

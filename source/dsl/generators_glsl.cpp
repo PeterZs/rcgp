@@ -1,10 +1,12 @@
 #include <array>
 #include <cctype>
+#include <cstdlib>
+#include <iostream>
+#include <print>
 #include <string_view>
 #include <fmt/format.h>
 
 #include "dsl/generators.hpp"
-#include "util/logging.hpp"
 #include "util/timer.hpp"
 
 namespace rcgp {
@@ -168,7 +170,8 @@ std::string primitive_type_string(const PrimitiveType &primitive)
 		break;
 	}
 
-	fatal("unhandled primitive type string case");
+	std::println(std::cerr, "unhandled primitive type string case");
+	std::abort();
 }
 
 struct TypeRepr {
@@ -181,10 +184,12 @@ TypeRepr type_repr(Context &ctx, const Reference &ref)
 	// TODO: each reference should have an assembly dump (with tabs);
 	// in fact we should overhaul the current assembly generator
 	// to be like this...
-	assertion(ref->is <Type> (),
-		"type_repr only operates on Type instructions:"
-		"\n\tref: %s",
-		ref->repr().c_str());
+	if (!ref->is <Type> ()) {
+		std::println(std::cerr,
+			"type_repr only operates on Type instructions:\n\tref: {}",
+			ref->repr());
+		std::abort();
+	}
 
 	auto &type = ref->as <Type> ();
 	vswitch (type) {
@@ -210,7 +215,8 @@ TypeRepr type_repr(Context &ctx, const Reference &ref)
 		break;
 	}
 
-	fatal("unhandled case for type_repr:\n%s", ref->repr().c_str());
+	std::println(std::cerr, "unhandled case for type_repr:\n{}", ref->repr());
+	std::abort();
 }
 
 bool contains_unsized_array(Reference type)
@@ -349,7 +355,8 @@ std::string reference(Context &ctx, Reference ref)
 		break;
 	}
 
-	fatal("unhandled reference:\n%s", ref->repr().c_str());
+	std::println(std::cerr, "unhandled reference:\n{}", ref->repr());
+	std::abort();
 }
 
 std::string expression(Context &ctx, Reference expr)
@@ -416,11 +423,12 @@ std::string expression(Context &ctx, Reference expr)
 		// TODO: need to detect arrays; also should
 		// handle static (global) construction
 		auto repr = type_repr(ctx, construct.type);
-		assertion(repr.suffix.empty(),
-			"construct cannot handle array types yet (base=%p, suffix=%p)",
-			repr.base.c_str(),
-			repr.suffix.c_str()
-		);
+		if (!repr.suffix.empty()) {
+			std::println(std::cerr,
+				"construct cannot handle array types yet (base={}, suffix={})",
+				repr.base, repr.suffix);
+			std::abort();
+		}
 
 		std::string out = repr.base + "(";
 
@@ -518,7 +526,8 @@ std::string expression(Context &ctx, Reference expr)
 		break;
 	}
 
-	fatal("expression not implemented for %s", expr->repr().c_str());
+	std::println(std::cerr, "expression not implemented for {}", expr->repr());
+	std::abort();
 	return "?";
 }
 
@@ -712,8 +721,10 @@ void emit_preamble(Context &ctx)
 	}
 	if (ctx.block.context.model == ShaderStage::eMesh) {
 		if (!ctx.block.context.mesh_max_vertices.has_value()
-			|| !ctx.block.context.mesh_max_primitives.has_value())
-			fatal("mesh shader missing MeshletPayload size information");
+			|| !ctx.block.context.mesh_max_primitives.has_value()) {
+			std::println(std::cerr, "mesh shader missing MeshletPayload size information");
+			std::abort();
+		}
 		auto max_vertices = ctx.block.context.mesh_max_vertices.value();
 		auto max_primitives = ctx.block.context.mesh_max_primitives.value();
 		ctx.result += fmt::format(
@@ -825,15 +836,21 @@ void emit_thread_outputs(Context &ctx)
 			}
 
 			if (not is_same_type(it->second.type, tout.type)) {
-				fatal("thread output type mismatch for location %u (%s vs %s)",
+				std::println(std::cerr,
+					"thread output type mismatch for location {} ({} vs {})",
 					tout.argi,
-					it->second.type->repr().c_str(),
-					tout.type->repr().c_str());
+					it->second.type->repr(),
+					tout.type->repr());
+				std::abort();
 			}
 
 			if (it->second.properties != tout.properties) {
-				fatal("thread output properties mismatch for lcoation %u (%d vs %d)",
-					tout.argi, it->second.properties, tout.properties);
+				std::println(std::cerr,
+					"thread output properties mismatch for lcoation {} ({} vs {})",
+					tout.argi,
+					static_cast<int>(it->second.properties),
+					static_cast<int>(tout.properties));
+				std::abort();
 			}
 		}
 	}
@@ -907,8 +924,10 @@ std::string resource_instance_name(const GlobalResource &grsrc)
 void emit_buffer_fields(Context &ctx, const AggregateType &agg)
 {
 	for (size_t i = 0; i < agg.size(); i++) {
-		if (contains_unsized_array(agg[i]) && (i + 1 < agg.size()))
-			fatal("unsized array must be the last field in a buffer block");
+		if (contains_unsized_array(agg[i]) && (i + 1 < agg.size())) {
+			std::println(std::cerr, "unsized array must be the last field in a buffer block");
+			std::abort();
+		}
 		auto decl = type_repr(ctx, agg[i]);
 		ctx.result += fmt::format("    {} f{}{};\n", decl.base, i, decl.suffix);
 	}
@@ -950,7 +969,8 @@ void emit_resource_decl(Context &ctx, GlobalResource &grsrc)
 		}
 		break;
 	default:
-		fatal("unsupported global resource kind");
+		std::println(std::cerr, "unsupported global resource kind");
+		std::abort();
 	}
 
 	auto group = grsrc.group.value_or(0);
@@ -958,8 +978,10 @@ void emit_resource_decl(Context &ctx, GlobalResource &grsrc)
 	auto instance = resource_instance_name(grsrc);
 	ctx.result += fmt::format("layout ({}set = {}, binding = {}) {} R{}{} {{\n",
 		layout_string(grsrc.layout), group, index, modifier, group, index);
-	if (!grsrc.type || !grsrc.type->is <Type> ())
-		fatal("invalid resource type");
+	if (!grsrc.type || !grsrc.type->is <Type> ()) {
+		std::println(std::cerr, "invalid resource type");
+		std::abort();
+	}
 
 	auto &type = grsrc.type->as <Type> ();
 	if (type.is <AggregateType> ()) {
@@ -1004,8 +1026,10 @@ std::string subroutine_return_type(Context &ctx, const Block &blk, uint32_t &out
 	out_argi = 0;
 	if (blk.context.thread_outputs.empty())
 		return "void";
-	if (blk.context.thread_outputs.size() > 1)
-		fatal("subroutine return with multiple outputs is not supported");
+	if (blk.context.thread_outputs.size() > 1) {
+		std::println(std::cerr, "subroutine return with multiple outputs is not supported");
+		std::abort();
+	}
 
 	auto &tout = blk.context.thread_outputs.front();
 	out_argi = tout.argi;

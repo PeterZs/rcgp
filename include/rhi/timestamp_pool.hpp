@@ -1,6 +1,8 @@
 #pragma once
 
-#include "../util/logging.hpp"
+#include <cstdlib>
+#include <iostream>
+#include <print>
 
 namespace rcgp {
 
@@ -10,7 +12,10 @@ struct TimestampQueryResult {
 	double period;
 
 	std::optional <double> delta(size_t a, size_t b) const {
-		assertion(ready(), "cannot query deltas for unready time stamps");
+		if (!ready()) {
+			std::println(std::cerr, "cannot query deltas for unready time stamps");
+			std::abort();
+		}
 
 		auto K = period / 1'000'000.0f;
 		if (flags & vk::QueryResultFlagBits::eWithAvailability) {

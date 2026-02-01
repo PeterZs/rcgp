@@ -1,7 +1,8 @@
 #include <vector>
 
-#include <fmt/printf.h>
-#include <fmt/color.h>
+#include <cstdlib>
+#include <iostream>
+#include <print>
 
 #include "rhi/session.hpp"
 #include "rhi/glfw.hpp"
@@ -9,49 +10,38 @@
 namespace rcgp {
 
 VKAPI_ATTR VKAPI_CALL
-vk::Bool32 validation_callback(
+vk::Bool32 general_validation_callback(
 	vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
 	vk::DebugUtilsMessageTypeFlagsEXT types,
 	const vk::DebugUtilsMessengerCallbackDataEXT *data,
 	void *user_data
 )
 {
-	const bool trap_on_error = reinterpret_cast <std::intptr_t> (user_data);
+	auto *context = reinterpret_cast <Session *> (user_data);
 
-	auto fg = fmt::fg(fmt::color::gray);
-	bool trap = false;
+	if (context->validation_callback)
+		context->validation_callback.value()(severity, data->pMessage);
+	else
+		std::println(std::cerr, "vulkan: {}", data->pMessage);
 
-	switch (severity) {
-	case vk::DebugUtilsMessageSeverityFlagBitsEXT::eError:
-		fg = fmt::fg(fmt::color::red);
-		trap = trap_on_error;
-		break;
-	case vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning:
-		fg = fmt::fg(fmt::color::yellow);
-		break;
-	case vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo:
-		fg = fmt::fg(fmt::color::light_blue);
-		break;
-	default:
-		break;
-	}
-
-	auto header = fmt::format(fmt::emphasis::bold | fg, "[vvl]");
-	auto message = fmt::format(fmt::emphasis::faint, "{}", data->pMessage);
-
-	fmt::println(stderr, "{} {}", header, message);
+	bool trap = context->trap_on_error && (severity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eError);
 	if (trap)
-		__builtin_trap();
+		std::abort();
 
 	return false;
 }
 
-std::tuple <Session, vk::detail::DispatchLoaderDynamic> Session::from(const Options &options)
+auto Session::from(const Options &options) -> std::tuple <
+	std::unique_ptr <Session>,
+	vk::detail::DispatchLoaderDynamic
+>
 {
-	auto product = std::tuple <Session, vk::detail::DispatchLoaderDynamic> {};
-	auto &[session, dld] = product;
+	auto product = std::tuple {
+		std::make_unique <Session> (),
+		vk::detail::DispatchLoaderDynamic(),
+	};
 
-	session.trap_on_error = options.trap_on_error;
+	auto &[session, dld] = product;
 
 	glfw::boot();
 
@@ -85,12 +75,13 @@ std::tuple <Session, vk::detail::DispatchLoaderDynamic> Session::from(const Opti
 		| vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation
 		| vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
 
-	std::intptr_t trap_on_error = options.trap_on_error;
+	session->trap_on_error = options.trap_on_error;
+	session->validation_callback = options.validation_callback;
 	auto debug_info = vk::DebugUtilsMessengerCreateInfoEXT()
 		.setMessageType(debug_type_flags)
 		.setMessageSeverity(debug_severity_flags)
-		.setPfnUserCallback(validation_callback)
-		.setPUserData(reinterpret_cast <void *> (trap_on_error));
+		.setPfnUserCallback(general_validation_callback)
+		.setPUserData(session.get());
 
 	auto app_info = vk::ApplicationInfo()
 		.setApiVersion(VK_API_VERSION_1_4)
@@ -113,12 +104,12 @@ std::tuple <Session, vk::detail::DispatchLoaderDynamic> Session::from(const Opti
 			validation_features.setPNext(&debug_info);
 	}
 
-	session.handle = vk::createInstance(instance_info, nullptr, dld);
+	session->handle = vk::createInstance(instance_info, nullptr, dld);
 
-	dld.init(session.handle, vkGetInstanceProcAddr);
+	dld.init(session->handle, vkGetInstanceProcAddr);
 
 	if (options.validation)
-		session.debugger = session.handle.createDebugUtilsMessengerEXT(debug_info, nullptr, dld);
+		session->debugger = session->handle.createDebugUtilsMessengerEXT(debug_info, nullptr, dld);
 
 	return product;
 }

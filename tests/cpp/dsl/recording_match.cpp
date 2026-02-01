@@ -162,12 +162,13 @@ static void assert_block_sequence(
 )
 {
 	if (actual.get() == nullptr || expected.get() == nullptr) {
-		assertion(false, "expected blocks to be created");
-		return;
+		std::println(std::cerr, "expected blocks to be created");
+		std::abort();
 	}
 	if (match_block(*actual, *expected))
 		return;
-	info("%s actual:\n%s", label, generate_assembly(actual).c_str());
-	info("%s expected:\n%s", label, generate_assembly(expected).c_str());
-	assertion(false, "expected %s sequence to match", label);
+	std::println("{} actual:\n{}", label, generate_assembly(actual));
+	std::println("{} expected:\n{}", label, generate_assembly(expected));
+	std::println(std::cerr, "expected {} sequence to match", label);
+	std::abort();
 }

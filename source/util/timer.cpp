@@ -1,13 +1,15 @@
 #include <algorithm>
+#include <cstdlib>
+#include <iostream>
+#include <print>
 #include <list>
+#include <map>
 #include <memory>
 #include <string>
-#include <map>
 
 #include <fmt/color.h>
 #include <fmt/format.h>
 
-#include "util/logging.hpp"
 #include "util/timer.hpp"
 
 namespace rcgp {
@@ -195,7 +197,10 @@ void TimerToken::end()
 
 	payload->milliseconds = double(us) / 1000.0;
 
-	assertion(active.top() == payload, "scoped timer invariant was broken");
+	if (active.top() != payload) {
+		std::println(std::cerr, "scoped timer invariant was broken");
+		std::abort();
+	}
 	active.pop();
 
 	if (active.empty()) {
@@ -207,14 +212,20 @@ void TimerToken::end()
 
 void TimerToken::note(const std::string &note)
 {
-	assertion(not active.empty(), "cannot add notes when there is no active scope timer");
+	if (active.empty()) {
+		std::println(std::cerr, "cannot add notes when there is no active scope timer");
+		std::abort();
+	}
 	auto &top = active.top();
 	top->notes.emplace_back(note);
 }
 
 void TimerToken::entry(const std::string &name, double ms)
 {
-	assertion(not active.empty(), "cannot add entry when there is no active scope timer");
+	if (active.empty()) {
+		std::println(std::cerr, "cannot add entry when there is no active scope timer");
+		std::abort();
+	}
 
 	auto entry_payload = std::make_shared <Payload> ();
 	entry_payload->name = name;
@@ -233,8 +244,8 @@ void TimerToken::add_default_callback()
 {
 	add_callback("default",
 		[](const Payload &payload) {
-			info("scoped timer payload report:\n%s",
-				payload.report_string().c_str());
+			std::println("scoped timer payload report:\n{}",
+				payload.report_string());
 		}
 	);
 }

@@ -1,4 +1,7 @@
 #include <ranges>
+#include <cstdlib>
+#include <iostream>
+#include <print>
 #include <set>
 
 #include "rhi/command_buffer.hpp"
@@ -8,7 +11,6 @@
 #include "rhi/window.hpp"
 #include "rhi/timestamp_pool.hpp"
 
-#include "util/logging.hpp"
 #include "util/cti.hpp"
 
 namespace rcgp {
@@ -23,7 +25,8 @@ auto Device::find_memory_type(uint32_t filter, vk::MemoryPropertyFlags flags) co
 			return i;
 	}
 
-	fatal("no compatible memory type for buffer");
+	std::println(std::cerr, "no compatible memory type for buffer");
+	std::abort();
 }
 
 auto Device::new_command_buffers(const CommandPool &cpool, size_t count) const
@@ -116,14 +119,8 @@ Device Device::from(
 	device.properties = device.physical.getMemoryProperties();
 
 	auto queue_families = device.physical.getQueueFamilyProperties();
-
-	info("queue families:");
-	for (const auto &[i, family] : std::views::enumerate(queue_families)) {
-		info("%d: %u of %s", i, family.queueCount,
-			vk::to_string(family.queueFlags).c_str());
-	}
-
 	auto queue_allocation = std::set <int32_t> ();
+
 	auto queue_family_index = [&](const vk::QueueFlags &flags) -> int32_t {
 		// Prefer exact match
 		for (const auto &[i, family] : std::views::enumerate(queue_families)) {
@@ -154,7 +151,7 @@ Device Device::from(
 	for (auto &[key, flags] : options.queues) {
 		auto idx = queue_family_index(flags);
 		if (idx == -1) {
-			error("failed to find a suitable queue for '%s'", key);
+			std::println(std::cerr, "failed to find a suitable queue for '{}'", key);
 			continue;
 		}
 

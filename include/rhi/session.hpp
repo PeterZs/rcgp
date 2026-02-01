@@ -1,14 +1,25 @@
 #pragma once
 
+#include <memory>
+#include <functional>
+#include <string_view>
 #include <tuple>
+
 #include <vulkan/vulkan.hpp>
 
 namespace rcgp {
+
+using ValidationCallback = std::function <void (vk::DebugUtilsMessageSeverityFlagBitsEXT, std::string_view)>;
 
 struct Session {
 	vk::Instance handle;
 	vk::DebugUtilsMessengerEXT debugger;
 	bool trap_on_error = true;
+	std::optional <ValidationCallback> validation_callback;
+
+	Session() = default;
+	Session(const Session &) = delete;
+	Session &operator=(const Session &) = delete;
 
 	struct Options {
 		const char *const application_name;
@@ -18,10 +29,14 @@ struct Session {
 		bool validation = true;
 		bool validate_instance = true;
 		bool trap_on_error = true;
+		std::optional <ValidationCallback> validation_callback;
 		std::vector <vk::ValidationFeatureEnableEXT> validation_features;
 	};
 
-	static std::tuple <Session, vk::detail::DispatchLoaderDynamic> from(const Options &info);
+	static auto from(const Options &info) -> std::tuple <
+		std::unique_ptr <Session>,
+		vk::detail::DispatchLoaderDynamic
+	>;
 };
 
 } // namespace rcgp

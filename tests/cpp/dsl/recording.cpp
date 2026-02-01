@@ -1,4 +1,6 @@
 #include <cstdint>
+#include <iostream>
+#include <print>
 #include <functional>
 #include <memory>
 #include <unordered_map>
@@ -10,7 +12,6 @@
 #include "dsl/jems.hpp"
 #include "meta/inject_reference.hpp"
 #include "meta/reconstruct_type.hpp"
-#include "util/logging.hpp"
 
 using namespace rcgp;
 
@@ -46,7 +47,7 @@ void test_recording_scalar_constant()
 		jems::store(local, value);
 	});
 	assert_block_sequence("scalar constant", sbr, expected);
-	info("recording_scalar_constant:\n%s", generate_assembly(sbr).c_str());
+	std::println("recording_scalar_constant:\n{}", generate_assembly(sbr));
 }
 
 void test_recording_binary_op_add()
@@ -68,7 +69,7 @@ void test_recording_binary_op_add()
 		jems::operation(OperationCode::eAdd, a, b);
 	});
 	assert_block_sequence("binary add", sbr, expected);
-	info("recording_binary_op_add:\n%s", generate_assembly(sbr).c_str());
+	std::println("recording_binary_op_add:\n{}", generate_assembly(sbr));
 }
 
 void test_recording_unary_op_negate()
@@ -89,7 +90,7 @@ void test_recording_unary_op_negate()
 		jems::operation(OperationCode::eMultiply, neg, a);
 	});
 	assert_block_sequence("unary negate", sbr, expected);
-	info("recording_unary_op_negate:\n%s", generate_assembly(sbr).c_str());
+	std::println("recording_unary_op_negate:\n{}", generate_assembly(sbr));
 }
 
 void test_recording_assignment_store()
@@ -108,7 +109,7 @@ void test_recording_assignment_store()
 		jems::store(a, b);
 	});
 	assert_block_sequence("assignment store", sbr, expected);
-	info("recording_assignment_store:\n%s", generate_assembly(sbr).c_str());
+	std::println("recording_assignment_store:\n{}", generate_assembly(sbr));
 }
 
 void test_recording_increment_decrement()
@@ -151,7 +152,7 @@ void test_recording_increment_decrement()
 		jems::store(a, sub2);
 	});
 	assert_block_sequence("increment/decrement", sbr, expected);
-	info("recording_increment_decrement:\n%s", generate_assembly(sbr).c_str());
+	std::println("recording_increment_decrement:\n{}", generate_assembly(sbr));
 }
 
 void test_recording_type_caching()
@@ -170,7 +171,7 @@ void test_recording_type_caching()
 		(void)b;
 	});
 	assert_block_sequence("type caching", sbr, expected);
-	info("recording_type_caching:\n%s", generate_assembly(sbr).c_str());
+	std::println("recording_type_caching:\n{}", generate_assembly(sbr));
 }
 
 void test_recording_construct_vec3()
@@ -200,7 +201,7 @@ void test_recording_construct_vec3()
 		jems::store(v, ctor);
 	});
 	assert_block_sequence("construct vec3", sbr, expected);
-	info("recording_construct_vec3:\n%s", generate_assembly(sbr).c_str());
+	std::println("recording_construct_vec3:\n{}", generate_assembly(sbr));
 }
 
 void test_recording_swizzle_xyz()
@@ -216,7 +217,7 @@ void test_recording_swizzle_xyz()
 		jems::swizzle(SwizzleCode::eXYZ, v);
 	});
 	assert_block_sequence("swizzle xyz", sbr, expected);
-	info("recording_swizzle_xyz:\n%s", generate_assembly(sbr).c_str());
+	std::println("recording_swizzle_xyz:\n{}", generate_assembly(sbr));
 }
 
 void test_recording_field_access()
@@ -248,7 +249,7 @@ void test_recording_field_access()
 		jems::field_access(pair, 1);
 	});
 	assert_block_sequence("field access", sbr, expected);
-	info("recording_field_access:\n%s", generate_assembly(sbr).c_str());
+	std::println("recording_field_access:\n{}", generate_assembly(sbr));
 }
 
 void test_recording_array_access()
@@ -272,5 +273,5 @@ void test_recording_array_access()
 		jems::array_access(arr, idx);
 	});
 	assert_block_sequence("array access", sbr, expected);
-	info("recording_array_access:\n%s", generate_assembly(sbr).c_str());
+	std::println("recording_array_access:\n{}", generate_assembly(sbr));
 }

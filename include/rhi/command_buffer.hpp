@@ -2,7 +2,9 @@
 
 #include "image.hpp"
 #include "buffer.hpp"
-#include "../util/logging.hpp"
+#include <cstdlib>
+#include <iostream>
+#include <print>
 
 namespace rcgp {
 
@@ -141,7 +143,10 @@ struct CommandBuffer : vk::CommandBuffer {
 	}
 
 	auto &draw_mesh_tasks(uint32_t x, uint32_t y = 1, uint32_t z = 1) const {
-		assertion(loader != nullptr, "draw_mesh_tasks requires a dynamic loader");
+		if (loader == nullptr) {
+			std::println(std::cerr, "draw_mesh_tasks requires a dynamic loader");
+			std::abort();
+		}
 		loader->vkCmdDrawMeshTasksEXT(*this, x, y, z);
 		return *this;
 	}

@@ -1,5 +1,8 @@
 #include "rhi/pipelines.hpp"
-#include "util/logging.hpp"
+#include <cstdlib>
+#include <iostream>
+#include <print>
+
 #include "util/timer.hpp"
 
 namespace rcgp {
@@ -103,7 +106,10 @@ vk::Pipeline compile_rasterization_pipeline(
 		.setSubpass(0);
 
 	auto [result, pipeline] = device.logical.createGraphicsPipeline(nullptr, pipeline_info, nullptr);
-	assertion(result == vk::Result::eSuccess, "failed to compile pipeline");
+	if (result != vk::Result::eSuccess) {
+		std::println(std::cerr, "failed to compile pipeline");
+		std::abort();
+	}
 
 	return pipeline;
 }
@@ -127,7 +133,10 @@ vk::Pipeline compile_compute_pipeline(
 		.setLayout(layout);
 
 	auto [result, pipeline] = device.logical.createComputePipeline(nullptr, pipeline_info, nullptr);
-	assertion(result == vk::Result::eSuccess, "failed to compile pipeline");
+	if (result != vk::Result::eSuccess) {
+		std::println(std::cerr, "failed to compile pipeline");
+		std::abort();
+	}
 
 	return pipeline;
 }
@@ -230,7 +239,10 @@ vk::Pipeline compile_mesh_shading_pipeline(
 		.setSubpass(0);
 
 	auto [result, pipeline] = device.logical.createGraphicsPipeline(nullptr, pipeline_info, nullptr);
-	assertion(result == vk::Result::eSuccess, "failed to compile mesh shading pipeline");
+	if (result != vk::Result::eSuccess) {
+		std::println(std::cerr, "failed to compile mesh shading pipeline");
+		std::abort();
+	}
 
 	return pipeline;
 }

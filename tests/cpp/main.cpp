@@ -1,5 +1,5 @@
 #include <rcgp.hpp>
-#include <util/logging.hpp>
+#include <print>
 
 #include "dsl/recording.cpp"
 
@@ -18,5 +18,5 @@ int main()
 	test_recording_swizzle_xyz();
 	test_recording_field_access();
 	test_recording_array_access();
-	ok("dsl recording tests passed");
+	std::println("dsl recording tests passed");
 }

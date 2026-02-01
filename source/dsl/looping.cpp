@@ -1,5 +1,7 @@
 #include "dsl/looping.hpp"
-#include "util/logging.hpp"
+#include <cstdlib>
+#include <iostream>
+#include <print>
 
 namespace rcgp {
 
@@ -35,8 +37,10 @@ _loop_holder::~_loop_holder()
 
 	auto body_block = trace_body(body);
 
-	if (not cond_value)
-		fatal("loop condition produced no value");
+	if (not cond_value) {
+		std::println(std::cerr, "loop condition produced no value");
+		std::abort();
+	}
 
 	Tracer::singleton.active().add(Loop {
 		kind,
