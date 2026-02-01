@@ -1,55 +1,33 @@
-#include <filesystem>
 #include <cstdlib>
+#include <filesystem>
 #include <iostream>
+#include <map>
 #include <print>
-#include <set>
 #include <vector>
+#include <source_location>
 
 #include <fmt/format.h>
 
 #include "dsl/generators.hpp"
+#include "dsl/instructions.hpp"
 
 namespace rcgp {
 
 struct Context {
 	const SharedBlockReference &sbr;
 	std::map <intptr_t, uint32_t> ids;
-};
+	bool debug;
 
-std::string stringify(Context &ctx, Reference ref);
-std::string stringify(Context &ctx, Constant x, Reference ref);
-std::string stringify_type(Context &ctx, PrimitiveType x, Reference ref);
-std::string stringify_type(Context &ctx, AggregateType x, Reference ref);
-std::string stringify_type(Context &ctx, ArrayType x, Reference ref);
-std::string stringify(Context &ctx, Type x, Reference ref);
-std::string stringify(Context &ctx, Operation x, Reference ref);
-std::string stringify(Context &ctx, Store x, Reference ref);
-std::string stringify(Context &ctx, ArrayAccess x, Reference ref);
-std::string stringify(Context &ctx, FieldAccess x, Reference ref);
-std::string stringify(Context &ctx, Argument x, Reference ref);
-std::string stringify(GlobalResourceLayout layout);
-std::string stringify(Context &ctx, GlobalResource x, Reference ref);
-std::string stringify(Context &ctx, ThreadInput x, Reference ref);
-std::string stringify_rate_properties(RateProperties properties);
-std::string stringify(Context &ctx, ThreadOutput x, Reference ref);
-std::string stringify(Context &ctx, Invocation x, Reference ref);
-std::string stringify(Context &ctx, GlobalIntrinsic x, Reference ref);
-std::string stringify(Context &ctx, Construct x, Reference ref);
-std::string stringify(Context &ctx, BuiltinIntrinsic x, Reference ref);
-std::string stringify(Context &ctx, Swizzle x, Reference ref);
-std::string stringify(Context &ctx, Branch x, Reference ref);
-std::string stringify(Context &ctx, Loop x, Reference ref);
-std::string stringify(Context &ctx, Local x, Reference ref);
-std::string stringify(Context &ctx, Block x, Reference ref);
-std::string stringify(ShaderStage stage);
-std::string generate(Context &ctx, size_t tabs = 0, bool emit_branches = true);
-std::string stringify_block_ref(Context &ctx, const SharedBlockReference &blk);
-std::string generate_block_body(Context &ctx, const SharedBlockReference &blk, const std::string &indent);
-void emit_debug_line(std::string &result, const std::string &text, const std::source_location &origin);
-void emit_branch_block(Context &ctx, const Branch &branch, Reference instr,
-	std::string &result);
-void emit_loop_block(Context &ctx, const Loop &loop, Reference instr,
-	std::string &result);
+	std::string auxiliary(const std::string &text, const std::source_location &origin) const {
+		if (debug) {
+			auto rel = std::filesystem::relative(origin.file_name());
+			return fmt::format("  {:<40} ; from {}:{}\n",
+				text, rel.string(), origin.line());
+		} else {
+			return "  " + text + '\n';
+		}
+	}
+};
 
 std::string stringify(Context &ctx, Reference ref)
 {
@@ -66,6 +44,21 @@ std::string stringify(Context &ctx, Reference ref)
 		ctx.ids[addr] = id;
 		return fmt::format("${}", id);
 	}
+}
+
+std::string stringify_block_ref(Context &ctx, const SharedBlockReference &blk)
+{
+	if (!blk)
+		return "nil";
+
+	auto addr = intptr_t(blk.get());
+	auto it = ctx.ids.find(addr);
+	if (it != ctx.ids.end())
+		return fmt::format("${}", it->second);
+
+	auto id = ctx.ids.size();
+	ctx.ids[addr] = id;
+	return fmt::format("${}", id);
 }
 
 #define $assign stringify(ctx, ref) + " = " +
@@ -85,19 +78,25 @@ std::string stringify_type(Context &ctx, PrimitiveType x, Reference ref)
 	vcase(uint32_t): return "u32";
 	vcase(float): return "f32";
 
-	vcase(VectorType <float, 2>): return "vec2";
-	vcase(VectorType <float, 3>): return "vec3";
-	vcase(VectorType <float, 4>): return "vec4";
+	vcase(VectorType <int32_t, 2>): return "int2";
+	vcase(VectorType <int32_t, 3>): return "int3";
+	vcase(VectorType <int32_t, 4>): return "int4";
+	vcase(VectorType <uint32_t, 2>): return "uint2";
+	vcase(VectorType <uint32_t, 3>): return "uint3";
+	vcase(VectorType <uint32_t, 4>): return "uint4";
+	vcase(VectorType <float, 2>): return "float2";
+	vcase(VectorType <float, 3>): return "float3";
+	vcase(VectorType <float, 4>): return "float4";
 
-	vcase(MatrixType <int32_t, 2, 2>): return "mat2i";
-	vcase(MatrixType <int32_t, 3, 3>): return "mat3i";
-	vcase(MatrixType <int32_t, 4, 4>): return "mat4i";
-	vcase(MatrixType <uint32_t, 2, 2>): return "mat2u";
-	vcase(MatrixType <uint32_t, 3, 3>): return "mat3u";
-	vcase(MatrixType <uint32_t, 4, 4>): return "mat4u";
-	vcase(MatrixType <float, 2, 2>): return "mat2";
-	vcase(MatrixType <float, 3, 3>): return "mat3";
-	vcase(MatrixType <float, 4, 4>): return "mat4";
+	vcase(MatrixType <int32_t, 2, 2>): return "int2x2";
+	vcase(MatrixType <int32_t, 3, 3>): return "int3x3";
+	vcase(MatrixType <int32_t, 4, 4>): return "int4x4";
+	vcase(MatrixType <uint32_t, 2, 2>): return "uint2x2";
+	vcase(MatrixType <uint32_t, 3, 3>): return "uint3x3";
+	vcase(MatrixType <uint32_t, 4, 4>): return "uint4x4";
+	vcase(MatrixType <float, 2, 2>): return "float2x2";
+	vcase(MatrixType <float, 3, 3>): return "float3x3";
+	vcase(MatrixType <float, 4, 4>): return "float4x4";
 	default:
 		break;
 	}
@@ -251,6 +250,7 @@ std::string stringify(Context &ctx, ThreadOutput x, Reference ref)
 
 std::string stringify(Context &ctx, GlobalIntrinsic x, Reference ref)
 {
+	// TODO: use repr
 	switch (x) {
 	case GlobalIntrinsic::eClipPosition:
 		return $assign "SVPosition";
@@ -422,11 +422,31 @@ std::string stringify(ShaderStage stage)
 	return "?";
 }
 
-void emit_debug_line(std::string &result, const std::string &text, const std::source_location &origin)
+std::string generate_block_body(Context &ctx, const SharedBlockReference &blk, const std::string &indent)
 {
-	auto rel = std::filesystem::relative(origin.file_name());
-	result += fmt::format("  {:<40} ; from {}:{}\n",
-		text, rel.string(), origin.line());
+	std::string result = "block {\n";
+
+	auto prefix = indent + "  ";
+	auto pad_width = 40;
+	if (indent.size() < pad_width)
+		pad_width -= indent.size();
+
+	if (blk->empty())
+		result += prefix + "(empty block)\n";
+
+	for (auto &instr : *blk) {
+		auto str = std::visit([&](auto x) {
+			return stringify(ctx, x, instr);
+		}, *instr);
+		auto loc = instr->debug_info.origin;
+		auto rel = std::filesystem::relative(loc.file_name());
+		result += fmt::format("{}{} ; from {}:{}\n",
+			prefix, fmt::format("{:<{}}", str, pad_width),
+			rel.string(), loc.line());
+	}
+
+	result += indent + "}";
+	return result;
 }
 
 void emit_branch_block(Context &ctx, const Branch &branch, Reference instr,
@@ -444,7 +464,8 @@ void emit_branch_block(Context &ctx, const Branch &branch, Reference instr,
 	}
 
 	std::string line = fmt::format("{} = branch(", stringify(ctx, instr));
-	emit_debug_line(result, line, instr->debug_info.origin);
+	result += ctx.auxiliary(line, instr->debug_info.origin);
+
 	std::vector <std::string> entries;
 	entries.reserve(branch.segments.size() + (branch.fallback ? 1 : 0));
 	for (auto &segment : branch.segments) {
@@ -486,7 +507,8 @@ void emit_loop_block(Context &ctx, const Loop &loop, Reference instr,
 		body_ref, generate_block_body(ctx, loop.body, "  "));
 
 	auto line = fmt::format("{} = loop(", stringify(ctx, instr));
-	emit_debug_line(result, line, instr->debug_info.origin);
+	result += ctx.auxiliary(line, instr->debug_info.origin);
+
 	result += fmt::format("    kind: {}\n",
 		(loop.kind == LoopKind::eWhile) ? "while" : "for");
 	if (loop.init.has_value())
@@ -498,12 +520,14 @@ void emit_loop_block(Context &ctx, const Loop &loop, Reference instr,
 	result += "  )\n";
 }
 
-std::string generate(Context &ctx, size_t tabs, bool emit_branches)
+std::string generate(Context &ctx)
 {
 	std::string result = "block {\n";
 
 	result += "  context {\n";
-	result += fmt::format("    blkid: {},\n", (void *) ctx.sbr.get());
+	if (ctx.debug)
+		result += fmt::format("    blkid: {},\n", (void *) ctx.sbr.get());
+
 	result += "    model: " + stringify(ctx.sbr->context.model) + ",\n";
 	if (!ctx.sbr->context.name.empty())
 		result += fmt::format("    name: {},\n", ctx.sbr->context.name);
@@ -540,7 +564,7 @@ std::string generate(Context &ctx, size_t tabs, bool emit_branches)
 	result += "  }\n";
 
 	for (auto &instr : *ctx.sbr) {
-		if (emit_branches && instr->is <Branch> ()) {
+		if (instr->is <Branch> ()) {
 			emit_branch_block(ctx,
 				instr->as <Branch> (),
 				instr, result
@@ -548,7 +572,7 @@ std::string generate(Context &ctx, size_t tabs, bool emit_branches)
 			continue;
 		}
 
-		if (emit_branches && instr->is <Loop> ()) {
+		if (instr->is <Loop> ()) {
 			emit_loop_block(ctx,
 				instr->as <Loop> (),
 				instr, result
@@ -559,12 +583,10 @@ std::string generate(Context &ctx, size_t tabs, bool emit_branches)
 		auto str = std::visit([&](auto x) {
 			return stringify(ctx, x, instr);
 		}, *instr);
-		emit_debug_line(result, str, instr->debug_info.origin);
+
+		result += ctx.auxiliary(str, instr->debug_info.origin);
 	}
 	result += "}";
-
-	if (!emit_branches)
-		return result;
 
 	std::vector <SharedBlockReference> blocks;
 	std::set <const Block *> visited;
@@ -595,52 +617,15 @@ std::string generate(Context &ctx, size_t tabs, bool emit_branches)
 	return result;
 }
 
-std::string stringify_block_ref(Context &ctx, const SharedBlockReference &blk)
+std::string generate_assembly(const SharedBlockReference &sbr, bool debug)
 {
-	if (!blk)
-		return "nil";
+	auto ctx = Context {
+		.sbr = sbr,
+		.ids = {},
+		.debug = debug,
+	};
 
-	auto addr = intptr_t(blk.get());
-	auto it = ctx.ids.find(addr);
-	if (it != ctx.ids.end())
-		return fmt::format("${}", it->second);
-
-	auto id = ctx.ids.size();
-	ctx.ids[addr] = id;
-	return fmt::format("${}", id);
-}
-
-std::string generate_block_body(Context &ctx, const SharedBlockReference &blk, const std::string &indent)
-{
-	std::string result = "block {\n";
-
-	auto prefix = indent + "  ";
-	auto pad_width = 40;
-	if (indent.size() < pad_width)
-		pad_width -= indent.size();
-
-	if (blk->empty())
-		result += prefix + "(empty block)\n";
-
-	for (auto &instr : *blk) {
-		auto str = std::visit([&](auto x) {
-			return stringify(ctx, x, instr);
-		}, *instr);
-		auto loc = instr->debug_info.origin;
-		auto rel = std::filesystem::relative(loc.file_name());
-		result += fmt::format("{}{} ; from {}:{}\n",
-			prefix, fmt::format("{:<{}}", str, pad_width),
-			rel.string(), loc.line());
-	}
-
-	result += indent + "}";
-	return result;
-}
-
-std::string generate_assembly(const SharedBlockReference &sbr, size_t tabs)
-{
-	Context ctx { sbr, {} };
-	return generate(ctx, tabs);
+	return generate(ctx);
 }
 
 } // namespace rcgp

@@ -1,12 +1,14 @@
 #include <array>
-#include <cctype>
 #include <cstdlib>
 #include <iostream>
+#include <map>
 #include <print>
 #include <string_view>
+
 #include <fmt/format.h>
 
 #include "dsl/generators.hpp"
+#include "dsl/instructions.hpp"
 #include "util/timer.hpp"
 
 namespace rcgp {
@@ -1158,11 +1160,11 @@ std::string generate(Context &ctx, size_t tabs)
 	return ctx.result;
 }
 
-std::string generate_glsl(const SharedBlockReference &sbr, size_t tabs)
+std::string generate_glsl(const SharedBlockReference &sbr)
 {
 	TSCOPE("generating glsl code");
-	Context ctx { *sbr.get() };
-	return generate(ctx, tabs);
+	auto ctx = Context { .block = *sbr.get() };
+	return generate(ctx, 0);
 }
 
 } // namespace rcgp

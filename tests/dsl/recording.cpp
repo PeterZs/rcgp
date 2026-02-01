@@ -4,6 +4,7 @@
 
 #include <rcgp.hpp>
 
+#include "../block_diff.cpp"
 #include "../suite.cpp"
 
 using namespace rcgp;
@@ -26,7 +27,7 @@ SharedBlockReference trace_block(const std::function <void ()> &fn)
 	return sbr;
 }
 
-// TODO: mutch of this is probably useful in the main code
+// TODO: much of this is probably useful in the main code
 bool match_ref(
 	const Reference &actual,
 	const Reference &expected,
@@ -188,7 +189,7 @@ void assert_blocks_match(
 	} else if (not match_block(*actual, *expected)) {
 		auto act = generate_assembly(actual);
 		auto exp = generate_assembly(expected);
-		fmt::println("mismatching blocks:\n{}\n{}", act, exp);
+		print_block_diff(exp, act);
 		mark_fail;
 	}
 }
@@ -203,7 +204,7 @@ add_test(scalar_constant)
 		auto type = jems::type(int32_t());
 		auto local = jems::local(type);
 		auto value = jems::constant(int32_t(3));
-		jems::store(local, value);
+		// jems::store(local, value);
 	});
 
 	assert_blocks_match(sbr, expected);

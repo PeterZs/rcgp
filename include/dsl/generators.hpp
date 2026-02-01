@@ -2,11 +2,12 @@
 
 #include <string>
 
-#include "instructions.hpp"
+#include "instruction_types.hpp"
 
 namespace rcgp {
 
-std::string generate_assembly(const SharedBlockReference &sbr, size_t tabs = 0);
-std::string generate_glsl(const SharedBlockReference &sbr, size_t tabs = 0);
+std::string generate_assembly(const SharedBlockReference &sbr, bool debug = false);
+std::string generate_glsl(const SharedBlockReference &sbr);
+// TODO: SPIRV generator
 
 } // namespace rcgp
