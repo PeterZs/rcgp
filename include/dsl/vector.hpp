@@ -22,7 +22,7 @@ struct vector : public vector_base <T, N> {
 			return *this;
 		}
 
-		auto type = jems::type_loc(std::source_location::current(), VectorType <T, N> ());
+		auto type = jems::type_loc(std::source_location::current(), primitive_of <T, N> ());
 		assign_or_store(*this, rhs, type);
 		return *this;
 	}

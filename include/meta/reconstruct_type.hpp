@@ -25,21 +25,21 @@ struct reconstructor_t {
 template <typename T>
 struct reconstructor_t <scalar <T>> {
 	static jems::handle main($location) {
-		return jems::type_loc(loc, T());
+		return jems::type_loc(loc, primitive_of <T> ());
 	}
 };
 
 template <typename T, size_t N>
 struct reconstructor_t <vector <T, N>> {
 	static jems::handle main($location) {
-		return jems::type_loc(loc, VectorType <T, N> ());
+		return jems::type_loc(loc, primitive_of <T, N> ());
 	}
 };
 
 template <typename T, size_t N, size_t M>
 struct reconstructor_t <matrix <T, N, M>> {
 	static jems::handle main($location) {
-		return jems::type_loc(loc, MatrixType <T, N, M> ());
+		return jems::type_loc(loc, primitive_of <T, N, M> ());
 	}
 };
 

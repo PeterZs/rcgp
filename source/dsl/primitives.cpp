@@ -5,6 +5,7 @@
 namespace rcgp {
 
 // Explicit instantiations for common DSL primitives.
+// TODO: generate with scripts
 template class scalar <int32_t>;
 template class scalar <uint32_t>;
 template class scalar <float>;

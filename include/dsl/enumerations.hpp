@@ -30,6 +30,51 @@ enum class OperationCode {
 
 std::string_view repr(OperationCode value);
 
+enum class PrimitiveType {
+	eBool,
+	eInt32,
+	eUInt32,
+	eFloat,
+	eUVec2,
+	eUVec3,
+	eUVec4,
+	eIVec2,
+	eIVec3,
+	eIVec4,
+	eVec2,
+	eVec3,
+	eVec4,
+	eIMat2x2,
+	eIMat2x3,
+	eIMat2x4,
+	eIMat3x2,
+	eIMat3x3,
+	eIMat3x4,
+	eIMat4x2,
+	eIMat4x3,
+	eIMat4x4,
+	eUMat2x2,
+	eUMat2x3,
+	eUMat2x4,
+	eUMat3x2,
+	eUMat3x3,
+	eUMat3x4,
+	eUMat4x2,
+	eUMat4x3,
+	eUMat4x4,
+	eFMat2x2,
+	eFMat2x3,
+	eFMat2x4,
+	eFMat3x2,
+	eFMat3x3,
+	eFMat3x4,
+	eFMat4x2,
+	eFMat4x3,
+	eFMat4x4,
+};
+
+std::string_view repr(PrimitiveType value);
+
 enum class GlobalResourceKind {
 	ePushConstant,
 	eUniformBuffer,

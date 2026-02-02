@@ -74,36 +74,7 @@ std::string stringify(AsmContext &ctx, Constant x, Reference ref)
 
 std::string stringify_type(AsmContext &ctx, PrimitiveType x, Reference ref)
 {
-	vswitch(x) {
-	vcase(bool): return "bool";
-	vcase(int32_t): return "i32";
-	vcase(uint32_t): return "u32";
-	vcase(float): return "f32";
-
-	vcase(VectorType <int32_t, 2>): return "int2";
-	vcase(VectorType <int32_t, 3>): return "int3";
-	vcase(VectorType <int32_t, 4>): return "int4";
-	vcase(VectorType <uint32_t, 2>): return "uint2";
-	vcase(VectorType <uint32_t, 3>): return "uint3";
-	vcase(VectorType <uint32_t, 4>): return "uint4";
-	vcase(VectorType <float, 2>): return "float2";
-	vcase(VectorType <float, 3>): return "float3";
-	vcase(VectorType <float, 4>): return "float4";
-
-	vcase(MatrixType <int32_t, 2, 2>): return "int2x2";
-	vcase(MatrixType <int32_t, 3, 3>): return "int3x3";
-	vcase(MatrixType <int32_t, 4, 4>): return "int4x4";
-	vcase(MatrixType <uint32_t, 2, 2>): return "uint2x2";
-	vcase(MatrixType <uint32_t, 3, 3>): return "uint3x3";
-	vcase(MatrixType <uint32_t, 4, 4>): return "uint4x4";
-	vcase(MatrixType <float, 2, 2>): return "float2x2";
-	vcase(MatrixType <float, 3, 3>): return "float3x3";
-	vcase(MatrixType <float, 4, 4>): return "float4x4";
-	default:
-		break;
-	}
-
-	return "primitive(?)";
+	return std::string(repr(x));
 }
 
 std::string stringify_type(AsmContext &ctx, AggregateType x, Reference ref)

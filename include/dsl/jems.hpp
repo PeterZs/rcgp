@@ -2,13 +2,11 @@
 
 #include <algorithm>
 
-#include "tracer.hpp"
 #include "instructions.hpp"
+#include "primitive_of.hpp"
+#include "tracer.hpp"
 
-namespace rcgp {
-
-// JIT Emitters
-namespace jems {
+namespace rcgp::jems {
 
 struct handle {
 	Reference _ref;
@@ -92,7 +90,7 @@ inline size_t type_cache_key_for(const Type &type)
 	vcase(PrimitiveType): {
 		auto &prim = type.as <PrimitiveType> ();
 		key = RuntimeTypeRegistry::id <PrimitiveType> ();
-		hash_combine(key, prim.index());
+		hash_combine(key, static_cast <size_t> (prim));
 		return key;
 	}
 	vcase(AggregateType): {
@@ -120,6 +118,7 @@ inline size_t type_cache_key_for(const Type &type)
 template <typename ... Args>
 struct type : handle {
 	type(Args ... args, const std::source_location &loc = std::source_location::current()) {
+		static_assert(sizeof...(Args) == 1);
 		Type t(args...);
 		auto key = type_cache_key_for(t);
 		auto &cache = Tracer::singleton.type_cache;
@@ -138,6 +137,7 @@ struct type : handle {
 template <typename ... Args>
 struct type_loc : handle {
 	type_loc(const std::source_location &loc, Args ... args) {
+		static_assert(sizeof...(Args) == 1);
 		Type t(args...);
 		auto key = type_cache_key_for(t);
 		auto &cache = Tracer::singleton.type_cache;
@@ -156,7 +156,6 @@ struct type_loc : handle {
 template <typename ... Args>
 type(Args ...) -> type <Args...>;
 
-} // namespace jems
-} // namespace rcgp
+} // namespace rcgp::jems
 
 #define $location const std::source_location &loc = std::source_location::current()

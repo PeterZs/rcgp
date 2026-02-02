@@ -21,7 +21,7 @@ add_test(scalar_constant)
 	  context {
 	    model: subroutine,
 	  }
-	  $0 = i32
+	  $0 = Int32
 	  $1 = local $0
 	  $2 = 3
 	  store $1 $2
@@ -42,7 +42,7 @@ add_test(binary_op)
 	  context {
 	    model: subroutine,
 	  }
-	  $0 = i32
+	  $0 = Int32
 	  $1 = local $0
 	  $2 = 1
 	  store $1 $2
@@ -66,7 +66,7 @@ add_test(unary_op)
 	  context {
 	    model: subroutine,
 	  }
-	  $0 = i32
+	  $0 = Int32
 	  $1 = local $0
 	  $2 = 1
 	  store $1 $2
@@ -91,7 +91,7 @@ add_test(assignment_store)
 	  context {
 	    model: subroutine,
 	  }
-	  $0 = i32
+	  $0 = Int32
 	  $1 = local $0
 	  $2 = local $0
 	  $3 = 7
@@ -116,7 +116,7 @@ add_test(increment_decrement)
 	  context {
 	    model: subroutine,
 	  }
-	  $0 = i32
+	  $0 = Int32
 	  $1 = local $0
 	  $2 = 1
 	  store $1 $2
@@ -156,7 +156,7 @@ add_test(type_caching)
 	  context {
 	    model: subroutine,
 	  }
-	  $0 = i32
+	  $0 = Int32
 	  $1 = local $0
 	  $2 = local $0
 	}
@@ -177,7 +177,7 @@ add_test(construct_vec3)
 	  context {
 	    model: subroutine,
 	  }
-	  $0 = f32
+	  $0 = Float
 	  $1 = local $0
 	  $2 = 1
 	  store $1 $2
@@ -187,7 +187,7 @@ add_test(construct_vec3)
 	  $5 = local $0
 	  $6 = 3
 	  store $5 $6
-	  $7 = float3
+	  $7 = Vec3
 	  $8 = new $7($1, $3, $5)
 	  $9 = local $7
 	  store $9 $8
@@ -207,7 +207,7 @@ add_test(swizzle_xyz)
 	  context {
 	    model: subroutine,
 	  }
-	  $0 = float4
+	  $0 = Vec4
 	  $1 = local $0
 	  $2 = swizzle($1, xyz)
 	}
@@ -230,9 +230,9 @@ add_test(field_access)
 	  context {
 	    model: subroutine,
 	  }
-	  $0 = f32
+	  $0 = Float
 	  $1 = local $0
-	  $2 = i32
+	  $2 = Int32
 	  $3 = local $2
 	  $4 = RecordingPair($0, $2)
 	  $5 = local $4
@@ -259,7 +259,7 @@ add_test(array_access)
 	  context {
 	    model: subroutine,
 	  }
-	  $0 = i32
+	  $0 = Int32
 	  $1 = array($0, 4)
 	  $2 = local $1
 	  $3 = local $0
@@ -290,26 +290,26 @@ add_test(for_loop)
 	  context {
 	    model: subroutine,
 	  }
-	  $0 = float2
+	  $0 = Vec2
 	  $1 = array($0, -1)
 	  $2 = storage_buffer($1, nil:0, Std430)
-	  $3 = f32
+	  $3 = Float
 	  $4 = local $3
 	  $5 = 0
 	  store $4 $5
-	  $6 = i32
+	  $6 = Int32
 	  $7 = local $6
 	  $8 = 0
 	  store $7 $8
 	  $9 = block {
-	      $6 = i32
+	      $6 = Int32
 	      $10 = local $6
 	      $11 = 10
 	      store $10 $11
 	      $12 = lt($7, $10)
 	  }
 	  $13 = block {
-	      $6 = i32
+	      $6 = Int32
 	      $14 = local $6
 	      $15 = 1
 	      store $14 $15
@@ -317,8 +317,8 @@ add_test(for_loop)
 	      store $7 $16
 	  }
 	  $17 = block {
-	      $3 = f32
-	      $0 = float2
+	      $3 = Float
+	      $0 = Vec2
 	      $18 = local $0
 	      $19 = index($2, $7)
 	      $20 = swizzle($19, y)

@@ -97,6 +97,49 @@ static auto g_intrinsic_code = std::array {
 	"EmitMeshTasksEXT",
 };
 
+static auto g_primitive_types = std::array {
+	"bool",
+	"int",
+	"uint",
+	"float",
+	"uvec2",
+	"uvec3",
+	"uvec4",
+	"ivec2",
+	"ivec3",
+	"ivec4",
+	"vec2",
+	"vec3",
+	"vec4",
+	"imat2",
+	"imat2x3",
+	"imat2x4",
+	"imat3x2",
+	"imat3",
+	"imat3x4",
+	"imat4x2",
+	"imat4x3",
+	"imat4",
+	"umat2",
+	"umat2x3",
+	"umat2x4",
+	"umat3x2",
+	"umat3",
+	"umat3x4",
+	"umat4x2",
+	"umat4x3",
+	"umat4",
+	"mat2",
+	"mat2x3",
+	"mat2x4",
+	"mat3x2",
+	"mat3",
+	"mat3x4",
+	"mat4x2",
+	"mat4x3",
+	"mat4",
+};
+
 struct GLSLEmitter {
 	// TODO: should instead store the blocks for each method...
 	const SharedBlockReference &sbr;
@@ -724,34 +767,10 @@ struct TypeRepr {
 
 std::string primitive_repr(const PrimitiveType &primitive)
 {
-	vswitch (primitive) {
-	vcase(int32_t): return "int";
-	vcase(uint32_t): return "uint";
-	vcase(float): return "float";
-	vcase(bool): return "bool";
-	vcase(VectorType <float, 2>): return "vec2";
-	vcase(VectorType <float, 3>): return "vec3";
-	vcase(VectorType <float, 4>): return "vec4";
-	vcase(VectorType <int32_t, 2>): return "ivec2";
-	vcase(VectorType <int32_t, 3>): return "ivec3";
-	vcase(VectorType <int32_t, 4>): return "ivec4";
-	vcase(VectorType <uint32_t, 2>): return "uvec2";
-	vcase(VectorType <uint32_t, 3>): return "uvec3";
-	vcase(VectorType <uint32_t, 4>): return "uvec4";
-	vcase(MatrixType <int32_t, 2, 2>): return "imat2";
-	vcase(MatrixType <int32_t, 3, 3>): return "imat3";
-	vcase(MatrixType <int32_t, 4, 4>): return "imat4";
-	vcase(MatrixType <uint32_t, 2, 2>): return "umat2";
-	vcase(MatrixType <uint32_t, 3, 3>): return "umat3";
-	vcase(MatrixType <uint32_t, 4, 4>): return "umat4";
-	vcase(MatrixType <float, 2, 2>): return "mat2";
-	vcase(MatrixType <float, 3, 3>): return "mat3";
-	vcase(MatrixType <float, 4, 4>): return "mat4";
-	default:
-		break;
-	}
-
-	fatal("unhandled primitive type string case");
+	auto raw = std::to_underlying(primitive);
+	if (raw < 0 || static_cast<size_t>(raw) >= g_primitive_types.size())
+		fatal("unhandled primitive type string case");
+	return g_primitive_types.at(static_cast<size_t>(raw));
 }
 
 TypeRepr type_repr(const GLSLEmitter &em, const Reference &ref)

@@ -3,9 +3,10 @@
 #include <cstdlib>
 #include <type_traits>
 
+#include "local.hpp"
+#include "primitive_of.hpp"
 #include "pygen_macro_swizzle.hpp"
 #include "scalar.hpp"
-#include "local.hpp"
 
 namespace rcgp {
 
@@ -51,14 +52,14 @@ public:
 	vector_base() {
 		// TODO: Tracer is_active()
 		if (not Tracer::singleton.records.empty()) {
-			auto type = jems::type(VectorType <T, 2> ());
+			auto type = jems::type(primitive_of <T, 2> ());
 			init_local_if_tracing(*this, type);
 		}
 	}
 	
 	vector_base(const scalar <T> &x, const scalar <T> &y, $location)
 		: handle(wrap_in_local(loc,
-			jems::type_loc(loc, VectorType <T, 2> ()),
+			jems::type_loc(loc, primitive_of <T, 2> ()),
 			x, y
 		)) {}
 };
@@ -72,32 +73,32 @@ public:
 
 	vector_base() {
 		if (not Tracer::singleton.records.empty()) {
-			auto type = jems::type(VectorType <T, 3> ());
+			auto type = jems::type(primitive_of <T, 3> ());
 			init_local_if_tracing(*this, type);
 		}
 	}
 
 	vector_base(const scalar <T> x, $location)
 		: handle(wrap_in_local(loc,
-			jems::type_loc(loc, VectorType <T, 3> ()),
+			jems::type_loc(loc, primitive_of <T, 3> ()),
 			x, x, x
 		)) {}
 
 	vector_base(const vector_base <T, 4> v, $location)
 		: handle(wrap_in_local(loc,
-			jems::type_loc(loc, VectorType <T, 3> ()),
+			jems::type_loc(loc, primitive_of <T, 3> ()),
 			v
 		)) {}
 	
 	vector_base(const vector_base <T, 2> &xy, const scalar <T> &z, $location)
 		: handle(wrap_in_local(loc,
-			jems::type_loc(loc, VectorType <T, 3> ()),
+			jems::type_loc(loc, primitive_of <T, 3> ()),
 			xy, z
 		)) {}
 	
 	vector_base(const scalar <T> &x, const scalar <T> &y, const scalar <T> &z, $location)
 		: handle(wrap_in_local(loc,
-			jems::type_loc(loc, VectorType <T, 3> ()),
+			jems::type_loc(loc, primitive_of <T, 3> ()),
 			x, y, z
 		)) {}
 };
@@ -111,32 +112,32 @@ public:
 
 	vector_base() {
 		if (not Tracer::singleton.records.empty()) {
-			auto type = jems::type(VectorType <T, 4> ());
+			auto type = jems::type(primitive_of <T, 4> ());
 			init_local_if_tracing(*this, type);
 		}
 	}
 	
 	vector_base(const scalar <T> &x, $location)
 		: handle(wrap_in_local(loc,
-			jems::type_loc(loc, VectorType <T, 4> ()),
+			jems::type_loc(loc, primitive_of <T, 4> ()),
 			x, x, x, x
 		)) {}
 	
 	vector_base(const vector_base <T, 3> &xyz, const scalar <T> &w, $location)
 		: handle(wrap_in_local(loc,
-			jems::type_loc(loc, VectorType <T, 4> ()),
+			jems::type_loc(loc, primitive_of <T, 4> ()),
 			xyz, w
 		)) {}
 
 	vector_base(const vector_base <T, 2> &xy, const scalar <T> &z, const scalar <T> &w, $location)
 		: handle(wrap_in_local(loc,
-			jems::type_loc(loc, VectorType <T, 4> ()),
+			jems::type_loc(loc, primitive_of <T, 4> ()),
 			xy, z, w
 		)) {}
 
 	vector_base(const scalar <T> &x, const scalar <T> &y, const scalar <T> &z, const scalar <T> &w, $location)
 		: handle(wrap_in_local(loc,
-			jems::type_loc(loc, VectorType <T, 4> ()),
+			jems::type_loc(loc, primitive_of <T, 4> ()),
 			x, y, z, w
 		)) {}
 };

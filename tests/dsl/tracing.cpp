@@ -43,11 +43,11 @@ add_test(vs_clip)
 	    model: vertex shader,
 	    name: main,
 	  }
-	  $0 = f32
+	  $0 = Float
 	  $1 = local $0
 	  $2 = 1
 	  store $1 $2
-	  $3 = float4
+	  $3 = Vec4
 	  $4 = new $3($1, $1, $1, $1)
 	  $5 = local $3
 	  store $5 $4
@@ -75,24 +75,24 @@ add_test(vs_louts)
 	    stage out 0: $0 (smooth),
 	    stage out 1: $1 (flat),
 	  }
-	  $2 = f32
+	  $2 = Float
 	  $3 = local $2
 	  $4 = 1
 	  store $3 $4
-	  $0 = float3
+	  $0 = Vec3
 	  $5 = new $0($3, $3, $3)
 	  $6 = local $0
 	  store $6 $5
 	  $7 = stage out($0, 0, smooth)
 	  store $7 $6
-	  $8 = u32
+	  $8 = UInt32
 	  $9 = local $8
 	  $10 = 4
 	  store $9 $10
 	  $11 = local $8
 	  $12 = 1
 	  store $11 $12
-	  $1 = uint2
+	  $1 = UVec2
 	  $13 = new $1($11, $9)
 	  $14 = local $1
 	  store $14 $13
@@ -121,9 +121,9 @@ add_test(vs_stream)
 	    stage in 0: $0,
 	    stage out 0: $0 (smooth),
 	  }
-	  $1 = float4
-	  $2 = f32
-	  $0 = float3
+	  $1 = Vec4
+	  $2 = Float
+	  $0 = Vec3
 	  $3 = local $0
 	  $4 = stage in($0, 0)
 	  $5 = local $2
@@ -161,11 +161,11 @@ add_test(vs_push_constant)
 	    stage out 0: $0 (smooth),
 	    resource: {$1},
 	  }
-	  $2 = float4
-	  $3 = f32
-	  $0 = float3
+	  $2 = Vec4
+	  $3 = Float
+	  $0 = Vec3
 	  $4 = local $0
-	  $5 = float4x4
+	  $5 = FMat4x4
 	  $6 = local $5
 	  $7 = local $5
 	  $8 = local $5

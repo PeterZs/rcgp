@@ -4,6 +4,7 @@
 
 #include "scalar.hpp"
 #include "local.hpp"
+#include "primitive_of.hpp"
 
 namespace rcgp {
 
@@ -14,14 +15,14 @@ public:
 	matrix() {
 		if (Tracer::singleton.records.empty())
 			return;
-		auto type = jems::type_loc(std::source_location::current(), MatrixType <T, N, M> ());
+		auto type = jems::type_loc(std::source_location::current(), primitive_of <T, N, M> ());
 		init_local_if_tracing(*this, type);
 	}
 
 	template <size_t A, size_t B>
 	explicit matrix(const matrix <T, A, B> &other)
 		: handle(jems::construct(
-			jems::type(MatrixType <T, N, M> ()),
+			jems::type(primitive_of <T, N, M> ()),
 			other
 		)) {}
 
@@ -37,7 +38,7 @@ public:
 			return *this;
 		}
 
-		auto type = jems::type_loc(std::source_location::current(), MatrixType <T, N, M> ());
+		auto type = jems::type_loc(std::source_location::current(), primitive_of <T, N, M> ());
 		assign_or_store(*this, rhs, type);
 		return *this;
 	}

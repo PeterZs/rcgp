@@ -66,7 +66,7 @@ template <typename T, size_t D>
 jems::handle resource_intrinsic(const Sampler <T, D> &, uint32_t binding)
 {
 	return jems::global_resource(
-		jems::type(VectorType <T, D> ()),
+		jems::type(primitive_of <T, D> ()),
 		GlobalResourceKind::eSampler,
 		GlobalResourceLayout::eNone,
 		GlobalResourceAccess::eRead,

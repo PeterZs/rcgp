@@ -16,7 +16,8 @@ def gen_jems_instantiations() -> tuple[list[str], list[str]]:
     scalar_types = ['int32_t', 'uint32_t', 'float']
     scalar_types_with_bool = ['bool'] + scalar_types
     vector_dims = [2, 3, 4]
-    matrix_dims_type = [3, 4]  # PrimitiveType only includes float 3x3 and 4x4
+    matrix_dims_type = [2, 3, 4]
+    matrix_dims_all = [2, 3, 4]
     matrix_dims_ops = [2, 3, 4]
 
     header = []
@@ -44,19 +45,8 @@ def gen_jems_instantiations() -> tuple[list[str], list[str]]:
         add_extern('constant', t)
         add_extern('constant_loc', t)
 
-    # type / type_loc for scalars and vector/matrix/array/aggregate
-    for t in scalar_types_with_bool:
-        add_extern('type', t)
-        add_extern('type_loc', t)
-
-    for t in scalar_types:
-        for d in vector_dims:
-            add_extern('type', f'VectorType <{t}, {d}>')
-            add_extern('type_loc', f'VectorType <{t}, {d}>')
-
-    for d in matrix_dims_type:
-        add_extern('type', f'MatrixType <float, {d}, {d}>')
-        add_extern('type_loc', f'MatrixType <float, {d}, {d}>')
+    add_extern('type', 'PrimitiveType')
+    add_extern('type_loc', 'PrimitiveType')
 
     add_extern('type', 'ArrayType')
     add_extern('type_loc', 'ArrayType')
@@ -130,19 +120,18 @@ def gen_jems_instantiations() -> tuple[list[str], list[str]]:
 
     # construct_loc for vector constructors (common shapes)
     for t in scalar_types:
-        add_extern('construct_loc', f'jems::type_loc <VectorType <{t}, 2>>, scalar <{t}>, scalar <{t}>')
-        add_extern('construct_loc', f'jems::type_loc <VectorType <{t}, 3>>, scalar <{t}>')
-        add_extern('construct_loc', f'jems::type_loc <VectorType <{t}, 3>>, vector_base <{t}, 4>')
-        add_extern('construct_loc', f'jems::type_loc <VectorType <{t}, 3>>, vector_base <{t}, 2>, scalar <{t}>')
-        add_extern('construct_loc', f'jems::type_loc <VectorType <{t}, 3>>, scalar <{t}>, scalar <{t}>, scalar <{t}>')
-        add_extern('construct_loc', f'jems::type_loc <VectorType <{t}, 4>>, scalar <{t}>')
-        add_extern('construct_loc', f'jems::type_loc <VectorType <{t}, 4>>, vector_base <{t}, 3>, scalar <{t}>')
-        add_extern('construct_loc', f'jems::type_loc <VectorType <{t}, 4>>, vector_base <{t}, 2>, scalar <{t}>, scalar <{t}>')
+        add_extern('construct_loc', f'jems::type_loc <PrimitiveType>, scalar <{t}>, scalar <{t}>')
+        add_extern('construct_loc', f'jems::type_loc <PrimitiveType>, scalar <{t}>')
+        add_extern('construct_loc', f'jems::type_loc <PrimitiveType>, vector_base <{t}, 4>')
+        add_extern('construct_loc', f'jems::type_loc <PrimitiveType>, vector_base <{t}, 2>, scalar <{t}>')
+        add_extern('construct_loc', f'jems::type_loc <PrimitiveType>, scalar <{t}>, scalar <{t}>, scalar <{t}>')
+        add_extern('construct_loc', f'jems::type_loc <PrimitiveType>, vector_base <{t}, 3>, scalar <{t}>')
+        add_extern('construct_loc', f'jems::type_loc <PrimitiveType>, vector_base <{t}, 2>, scalar <{t}>, scalar <{t}>')
 
-    # construct for matrix (float 3x3 and 4x4 only)
+    # construct for matrix (float square only)
     for d in matrix_dims_type:
         args = ', '.join(['scalar <float>'] * (d * d))
-        add_extern('construct', f'jems::type <MatrixType <float, {d}, {d}>>, {args}')
+        add_extern('construct', f'jems::type <PrimitiveType>, {args}')
 
     # store and loc for common shapes
     add_extern('store', 'jems::handle, scalar <float>')

@@ -5,6 +5,7 @@
 
 #include "jems.hpp"
 #include "local.hpp"
+#include "primitive_of.hpp"
 #include "primitives_concepts.hpp"
 
 namespace rcgp {
@@ -18,7 +19,7 @@ public:
 
 	scalar() {
 		if (!Tracer::singleton.records.empty()) {
-			auto type = jems::type_loc(std::source_location::current(), T());
+			auto type = jems::type_loc(std::source_location::current(), primitive_of <T> ());
 			init_local_if_tracing(*this, type);
 		}
 	}
@@ -30,7 +31,7 @@ public:
 			return;
 		}
 
-		auto local = jems::local(jems::type_loc(loc, T()));
+		auto local = jems::local(jems::type_loc(loc, primitive_of <T> ()));
 		_ref = local;
 		jems::store(local, jems::constant_loc(loc, value));
 	}
@@ -41,7 +42,7 @@ public:
 			return *this;
 		}
 
-		auto type = jems::type_loc(std::source_location::current(), T());
+		auto type = jems::type_loc(std::source_location::current(), primitive_of <T> ());
 		assign_or_store(*this, rhs, type);
 		return *this;
 	}
