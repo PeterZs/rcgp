@@ -17,12 +17,15 @@ struct Constant : variant <
 	bool,
 	int32_t,
 	uint32_t,
-	float, std::string
+	float,
+	std::string
 > {
 	using variant_self::variant;
 
 	std::string repr() const {
-		return "Constant";
+		return std::visit([](auto x) {
+			return fmt::format("{}", x);
+		}, *this);
 	}
 };
 

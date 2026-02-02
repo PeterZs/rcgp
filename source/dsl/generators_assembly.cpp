@@ -540,19 +540,10 @@ std::string generate(AsmContext &ctx)
 	}
 
 	for (auto [k, v] : ctx.sbr->context.global_resources) {
-		std::string set;
-
-		size_t count = 0;
-		for (auto &vv : v) {
-			set += stringify(ctx, vv);
-			if (++count < v.size())
-				set += ", ";
-		}
-
 		if (ctx.debug)
-			result += fmt::format("    resource {}: {{{}}},\n", k, set);
+			result += fmt::format("    resource {}: {},\n", k, stringify(ctx, v));
 		else
-			result += fmt::format("    resource: {{{}}},\n", set);
+			result += fmt::format("    resource: {{{}}},\n", stringify(ctx, v));
 	}
 
 	result += "  }\n";

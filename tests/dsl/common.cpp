@@ -129,16 +129,16 @@ void show_diff(const std::string &expected_str, const std::string &actual_str)
 	}
 }
 
-std::string clean(const std::string &input)
+std::string clean(const std::string &input, size_t end_trim)
 {
 	auto lines = split_lines(input);
 
-	lines = std::vector(lines.begin() + 1, lines.end() - 1);
+	lines = std::vector(lines.begin() + 1, lines.end() - end_trim);
 
 	std::string result;
 	for (size_t i = 0; i < lines.size(); i++) {
 		size_t off = 0;
-		if (lines[i][0] == '\t')
+		if (lines[i].size() && lines[i][0] == '\t')
 			off++;
 
 		result += lines[i].substr(off);
@@ -151,14 +151,30 @@ std::string clean(const std::string &input)
 
 void assert_assembly_match(const SharedBlockReference &block, const std::string &str)
 {
-	auto expected = clean(str);
+	auto expected = clean(str, 1);
 	auto act = generate_assembly(block);
 	if (act != expected) {
 		show_diff(expected, act);
-		if (g_suite.show_ground_truth) {
+		if (tests.show_ground_truth) {
 			auto style = fmt::fg(fmt::color::gray)
 				| fmt::emphasis::italic;
-			fmt::print(style, "{}\n", act);
+			fmt::print(style, "ground truth:\n{}\n", act);
+		}
+
+		mark_fail;
+	}
+}
+
+void assert_glsl_match(const SharedBlockReference &block, const std::string &str)
+{
+	auto expected = clean(str, 0);
+	auto act = generate_glsl(block);
+	if (act != expected) {
+		show_diff(expected, act);
+		if (tests.show_ground_truth) {
+			auto style = fmt::fg(fmt::color::gray)
+				| fmt::emphasis::italic;
+			fmt::print(style, "ground truth:\n{}\n", act);
 		}
 
 		mark_fail;

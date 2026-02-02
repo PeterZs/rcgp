@@ -5,38 +5,65 @@
 
 int main(int argc, char *argv[])
 {
+	std::string suite;
+	std::string filter;
+
 	size_t argi = 1;
 	while (argi < argc) {
-		if (argv[argi] == std::string("--gt"))
-			g_suite.show_ground_truth = true;
+		std::string arg = argv[argi];
+		if (arg == "--gt")
+			tests.show_ground_truth = true;
+		else if (arg.starts_with("--suite="))
+			suite = arg.substr(8);
+		else if (arg.starts_with("--filter="))
+			filter = arg.substr(9);
+
 		argi++;
 	}
 
 	auto pass_style = fmt::emphasis::bold | fmt::fg(fmt::color::light_green);
 	auto fail_style = fmt::emphasis::bold | fmt::fg(fmt::color::orange_red);
 
-	std::vector <std::string> failing;
-	for (auto &test : g_suite.tests) {
-		g_suite.pass = true;
+	size_t passed = 0;
+	size_t skipped = 0;
+	size_t ran = 0;
 
-		test.impl();
-
-		if (g_suite.pass) {
-			fmt::print(pass_style, "passed: ");
-		} else {
-			fmt::print(fail_style, "failed: ");
-			failing.push_back(test.name);
+	std::vector <test> failing;
+	for (auto &test : tests.tests) {
+		if (suite.size() and test.suite != suite) {
+			skipped++;
+			continue;
 		}
 
-		fmt::println("{}", test.name);
+		if (filter.size() and not test.name.contains(filter)) {
+			skipped++;
+			continue;
+		}
+
+		tests.pass = true;
+		test.impl();
+		ran++;
+
+		if (tests.pass) {
+			fmt::print(pass_style, "passed: ");
+			passed++;
+		} else {
+			fmt::print(fail_style, "failed: ");
+			failing.push_back(test);
+		}
+
+		fmt::println("{}::{}", test.suite, test.name);
 	}
 
 	if (failing.size()) {
 		fmt::print(fail_style, "summary: ");
-		fmt::print("{}/{} tests failed:\n", failing.size(), g_suite.tests.size());
-		for (auto &name : failing)
-			fmt::print(fmt::fg(fmt::color::gray), "  {}\n", name);
+		fmt::print("{}/{} tests failed:\n", failing.size(), ran);
+		for (auto &test : failing)
+			fmt::print(fmt::fg(fmt::color::gray), "  {}::{}\n", test.suite, test.name);
 		return EXIT_FAILURE;
+	} else {
+		fmt::print(pass_style, "summary: ");
+		fmt::print("passed {} tests, skipped {} tests\n", passed, skipped);
 	}
 
 	return EXIT_SUCCESS;

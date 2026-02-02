@@ -30,6 +30,8 @@ struct GlobalResource {
 	}
 };
 
+// TODO: separate one for subroutine arguments...
+
 struct ThreadInput {
 	Reference type;
 	// corresponds to actual order

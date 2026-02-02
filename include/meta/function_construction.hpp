@@ -46,7 +46,7 @@ auto trace(auto ftn)
 			auto returns = std::apply(ftn, args);
 			// TODO: provide stage
 			size_t argi = 0;
-			return_handler(returns, argi);
+			return_handler <S> (returns, argi);
 		}
 	}
 

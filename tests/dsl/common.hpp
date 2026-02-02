@@ -11,29 +11,31 @@ using namespace rcgp;
 using test_impl = std::function <void ()>;
 
 struct test {
+	std::string suite;
 	std::string name;
 	test_impl impl;
 };
 
-struct suite {
+struct test_collection {
 	bool pass;
 	bool show_ground_truth;
 	std::vector <test> tests;
-} inline g_suite;
+} inline tests;
 
-#define mark_fail g_suite.pass = false
+#define mark_fail tests.pass = false
 
-inline auto operator*(const std::string &name, const test_impl &impl)
+inline auto operator*(const test &t, const test_impl &impl)
 {
-	return test(name, impl);
+	return test(t.suite, t.name, impl);
 }
 
-inline auto operator<<(suite &s, const test &item)
+inline auto operator<<(test_collection &s, const test &item)
 {
 	s.tests.push_back(item);
 	return item;
 }
 
-#define add_test(name) auto name = g_suite << #name * []
+#define add_test(name) static auto name = tests << test(SUITE, #name, nullptr) * []
 
 void assert_assembly_match(const SharedBlockReference &block, const std::string &str);
+void assert_glsl_match(const SharedBlockReference &block, const std::string &str);

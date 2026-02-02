@@ -1,6 +1,6 @@
 #include "common.hpp"
 
-using namespace rcgp;
+#define SUITE "recording"
 
 struct RecordingPair {
 	f32 x;

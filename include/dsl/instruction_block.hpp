@@ -29,9 +29,10 @@ struct Block : std::vector <Reference> {
 		std::string name;
 
 		std::vector <Argument> arguments;
+		// TODO: should refactor to stage inputs/outputs
 		std::vector <ThreadInput> thread_inputs;
 		std::vector <ThreadOutput> thread_outputs;
-		std::map <void *, std::set <Reference>> global_resources;
+		std::map <void *, Reference> global_resources;
 		std::optional <std::array <uint32_t, 3>> workgroup_size;
 		std::optional <Reference> task_payload_type;
 		std::optional <uint32_t> mesh_max_vertices;
@@ -40,10 +41,10 @@ struct Block : std::vector <Reference> {
 		std::map <uint32_t, bool> mesh_perprimitive_outputs;
 		uint32_t mesh_output_counter = 0;
 		
-		void add_argument(Argument arg);
-		void add_thread_input(ThreadInput tin);
-		void add_thread_output(ThreadOutput tout);
-		void add_global_resource(void *addr, Reference resource);
+		void add_argument(const Argument &arg);
+		void add_thread_input(const ThreadInput &tin);
+		void add_thread_output(const ThreadOutput &tout);
+		void add_global_resource(void *addr, const Reference &resource);
 		void set_workgroup_size(uint32_t x, uint32_t y, uint32_t z);
 	} context;
 	

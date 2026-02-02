@@ -18,6 +18,7 @@ set(RCGP_GENERATED
 	${CMAKE_CURRENT_LIST_DIR}/include/dsl/pygen_macro_swizzle.hpp
 	${CMAKE_CURRENT_LIST_DIR}/source/dsl/pygen_jems_instantiations.cpp
 	${CMAKE_CURRENT_LIST_DIR}/source/dsl/pygen_intrinsics_arithmetic.cpp
+	${CMAKE_CURRENT_LIST_DIR}/source/dsl/pygen_instruction_enums.cpp
 )
 
 add_custom_command(
@@ -25,9 +26,11 @@ add_custom_command(
 	COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/include/dsl/generate_instantiations.py
 	COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/include/dsl/generate_macro_swizzle.py
 		${CMAKE_CURRENT_LIST_DIR}/include/dsl/pygen_macro_swizzle.hpp
+	COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/include/dsl/generate_instruction_enums.py
 	DEPENDS ${CMAKE_CURRENT_LIST_DIR}/include/dsl/generate_instantiations.py
 		${CMAKE_CURRENT_LIST_DIR}/include/dsl/generate_macro_swizzle.py
-	COMMENT "Generating DSL instantiation headers/sources"
+		${CMAKE_CURRENT_LIST_DIR}/include/dsl/generate_instruction_enums.py
+		COMMENT "Running Python header/source generator scripts"
 )
 
 add_custom_target(rcgp_generated
@@ -40,13 +43,12 @@ file(GLOB_RECURSE RCGP_LIBRARY_SOURCES CONFIGURE_DEPENDS
 	"${CMAKE_CURRENT_LIST_DIR}/source/util/*.cpp"
 )
 
+# Primary library
 add_library(rcgp STATIC
 	${RCGP_LIBRARY_SOURCES}
 	${RCGP_GENERATED}
 )
-
 add_dependencies(rcgp rcgp_generated)
-
 target_precompile_headers(rcgp PRIVATE <vulkan/vulkan.hpp>)
 target_link_libraries(rcgp PUBLIC
 	fmt
@@ -57,10 +59,10 @@ target_link_libraries(rcgp PUBLIC
 )
 
 add_executable(test EXCLUDE_FROM_ALL
-	tests/cpp/main.cpp
-	tests/cpp/mirror/std430.cpp
-	tests/cpp/mirror/scalar.cpp
+	tests/dsl/main.cpp
+	tests/dsl/common.cpp
+	tests/dsl/recording.cpp
+	tests/dsl/tracing.cpp
+	tests/dsl/glsl.cpp
 )
-
-target_precompile_headers(test REUSE_FROM rcgp)
-target_link_libraries(test PRIVATE rcgp)
+target_link_libraries(test rcgp)

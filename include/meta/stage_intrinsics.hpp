@@ -66,7 +66,7 @@ struct TaskGroup : WorkGroup <X, Y, Z> {
 	}
 };
 
-// Optional result of the vertex shader
+// Interpolation qualifiers for varying attributes
 template <primitive T, RateProperties P>
 struct Interpolant : jems::handle {
 	Interpolant() = default;
@@ -82,14 +82,32 @@ struct Interpolant : jems::handle {
 	}
 };
 
+// Smooth interpolation
 template <primitive T>
-using Smooth = Interpolant <T, RateProperties::eSmooth>;
+struct Smooth : Interpolant <T, RateProperties::eSmooth> {
+	using Interpolant <T, RateProperties::eSmooth> ::Interpolant;
+};
 
 template <primitive T>
-using Flat = Interpolant <T, RateProperties::eFlat>;
+Smooth(const T &) -> Smooth <T>;
+
+// Flat (no) interpolation
+template <primitive T>
+struct Flat : Interpolant <T, RateProperties::eFlat> {
+	using Interpolant <T, RateProperties::eFlat> ::Interpolant;
+};
 
 template <primitive T>
-using NoPerspective = Interpolant <T, RateProperties::eNoPerspective>;
+Flat(const T &) -> Flat <T>;
+
+// Smooth (without perspective correction) interpolation
+template <primitive T>
+struct NoPerspective : Interpolant <T, RateProperties::eNoPerspective> {
+	using Interpolant <T, RateProperties::eNoPerspective> ::Interpolant;
+};
+
+template <primitive T>
+NoPerspective(const T &) -> NoPerspective <T>;
 
 // Required result of the task shader
 template <typename T>

@@ -13,25 +13,22 @@ Reference Block::add(const T &sub, const Debug aux)
 void Block::apply_group_allocation_map(const group_allocation_map &map)
 {
 	for (auto &[addr, group] : map) {
-		auto &refs = context.global_resources[addr];
-		for (auto &ref : refs)
-			ref->as <GlobalResource> ().group = group;
+		auto &ref = context.global_resources[addr];
+		ref->as <GlobalResource> ().group = group;
 	}
 }
 
 void Block::apply_push_constant_allocation_map(const push_constant_allocation_map &map)
 {
 	for (auto &[addr, layout] : map) {
-		auto &refs = context.global_resources[addr];
-		for (auto &ref : refs) {
-			auto &grsrc = ref->as <GlobalResource> ();
-			grsrc.push_constant_index = layout.index;
-			grsrc.push_constant_offset = layout.offset;
-		}
+		auto &ref = context.global_resources[addr];
+		auto &grsrc = ref->as <GlobalResource> ();
+		grsrc.push_constant_index = layout.index;
+		grsrc.push_constant_offset = layout.offset;
 	}
 }
 
-void Block::Context::add_argument(Argument arg)
+void Block::Context::add_argument(const Argument &arg)
 {
 	if (arguments.size() > arg.argi) {
 		// already registered
@@ -42,7 +39,7 @@ void Block::Context::add_argument(Argument arg)
 	}
 }
 
-void Block::Context::add_thread_input(ThreadInput tin)
+void Block::Context::add_thread_input(const ThreadInput &tin)
 {
 	if (thread_inputs.size() > tin.argi) {
 		// already registered
@@ -53,7 +50,7 @@ void Block::Context::add_thread_input(ThreadInput tin)
 	}
 }
 
-void Block::Context::add_thread_output(ThreadOutput tout)
+void Block::Context::add_thread_output(const ThreadOutput &tout)
 {
 	if (thread_outputs.size() > tout.argi) {
 		// already registered
@@ -66,12 +63,9 @@ void Block::Context::add_thread_output(ThreadOutput tout)
 	}
 }
 
-void Block::Context::add_global_resource(void *addr, Reference resource)
+void Block::Context::add_global_resource(void *addr, const Reference &resource)
 {
-	if (not global_resources.contains(addr))
-		global_resources.emplace(addr, std::set <Reference> ());
-
-	global_resources[addr].insert(resource);
+	global_resources.emplace(addr, resource);
 }
 
 void Block::Context::set_workgroup_size(uint32_t x, uint32_t y, uint32_t z)

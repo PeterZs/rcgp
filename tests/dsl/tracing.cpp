@@ -1,7 +1,8 @@
 #include "common.hpp"
 
-using namespace rcgp;
+#define SUITE "tracing"
 
+// Resources
 struct View {
 	float4x4 model;
 	float4x4 view;
@@ -10,10 +11,11 @@ struct View {
 	$reflection(model, view, proj);
 };
 
-PushConstant <View> view;
+static PushConstant <View> view;
 
-AttributeStream <float3> position;
+static AttributeStream <float3> position;
 
+// Tests
 add_test(vs_empty)
 {
 	auto vs = $shader(vertex)() {};
@@ -117,7 +119,7 @@ add_test(vs_stream)
 	    model: vertex shader,
 	    name: main,
 	    thread in 0: $0,
-	    thread out 0: $0 (-),
+	    thread out 0: $0 (smooth),
 	  }
 	  $1 = float4
 	  $2 = f32
@@ -132,7 +134,7 @@ add_test(vs_stream)
 	  store $8 $7
 	  $9 = SVPosition
 	  store $9 $8
-	  $10 = thread out($0, 0, -)
+	  $10 = thread out($0, 0, smooth)
 	  store $10 $4
 	}
 	)");
@@ -156,7 +158,7 @@ add_test(vs_push_constant)
 	    model: vertex shader,
 	    name: main,
 	    thread in 0: $0,
-	    thread out 0: $0 (-),
+	    thread out 0: $0 (smooth),
 	    resource: {$1},
 	  }
 	  $2 = float4
@@ -190,7 +192,7 @@ add_test(vs_push_constant)
 	  $25 = new $0($21)
 	  $26 = local $0
 	  store $26 $25
-	  $27 = thread out($0, 0, -)
+	  $27 = thread out($0, 0, smooth)
 	  store $27 $26
 	}
 	)");

@@ -43,7 +43,7 @@ struct variant : std::variant <Args...> {
 
 #define vswitch(value)					\
 	using T = std::decay_t <decltype(value)>;	\
-	switch (value.index())
+	switch ((value).index())
 
 #define vcase(...) case T::type_index <__VA_ARGS__> ()
 
