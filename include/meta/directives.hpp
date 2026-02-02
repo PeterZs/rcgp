@@ -1,6 +1,8 @@
 #pragma once
 
 #include <array>
+#include <optional>
+#include <vector>
 #include <type_traits>
 
 #include "../rhi/command_buffer.hpp"
@@ -32,6 +34,27 @@ inline auto begin_render_pass(
 			.setClearValues(clear_values);
 
 		cmd.beginRenderPass(rp_begin, vk::SubpassContents::eInline);
+	};
+
+	return Commands <> { binder };
+}
+
+inline auto begin_rendering(
+	const vk::Rect2D &render_area,
+	std::vector <vk::RenderingAttachmentInfo> color_attachments,
+	std::optional <vk::RenderingAttachmentInfo> depth_attachment = std::nullopt
+)
+{
+	auto binder = [=](const CommandBuffer &cmd, SerializationContext &) {
+		auto rendering = vk::RenderingInfo()
+			.setRenderArea(render_area)
+			.setLayerCount(1)
+			.setColorAttachments(color_attachments);
+
+		if (depth_attachment.has_value())
+			rendering.setPDepthAttachment(&depth_attachment.value());
+
+		cmd.beginRendering(rendering);
 	};
 
 	return Commands <> { binder };
@@ -174,6 +197,15 @@ inline auto end_render_pass()
 {
 	auto binder = [](const CommandBuffer &cmd, SerializationContext &) {
 		cmd.endRenderPass();
+	};
+
+	return Commands <> { binder };
+}
+
+inline auto end_rendering()
+{
+	auto binder = [](const CommandBuffer &cmd, SerializationContext &) {
+		cmd.endRendering();
 	};
 
 	return Commands <> { binder };

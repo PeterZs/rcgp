@@ -88,6 +88,7 @@ struct Device {
 		bool mesh_shaders = false;
 		bool maintenance4 = false;
 		bool scalar_block_layout = false;
+		bool dynamic_rendering = false;
 	};
 
 	static Device from(

@@ -13,7 +13,7 @@
 namespace rcgp {
 
 //  TODO: move these to some other file
-consteval vk::ShaderStageFlags stage_to_flag(ShaderStage S)
+consteval vk::ShaderStageFlagBits stage_to_flag(ShaderStage S)
 {
 	switch (S) {
 	case ShaderStage::eVertex: return vk::ShaderStageFlagBits::eVertex;

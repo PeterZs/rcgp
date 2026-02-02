@@ -23,6 +23,21 @@ struct vertex_output_value <Interpolant <T, P>> {
 	using type = T;
 };
 
+template <primitive T>
+struct vertex_output_value <Smooth <T>> {
+	using type = T;
+};
+
+template <primitive T>
+struct vertex_output_value <Flat <T>> {
+	using type = T;
+};
+
+template <primitive T>
+struct vertex_output_value <NoPerspective <T>> {
+	using type = T;
+};
+
 template <typename T>
 using vertex_output_value_t = typename vertex_output_value <T> ::type;
 

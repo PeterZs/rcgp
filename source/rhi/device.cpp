@@ -187,6 +187,9 @@ Device Device::from(
 		feature_chain = &mesh_features;
 	}
 
+	if (options.dynamic_rendering)
+		features13.setDynamicRendering(true);
+
 	features13.setPNext(feature_chain);
 
 	auto device_info = vk::DeviceCreateInfo()

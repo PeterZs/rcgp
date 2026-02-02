@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vulkan/vulkan.hpp>
+
 #include "../dsl/jems.hpp"
 #include "../util/cti.hpp"
 #include "layouts.hpp"

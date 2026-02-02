@@ -19,9 +19,19 @@ template <typename ... Stage>
 auto shaders_to_modules(const Device &device, const ShaderCompiler &compiler, Stage &&... shaders)
 {
 	auto process = [&](auto shader) {
+		constexpr auto stage = decltype(shader)::stage;
+		auto asms = generate_assembly(shader);
+		std::println("assembly for {} shader:\n{}",
+			vk::to_string(stage_to_flag(stage)),
+			asms);
 		auto glsl = generate_glsl(shader);
-		auto spirv = compiler.glsl_to_spirv(glsl, stage_to_esh(decltype(shader)::stage));
-		return device.new_shader_module(spirv);
+		// std::println("glsl {} shader:\n{}", vk::to_string(stage_to_flag(stage)), glsl);
+		auto spirv = compiler.glsl_to_spirv(glsl, stage_to_esh(stage));
+		// TODO: make more error tolerant
+		if (spirv.empty())
+			return vk::ShaderModule();
+		else
+			return device.new_shader_module(spirv);
 	};
 
 	return std::tuple(process(shaders)...);
@@ -44,8 +54,10 @@ struct RasterizationCombinator {
 	) const {
 		TSCOPE("rasterization combinator");
 
-		[[maybe_unused]] constexpr bool interface_ok =
-			vertex_fragment_interface <VRet, Bs...> ::value;
+		// TODO: return a Tlist of error static strings...
+		// probably needs a error <auto s>
+		// [[maybe_unused]] constexpr bool interface_ok =
+		// 	vertex_fragment_interface <VRet, Bs...> ::value;
 
 		using vertex_icontext = icontext_from_args_t <As...>;
 		using fragment_icontext = icontext_from_args_t <Bs...>;
@@ -73,6 +85,66 @@ struct RasterizationCombinator {
 		auto pipeline = compile_rasterization_pipeline(
 			device,
 			render_pass,
+			translate_topology(T),
+			vmod, fmod,
+			"main", "main",
+			layout,
+			vertex_bindings,
+			vertex_attributes,
+			options
+		);
+
+		return RasterizationPipeline <
+			T,
+			decltype(streams),
+			decltype(gamap),
+			decltype(gvrs)
+		> (device.logical, pipeline, layout, dsls);
+	}
+};
+
+template <Topology T>
+struct DynamicRasterizationCombinator {
+	const Device &device;
+	const ShaderCompiler &compiler;
+	RasterizationRenderingFormats formats;
+	RasterizationOptions options;
+
+	template <
+		typename VRet, typename ... As,
+		typename FRet, typename ... Bs
+	>
+	auto operator()(
+		shader_stage <ShaderStage::eVertex, VRet, As...> &vertex,
+		shader_stage <ShaderStage::eFragment, FRet, Bs...> &fragment
+	) const {
+		TSCOPE("dynamic rasterization combinator");
+
+		// [[maybe_unused]] constexpr bool interface_ok =
+		// 	vertex_fragment_interface <VRet, Bs...> ::value;
+
+		using vertex_icontext = icontext_from_args_t <As...>;
+		using fragment_icontext = icontext_from_args_t <Bs...>;
+
+		auto streams = collect_streams(vertex_icontext());
+		auto vertex_bindings = sequence_to_vertex_bindings(streams);
+		auto vertex_attributes = sequence_to_vertex_attributes(streams);
+
+		auto gvrs = merge_stage_wrappers(tlist_concat(
+			collect_gvrs <ShaderStage::eVertex> (vertex_icontext()),
+			collect_gvrs <ShaderStage::eFragment> (fragment_icontext())
+		));
+
+		auto [layout, dsls, gamap] = apply_gvrs(device, gvrs, vertex, fragment);
+
+		auto [vmod, fmod] = shaders_to_modules(
+			device, compiler,
+			vertex, fragment
+		);
+
+		auto pipeline = compile_rasterization_pipeline_dynamic(
+			device,
+			formats,
 			translate_topology(T),
 			vmod, fmod,
 			"main", "main",
