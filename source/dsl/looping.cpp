@@ -49,7 +49,7 @@ _loop_holder::~_loop_holder()
 		std::move(cond_value),
 		std::move(step_block),
 		std::move(body_block),
-	}, Debug {});
+	}, DebugInfo {});
 }
 
 } // namespace rcgp

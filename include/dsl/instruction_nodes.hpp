@@ -6,14 +6,85 @@
 #include <string>
 #include <vector>
 #include <print>
+#include <memory>
 
 #include <fmt/format.h>
 
-#include "instruction_enums.hpp"
-#include "instruction_types.hpp"
+#include "../util/variant.hpp"
+#include "enumerations.hpp"
 
 namespace rcgp {
 
+// TODO: move repr implementations to instruction_nodes.cpp
+
+// Forward declarations
+struct Block;
+struct Instruction;
+
+using SharedBlockReference = std::shared_ptr <Block>;
+using Reference = std::shared_ptr <Instruction>;
+
+template <typename T, size_t N>
+struct VectorType {};
+
+template <typename T, size_t N, size_t M>
+struct MatrixType {};
+
+// TODO: just make this an enum...
+struct PrimitiveType : variant <
+	bool,
+	int32_t,
+	uint32_t,
+	float,
+	
+	// Vector types
+	VectorType <uint32_t, 2>,
+	VectorType <uint32_t, 3>,
+	VectorType <uint32_t, 4>,
+
+	VectorType <int32_t, 2>,
+	VectorType <int32_t, 3>,
+	VectorType <int32_t, 4>,
+
+	VectorType <float, 2>,
+	VectorType <float, 3>,
+	VectorType <float, 4>,
+
+	// Matrix types
+	MatrixType <int32_t, 2, 2>,
+	MatrixType <int32_t, 3, 3>,
+	MatrixType <int32_t, 4, 4>,
+	MatrixType <uint32_t, 2, 2>,
+	MatrixType <uint32_t, 3, 3>,
+	MatrixType <uint32_t, 4, 4>,
+	MatrixType <float, 2, 2>,
+	MatrixType <float, 3, 3>,
+	MatrixType <float, 4, 4>
+> {
+	using variant_self::variant;
+};
+
+struct AggregateType : std::vector <Reference> {
+	std::string name;
+};
+
+struct ArrayType {
+	Reference base;
+	int64_t size;
+};
+
+// @node Type
+struct Type : variant <
+	PrimitiveType,
+	AggregateType,
+	ArrayType
+> {
+	using variant_self::variant;
+
+	std::string repr() const;
+};
+
+// @node Constant
 struct Constant : variant <
 	bool,
 	int32_t,
@@ -30,6 +101,7 @@ struct Constant : variant <
 	}
 };
 
+// @node Operation
 struct Operation {
 	OperationCode code;
 	Reference a;
@@ -151,16 +223,47 @@ struct Store {
 	}
 };
 
-// TODO: enable/disable with macros... or templated instructions?
-struct Debug {
-	std::source_location origin;
-};
+struct GlobalResource {
+	Reference type;
+	GlobalResourceKind kind;
+	GlobalResourceLayout layout;
+	GlobalResourceAccess access = GlobalResourceAccess::eReadWrite;
 
-struct Return {
-	Reference value;
+	std::optional <uint32_t> group;
+	std::optional <uint32_t> index;
+	std::optional <uint32_t> offset;
 
 	std::string repr() const {
-		return "Return";
+		return std::format("GlobalResource({}, {})",
+			rcgp::repr(kind), rcgp::repr(layout));
+	}
+};
+
+struct Argument {
+	Reference type;
+	uint32_t argi;
+
+	std::string repr() const {
+		return std::format("Argument({})", argi);
+	}
+};
+
+struct StageInput {
+	Reference type;
+	uint32_t argi;
+
+	std::string repr() const {
+		return std::format("StageInput({})", argi);
+	}
+};
+
+struct StageOutput {
+	Reference type;
+	uint32_t argi;
+	RateProperties properties;
+
+	std::string repr() const {
+		return std::format("StageOutput({}, {})", argi, rcgp::repr(properties));
 	}
 };
 

@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "instruction_nodes.hpp"
-#include "instruction_resources.hpp"
 
 namespace rcgp {
 
@@ -17,6 +16,11 @@ using group_allocation_map = std::map <void *, uint32_t>;
 // Push constant to offset
 using push_constant_allocation_map = std::map <void *, uint32_t>;
 
+// DebugInfo information
+struct DebugInfo {
+	std::source_location origin;
+};
+
 struct Block : std::vector <Reference> {
 	// TODO: None option for loops and branches...
 	ShaderStage model = ShaderStage::eSubroutine;
@@ -24,7 +28,6 @@ struct Block : std::vector <Reference> {
 	std::string name;
 
 	std::vector <Argument> arguments;
-	// TODO: should refactor to stage inputs/outputs
 	std::vector <StageInput> stage_inputs;
 	std::vector <StageOutput> stage_outputs;
 	std::map <void *, Reference> global_resources;
@@ -44,32 +47,18 @@ struct Block : std::vector <Reference> {
 	void apply_group_allocation_map(const group_allocation_map &map);
 	void apply_push_constant_allocation_map(const push_constant_allocation_map &map);
 
+	// TODO: use a script to generate instantiations
 	template <typename T>
-	Reference add(const T &sub, Debug aux);
+	Reference add(const T &sub, const DebugInfo aux)
+	{
+		auto result = std::make_shared <Instruction> (sub, aux);
+		emplace_back(result);
+		return result;
+	}
 
 	std::string repr() const {
 		return "Block";
 	}
 };
-
-extern template Reference Block::add <Argument> (const Argument &sub, Debug aux);
-extern template Reference Block::add <Block> (const Block &sub, Debug aux);
-extern template Reference Block::add <BuiltinIntrinsic> (const BuiltinIntrinsic &sub, Debug aux);
-extern template Reference Block::add <Constant> (const Constant &sub, Debug aux);
-extern template Reference Block::add <Construct> (const Construct &sub, Debug aux);
-extern template Reference Block::add <Invocation> (const Invocation &sub, Debug aux);
-extern template Reference Block::add <ArrayAccess> (const ArrayAccess &sub, Debug aux);
-extern template Reference Block::add <FieldAccess> (const FieldAccess &sub, Debug aux);
-extern template Reference Block::add <GlobalIntrinsic> (const GlobalIntrinsic &sub, Debug aux);
-extern template Reference Block::add <GlobalResource> (const GlobalResource &sub, Debug aux);
-extern template Reference Block::add <Branch> (const Branch &sub, Debug aux);
-extern template Reference Block::add <Loop> (const Loop &sub, Debug aux);
-extern template Reference Block::add <Local> (const Local &sub, Debug aux);
-extern template Reference Block::add <Operation> (const Operation &sub, Debug aux);
-extern template Reference Block::add <Store> (const Store &sub, Debug aux);
-extern template Reference Block::add <Swizzle> (const Swizzle &sub, Debug aux);
-extern template Reference Block::add <StageInput> (const StageInput &sub, Debug aux);
-extern template Reference Block::add <StageOutput> (const StageOutput &sub, Debug aux);
-extern template Reference Block::add <Type> (const Type &sub, Debug aux);
 
 } // namespace rcgp

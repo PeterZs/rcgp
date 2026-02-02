@@ -50,12 +50,12 @@ struct scope {
 	template <typename ... Args>	\
 	struct name : handle {	\
 		name(Args ... args, const std::source_location &loc = std::source_location::current())	\
-			: handle(Tracer::singleton.active().add(type(args...), Debug(loc))) {}	\
+			: handle(Tracer::singleton.active().add(type(args...), DebugInfo(loc))) {}	\
 	};	\
 	template <typename ... Args>	\
 	struct name##_loc : handle {	\
 		name##_loc (const std::source_location &loc, Args ... args) \
-			: handle(Tracer::singleton.active().add(type(args...), Debug(loc))) {}	\
+			: handle(Tracer::singleton.active().add(type(args...), DebugInfo(loc))) {}	\
 	};	\
 	template <typename ... Args>	\
 	name(Args ...) -> name <Args...>;
@@ -130,7 +130,7 @@ struct type : handle {
 				blk.insert(blk.begin(), _ref);
 			return;
 		}
-		_ref = Tracer::singleton.active().add(t, Debug(loc));
+		_ref = Tracer::singleton.active().add(t, DebugInfo(loc));
 		cache.emplace(std::move(key), _ref);
 	}
 };
@@ -148,7 +148,7 @@ struct type_loc : handle {
 				blk.insert(blk.begin(), _ref);
 			return;
 		}
-		_ref = Tracer::singleton.active().add(t, Debug(loc));
+		_ref = Tracer::singleton.active().add(t, DebugInfo(loc));
 		cache.emplace(std::move(key), _ref);
 	}
 };

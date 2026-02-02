@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "instruction_types.hpp"
+#include "instructions.hpp"
 
 namespace rcgp {
 

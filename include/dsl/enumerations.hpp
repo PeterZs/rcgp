@@ -4,6 +4,7 @@
 
 namespace rcgp {
 
+// TODO: refactor repr file to pygen_enumerations_repr.cpp
 enum class OperationCode {
 	eAdd,
 	eSubtract,

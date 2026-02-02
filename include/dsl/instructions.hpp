@@ -1,12 +1,11 @@
 #pragma once
 
-#include "instruction_block.hpp"
 #include "instruction_nodes.hpp"
-#include "instruction_resources.hpp"
-#include "instruction_types.hpp"
+#include "instruction_block.hpp"
 
 namespace rcgp {
 
+// TODO: generate this header?
 struct Instruction : variant <
 	Argument,
 	ArrayAccess,
@@ -28,15 +27,15 @@ struct Instruction : variant <
 	StageOutput,
 	Type
 > {
-	Debug debug_info;
+	DebugInfo debug_info;
 
-	Instruction(const variant_self &base, Debug debug_info_ = {})
+	Instruction(const variant_self &base, DebugInfo debug_info_ = {})
 		: variant_self(base), debug_info(debug_info_) {}
 
 	std::string repr() const {
-		return std::visit([] <typename T> (T x) -> std::string {
+		return std::visit([&] <typename T> (T x) -> std::string {
 			if constexpr (std::same_as <T, GlobalIntrinsic>)
-				return "GlobalIntrinsic";
+				return std::string(rcgp::repr(this->as <GlobalIntrinsic> ()));
 			else
 				return x.repr();
 		}, *this);

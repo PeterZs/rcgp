@@ -37,7 +37,7 @@ _branch_holder::~_branch_holder()
 	Tracer::singleton.active().add(Branch {
 		std::move(segments),
 		std::move(fallback),
-	}, Debug {});
+	}, DebugInfo {});
 }
 
 _branch_holder operator+(_branch_holder &&a, _elif b)

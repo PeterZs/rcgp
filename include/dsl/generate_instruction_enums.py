@@ -47,7 +47,7 @@ def strip_enum_prefix(name: str) -> str:
 def generate_cpp(enums: list[tuple[str, list[str]]]) -> list[str]:
     lines: list[str] = []
     lines.append(HEADER_PREAMBLE)
-    lines.append('#include "dsl/instruction_enums.hpp"')
+    lines.append('#include "dsl/enumerations.hpp"')
     lines.append("")
     lines.extend(
         [
@@ -93,7 +93,7 @@ def write(path: Path, lines: list[str]) -> None:
 
 
 def main() -> None:
-    header = INCLUDE_DIR / "instruction_enums.hpp"
+    header = INCLUDE_DIR / "enumerations.hpp"
     enums = parse_enums(header.read_text())
     cpp_lines = generate_cpp(enums)
     write(SOURCE_DIR / "pygen_instruction_enums.cpp", cpp_lines)

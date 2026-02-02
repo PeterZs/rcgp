@@ -2,14 +2,6 @@
 
 namespace rcgp {
 
-template <typename T>
-Reference Block::add(const T &sub, const Debug aux)
-{
-	auto result = std::make_shared <Instruction> (sub, aux);
-	emplace_back(result);
-	return result;
-}
-
 void Block::apply_group_allocation_map(const group_allocation_map &map)
 {
 	for (auto &[addr, group] : map) {
@@ -78,26 +70,5 @@ void Block::set_workgroup_size(uint32_t x, uint32_t y, uint32_t z)
 	}
 	workgroup_size = size;
 }
-
-// TODO: use a script to generate instantiations
-template Reference Block::add <Argument> (const Argument &sub, Debug aux);
-template Reference Block::add <Block> (const Block &sub, Debug aux);
-template Reference Block::add <BuiltinIntrinsic> (const BuiltinIntrinsic &sub, Debug aux);
-template Reference Block::add <Constant> (const Constant &sub, Debug aux);
-template Reference Block::add <Construct> (const Construct &sub, Debug aux);
-template Reference Block::add <Invocation> (const Invocation &sub, Debug aux);
-template Reference Block::add <ArrayAccess> (const ArrayAccess &sub, Debug aux);
-template Reference Block::add <FieldAccess> (const FieldAccess &sub, Debug aux);
-template Reference Block::add <GlobalIntrinsic> (const GlobalIntrinsic &sub, Debug aux);
-template Reference Block::add <GlobalResource> (const GlobalResource &sub, Debug aux);
-template Reference Block::add <Branch> (const Branch &sub, Debug aux);
-template Reference Block::add <Loop> (const Loop &sub, Debug aux);
-template Reference Block::add <Local> (const Local &sub, Debug aux);
-template Reference Block::add <Operation> (const Operation &sub, Debug aux);
-template Reference Block::add <Store> (const Store &sub, Debug aux);
-template Reference Block::add <Swizzle> (const Swizzle &sub, Debug aux);
-template Reference Block::add <StageInput> (const StageInput &sub, Debug aux);
-template Reference Block::add <StageOutput> (const StageOutput &sub, Debug aux);
-template Reference Block::add <Type> (const Type &sub, Debug aux);
 
 } // namespace rcgp
