@@ -2,8 +2,9 @@
 
 #include <type_traits>
 
-#include "stage_intrinsics.hpp"
+#include "coerce_to_handle.hpp"
 #include "shader_stage.hpp"
+#include "stage_intrinsics.hpp"
 
 namespace rcgp {
 
@@ -68,32 +69,41 @@ void return_handler(const NoPerspective <T> &ret, size_t &argi)
 }
 
 template <ShaderStage S, primitive T>
-void return_handler(const T &ret, size_t &argi)
+void return_handler(const T &value, size_t &argi)
 {
-	// TODO: Result instruction for subroutines...
-	// or some other pathway for subroutines
 	auto type = reconstruct_type <T> ();
 
-	auto sout = StageOutput(type, argi++,
-		(S == ShaderStage::eVertex)
-		? RateProperties::eSmooth // default value
-		: RateProperties::eNone);
-
-	$tsb.add_stage_output(sout);
-
-	jems::store(jems::stage_output(sout), ret);
+	Reference ref;
+	if constexpr (S == ShaderStage::eSubroutine) {
+		auto ret = Return(type, argi++);
+		$tsb.add_return(ret);
+		ref = jems::returns(ret);
+	} else if constexpr (S == ShaderStage::eVertex) {
+		auto sout = StageOutput(type, argi++, RateProperties::eSmooth);
+		$tsb.add_stage_output(sout);
+		ref = jems::stage_output(sout);
+	} else if constexpr (S == ShaderStage::eFragment) {
+		auto sout = StageOutput(type, argi++, RateProperties::eNone);
+		$tsb.add_stage_output(sout);
+		ref = jems::stage_output(sout);
+	} else {
+		static_assert(false);
+	}
+	
+	jems::store(ref, value);
 }
 
-// template <ShaderStage S, aggregate T>
-// void return_handler(const T &ret, size_t &argi)
-// {
-// 	// TODO: restrict to only subroutines?
-// 	auto type = reconstruct_type <T> ();
-// 	auto tout = ThreadOutput(type, argi++, RateProperties::eNone);
-// 	$tsb.add_stage_output(tout);
-//
-// 	jems::store(jems::stage_output(tout), coerce_to_handle(ret));
-// }
+template <ShaderStage S, aggregate T>
+void return_handler(const T &value, size_t &argi)
+{
+	static_assert(S == ShaderStage::eSubroutine);
+
+	auto type = reconstruct_type <T> ();
+	auto ret = Return(type, argi++);
+	$tsb.add_return(ret);
+	auto ref = jems::returns(ret);
+	jems::store(ref, coerce_to_handle(value));
+}
 
 template <ShaderStage S, typename ... Args>
 void return_handler(const std::tuple <Args...> &ret, size_t &argi)

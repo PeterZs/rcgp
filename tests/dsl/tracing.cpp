@@ -3,6 +3,14 @@
 #define SUITE "tracing"
 
 // Resources
+// TODO: shared header...
+struct Ray {
+	float3 origin;
+	float3 direction;
+
+	$reflection(origin, direction);
+};
+
 struct View {
 	float4x4 model;
 	float4x4 view;
@@ -197,3 +205,91 @@ add_test(vs_push_constant)
 	}
 	)");
 };
+
+add_test(sr_return_primitives)
+{
+	auto sr = $subroutine(sr)() {
+		return std::tuple { float3(1), uint2(12, 13) };
+	};
+	
+	assert_assembly_match(sr, R"(
+	block {
+	  context {
+	    model: subroutine,
+	    name: sr,
+	    return 0: $0,
+	    return 1: $1,
+	  }
+	  $1 = UVec2
+	  $2 = UInt32
+	  $0 = Vec3
+	  $3 = Float
+	  $4 = local $3
+	  $5 = 1
+	  store $4 $5
+	  $6 = new $0($4, $4, $4)
+	  $7 = local $0
+	  store $7 $6
+	  $8 = local $2
+	  $9 = 13
+	  store $8 $9
+	  $10 = local $2
+	  $11 = 12
+	  store $10 $11
+	  $12 = new $1($10, $8)
+	  $13 = local $1
+	  store $13 $12
+	  $14 = return($0, 0)
+	  store $14 $7
+	  $15 = return($1, 1)
+	  store $15 $13
+	}
+	)");
+};
+
+add_test(sr_return_aggregate)
+{
+	auto sr = $subroutine(sr)() {
+		return Ray {
+			float3(0),
+			normalize(float3(1, 1, 1)),
+		};
+	};
+	
+	assert_assembly_match(sr, R"(
+	block {
+	  context {
+	    model: subroutine,
+	    name: sr,
+	    return 0: $0,
+	  }
+	  $1 = Vec3
+	  $2 = Float
+	  $3 = local $2
+	  $4 = 0
+	  store $3 $4
+	  $5 = new $1($3, $3, $3)
+	  $6 = local $1
+	  store $6 $5
+	  $7 = local $2
+	  $8 = 1
+	  store $7 $8
+	  $9 = local $2
+	  $10 = 1
+	  store $9 $10
+	  $11 = local $2
+	  $12 = 1
+	  store $11 $12
+	  $13 = new $1($11, $9, $7)
+	  $14 = local $1
+	  store $14 $13
+	  $15 = normalize($14)
+	  $0 = Ray($1, $1)
+	  $16 = return($0, 0)
+	  $17 = new $0($6, $15)
+	  store $16 $17
+	}
+	)");
+};
+
+// TODO: subroutine invocation

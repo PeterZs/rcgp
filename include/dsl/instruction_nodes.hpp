@@ -228,4 +228,13 @@ struct StageOutput {
 	}
 };
 
+struct Return {
+	Reference type;
+	uint32_t argi;
+
+	std::string repr() const {
+		return std::format("Return({})", argi);
+	}
+};
+
 } // namespace rcgp

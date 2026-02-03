@@ -25,6 +25,7 @@ struct Instruction : variant <
 	Swizzle,
 	StageInput,
 	StageOutput,
+	Return,
 	Type
 > {
 	DebugInfo debug_info;

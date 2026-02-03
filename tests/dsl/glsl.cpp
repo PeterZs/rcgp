@@ -3,6 +3,13 @@
 #define SUITE "glsl"
 
 // Resources
+struct Ray {
+	float3 origin;
+	float3 direction;
+
+	$reflection(origin, direction);
+};
+
 struct View {
 	float4x4 model;
 	float4x4 view;
@@ -171,6 +178,61 @@ add_test(vs_push_constant)
 	    vec3 lvar9;
 	    lvar9 = vec3((pc.f0 * lvar8));
 	    lout0 = lvar9;
+	}
+	)");
+};
+
+add_test(sr_return_primitives)
+{
+	auto sr = $subroutine(sr)() {
+		return std::tuple { float3(1), uint2(12, 13) };
+	};
+	
+	assert_glsl_match(sr, R"(
+	void sr(out vec3 ret0, out uvec2 ret1)
+	{
+	    float lvar0;
+	    lvar0 = 1;
+	    vec3 lvar1;
+	    lvar1 = vec3(lvar0, lvar0, lvar0);
+	    uint lvar2;
+	    lvar2 = 13;
+	    uint lvar3;
+	    lvar3 = 12;
+	    uvec2 lvar4;
+	    lvar4 = uvec2(lvar3, lvar2);
+	    ret0 = lvar1;
+	    ret1 = lvar4;
+	}
+	)");
+};
+
+add_test(sr_return_aggregate)
+{
+	auto sr = $subroutine(sr)() {
+		return Ray {
+			float3(0),
+			normalize(float3(1, 1, 1)),
+		};
+	};
+	
+	assert_glsl_match(sr, R"(
+	void sr(out Ray ret0)
+	{
+	    float lvar0;
+	    lvar0 = 0;
+	    vec3 lvar1;
+	    lvar1 = vec3(lvar0, lvar0, lvar0);
+	    float lvar2;
+	    lvar2 = 1;
+	    float lvar3;
+	    lvar3 = 1;
+	    float lvar4;
+	    lvar4 = 1;
+	    vec3 lvar5;
+	    lvar5 = vec3(lvar4, lvar3, lvar2);
+	    normalize(lvar5);
+	    ret0 = Ray(lvar1, normalize(lvar5));
 	}
 	)");
 };

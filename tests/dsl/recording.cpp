@@ -336,3 +336,72 @@ add_test(for_loop)
 	}
 	)");
 };
+
+add_test(branching)
+{
+	auto sbr = record {
+		i32 c = 12;
+		$if (c > 11) {
+			// TODO: support for c + 1 plainly
+			c = c + i32(1);
+		} $elif (c < 11 and c > 5) {
+			c = c + i32(2);
+		} $else {
+			c = c + i32(3);
+		};
+	};
+	
+	assert_assembly_match(sbr, R"(
+	block {
+	  context {
+	    model: subroutine,
+	  }
+	  $0 = Int32
+	  $1 = local $0
+	  $2 = 12
+	  store $1 $2
+	  $3 = local $0
+	  $4 = 11
+	  store $3 $4
+	  $5 = lt($1, $3)
+	  $6 = local $0
+	  $7 = 5
+	  store $6 $7
+	  $8 = gt($1, $6)
+	  $9 = and($5, $8)
+	  $10 = local $0
+	  $11 = 11
+	  store $10 $11
+	  $12 = gt($1, $10)
+	  $13 = block {
+	      $0 = Int32
+	      $14 = local $0
+	      $15 = 1
+	      store $14 $15
+	      $16 = add($1, $14)
+	      store $1 $16
+	  }
+	  $17 = block {
+	      $0 = Int32
+	      $18 = local $0
+	      $19 = 2
+	      store $18 $19
+	      $20 = add($1, $18)
+	      store $1 $20
+	  }
+	  $21 = block {
+	      $0 = Int32
+	      $22 = local $0
+	      $23 = 3
+	      store $22 $23
+	      $24 = add($1, $22)
+	      store $1 $24
+	  }
+	  $25 = branch(
+	    $12: $13,
+	    $9: $17,
+	    else: $21
+	  )
+	}
+	)");
+};

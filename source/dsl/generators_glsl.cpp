@@ -208,8 +208,12 @@ std::string lval_repr(const GLSLEmitter &em, const Reference &ref)
 {
 	vswitch (*ref) {
 	vcase(StageOutput): {
-		auto &tout = ref->as <StageOutput> ();
-		return std::format("lout{}", tout.argi);
+		auto &sout = ref->as <StageOutput> ();
+		return std::format("lout{}", sout.argi);
+	}
+	vcase(Return): {
+		auto &ret = ref->as <Return> ();
+		return std::format("ret{}", ret.argi);
 	}
 	vcase(GlobalIntrinsic): {
 		auto gintr = ref->as <GlobalIntrinsic> ();
@@ -339,8 +343,8 @@ std::string expr_repr(const GLSLEmitter &em, const Reference &ref)
 		return lval_repr(em, ref);
 	}
 	vcase(StageInput): {
-		auto &tin = ref->as <StageInput> ();
-		return fmt::format("lin{}", tin.argi);
+		auto &sin = ref->as <StageInput> ();
+		return fmt::format("lin{}", sin.argi);
 	}
 	vcase(Operation): {
 		auto &opn = ref->as <Operation> ();
@@ -455,6 +459,27 @@ void emit_body(GLSLEmitter &em, const SharedBlockReference &sbr)
 			break;
 		}
 	}
+}
+
+void emit_subroutine(GLSLEmitter &em, const SharedBlockReference &sbr)
+{
+	std::string args = "";
+	for (const auto &[i, ret] : std::views::enumerate(sbr->returns)) {
+		auto repr = type_repr(em, ret.type);
+		args += std::format("out {} ret{}{}", repr.base, i, repr.suffix);
+		if (i + 1 < sbr->returns.size())
+			args += ", ";
+	}
+
+	em.emit_fmt_line("void {}({})", sbr->name, args);
+
+	em.emit_line("{");
+	em.indentation++;
+
+	emit_body(em, em.sbr);
+	
+	em.indentation--;
+	em.emit_line("}");
 }
 
 void emit_main(GLSLEmitter &em)
@@ -691,9 +716,10 @@ std::string generate_glsl(const SharedBlockReference &sbr)
 		.indentation = 0,
 	};
 
-	// TODO: do the preprocessing here ONCE then run the emitter in full...
-
-	emit_whole(em);
+	if (sbr->model == ShaderStage::eSubroutine)
+		emit_subroutine(em, sbr);
+	else
+		emit_whole(em);
 
 	return em.result;
 }

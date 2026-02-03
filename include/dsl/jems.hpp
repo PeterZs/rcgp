@@ -63,6 +63,7 @@ JEM(constant, Constant);
 JEM(invocation, Invocation);
 JEM(construct, Construct);
 JEM(argument, Argument);
+JEM(returns, Return);
 JEM(stage_input, StageInput);
 JEM(stage_output, StageOutput);
 JEM(global_resource, GlobalResource);

@@ -28,6 +28,7 @@ struct Block : std::vector <Reference> {
 	std::string name;
 
 	std::vector <Argument> arguments;
+	std::vector <Return> returns;
 	std::vector <StageInput> stage_inputs;
 	std::vector <StageOutput> stage_outputs;
 	std::map <void *, Reference> global_resources;
@@ -40,6 +41,7 @@ struct Block : std::vector <Reference> {
 	uint32_t mesh_output_counter = 0;
 	
 	void add_argument(const Argument &arg);
+	void add_return(const Return &ret);
 	void add_stage_input(const StageInput &tin);
 	void add_stage_output(const StageOutput &tout);
 	void add_global_resource(void *addr, const Reference &resource);

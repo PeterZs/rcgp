@@ -33,6 +33,17 @@ void Block::add_argument(const Argument &arg)
 	}
 }
 
+void Block::add_return(const Return &ret)
+{
+	if (returns.size() > ret.argi) {
+		// already registered
+		__builtin_trap();
+	} else {
+		returns.resize(ret.argi + 1);
+		returns[ret.argi] = ret;
+	}
+}
+
 void Block::add_stage_input(const StageInput &sin)
 {
 	if (stage_inputs.size() > sin.argi) {

@@ -210,6 +210,12 @@ std::string stringify(AsmContext &ctx, StageOutput x, Reference ref)
 		stringify_rate_properties(x.properties));
 }
 
+std::string stringify(AsmContext &ctx, Return x, Reference ref)
+{
+	return $assign fmt::format("return({}, {})",
+		stringify(ctx, x.type), x.argi);
+}
+
 std::string stringify(AsmContext &ctx, GlobalIntrinsic x, Reference ref)
 {
 	// TODO: use repr
@@ -495,6 +501,11 @@ std::string generate(AsmContext &ctx)
 	for (auto arg : ctx.sbr->arguments) {
 		result += fmt::format("    argument {}: {},\n",
 			arg.argi, stringify(ctx, arg.type));
+	}
+	
+	for (auto ret : ctx.sbr->returns) {
+		result += fmt::format("    return {}: {},\n",
+			ret.argi, stringify(ctx, ret.type));
 	}
 
 	for (auto tin : ctx.sbr->stage_inputs) {
