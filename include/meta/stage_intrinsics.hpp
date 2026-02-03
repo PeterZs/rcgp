@@ -268,7 +268,7 @@ struct MeshletPayload : T {
 				constexpr auto count = perprimitive ? MaxPrimitives : MaxVertices;
 				auto type = reconstruct_type <array <Unwrapped, count>> ();
 				auto &counter = $tsb.mesh_output_counter;
-				auto tout = ThreadOutput(type, counter++, Field::properties);
+				auto tout = StageOutput(type, counter++, Field::properties);
 				$tsb.add_stage_output(tout);
 				$tsb.mesh_perprimitive_outputs.emplace(tout.argi, perprimitive);
 

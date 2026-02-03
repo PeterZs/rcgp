@@ -11,7 +11,6 @@
 #include "process_gvrs.hpp"
 #include "resources_collect.hpp"
 #include "shader_stage.hpp"
-#include "stage_interface.hpp"
 
 namespace rcgp {
 
@@ -20,18 +19,10 @@ auto shaders_to_modules(const Device &device, const ShaderCompiler &compiler, St
 {
 	auto process = [&](auto shader) {
 		constexpr auto stage = decltype(shader)::stage;
-		auto asms = generate_assembly(shader);
-		std::println("assembly for {} shader:\n{}",
-			vk::to_string(stage_to_flag(stage)),
-			asms);
 		auto glsl = generate_glsl(shader);
-		// std::println("glsl {} shader:\n{}", vk::to_string(stage_to_flag(stage)), glsl);
 		auto spirv = compiler.glsl_to_spirv(glsl, stage_to_esh(stage));
 		// TODO: make more error tolerant
-		if (spirv.empty())
-			return vk::ShaderModule();
-		else
-			return device.new_shader_module(spirv);
+		return device.new_shader_module(spirv);
 	};
 
 	return std::tuple(process(shaders)...);

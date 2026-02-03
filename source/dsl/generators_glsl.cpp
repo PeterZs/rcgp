@@ -41,6 +41,7 @@ static auto g_global_intrinsics = std::array {
 	// TODO: generate with script with @glsl comments
 	"gl_Position",
 	"gl_InstanceIndex",
+	"gl_VertexIndex",
 	"gl_LocalInvocationID",
 	"gl_WorkGroupID",
 	"gl_GlobalInvocationID",
@@ -167,529 +168,6 @@ struct GLSLEmitter {
 	}
 };
 
-//
-// std::string expression(GLSLContext &ctx, Reference expr)
-// {
-// 	auto &value = *expr;
-// 	vswitch (value) {
-// 	vcase(FieldAccess): {
-// 		auto &access = value.as <FieldAccess> ();
-// 		return fmt::format("{}.f{}", expression(ctx, access.value), access.fidx);
-// 	}
-// 	vcase(ArrayAccess): {
-// 		auto &access = value.as <ArrayAccess> ();
-// 		if (access.value && access.value->is <GlobalIntrinsic> ()) {
-// 			auto gi = access.value->as <GlobalIntrinsic> ();
-// 			if (gi == GlobalIntrinsic::eMeshVertices) {
-// 				return fmt::format("gl_MeshVerticesEXT[{}].gl_Position",
-// 					expression(ctx, access.index));
-// 			}
-// 		}
-// 		return fmt::format("{}[{}]",
-// 			expression(ctx, access.value), expression(ctx, access.index));
-// 	}
-// 	vcase(Swizzle): {
-// 		auto &swizzle = value.as <Swizzle> ();
-// 		return fmt::format("{}.{}", expression(ctx, swizzle.value), repr(swizzle.code));
-// 	}
-// 	vcase(GlobalResource):
-// 		return reference(ctx, value.as <GlobalResource> ());
-// 	vcase(GlobalIntrinsic):
-// 		return reference(ctx, value.as <GlobalIntrinsic> ());
-// 	vcase(StageOutput):
-// 		return reference(ctx, value.as <StageOutput> ());
-// 	vcase(Argument):
-// 		return reference(ctx, value.as <Argument> ());
-// 	vcase(Invocation): {
-// 		auto &invocation = value.as <Invocation> ();
-// 		const Block *callee = invocation.sbr.get();
-// 		std::string name = subroutine_name(ctx, callee);
-//
-// 		std::string out = name + "(";
-// 		auto nargs = invocation.args.size();
-// 		for (size_t i = 0; i < nargs; i++) {
-// 			out += expression(ctx, invocation.args[i]);
-// 			if (i + 1 < nargs)
-// 				out += ", ";
-// 		}
-//
-// 		return out + ")";
-// 	}
-// 	default:
-// 		break;
-// 	}
-//
-// 	std::println(std::cerr, "expression not implemented for {}", expr->repr());
-// 	std::abort();
-// 	return "?";
-// }
-//
-// void statement(GLSLContext &ctx, Reference instruction)
-// {
-// 	auto &value = *instruction;
-// 	vswitch (value) {
-// 	vcase(Local): {
-// 		auto name = reference(ctx, instruction);
-// 		auto decl = type_repr(ctx, value.as <Local> ().type);
-// 		ctx.result += fmt::format("{}{} {}{};\n",
-// 			ctx.indent, decl.base, name, decl.suffix);
-// 		return;
-// 	}
-// 	vcase(Store): {
-// 		auto &store = value.as <Store> ();
-// 		ctx.result += fmt::format("{}{} = {};\n",
-// 			ctx.indent,
-// 			reference(ctx, store.destination),
-// 			expression(ctx, store.source));
-// 		return;
-// 	}
-// 	vcase(BuiltinIntrinsic):
-// 		ctx.result += fmt::format("{}{};\n",
-// 			ctx.indent,
-// 			expression(ctx, instruction));
-// 		return;
-// 	vcase(Invocation):
-// 		ctx.result += fmt::format("{}{};\n",
-// 			ctx.indent,
-// 			expression(ctx, instruction));
-// 		return;
-// 	vcase(Branch): {
-// 		auto &branch = value.as <Branch> ();
-// 		auto emit_body = [&](const SharedBlockReference &blk) {
-// 			auto prev = ctx.indent;
-// 			ctx.indent += "    ";
-// 			for (auto &nested : *blk) {
-// 				if (nested->is <Store> () || nested->is <Invocation> ()
-// 					|| nested->is <BuiltinIntrinsic> ()
-// 					|| nested->is <Branch> () || nested->is <Loop> ()
-// 					|| nested->is <Local> ())
-// 					statement(ctx, nested);
-// 			}
-// 			ctx.indent = prev;
-// 		};
-//
-// 		for (size_t i = 0; i < branch.segments.size(); i++) {
-// 			auto &segment = branch.segments[i];
-// 			auto kw = (i == 0) ? "if" : "else if";
-// 			ctx.result += fmt::format("{}{} ({})\n",
-// 				ctx.indent, kw, expression(ctx, segment.cond));
-// 			ctx.result += fmt::format("{}{{\n", ctx.indent);
-// 			emit_body(segment.body);
-// 			ctx.result += fmt::format("{}}}\n", ctx.indent);
-// 		}
-//
-// 		if (branch.fallback.has_value()) {
-// 			ctx.result += fmt::format("{}else\n", ctx.indent);
-// 			ctx.result += fmt::format("{}{{\n", ctx.indent);
-// 			emit_body(branch.fallback.value());
-// 			ctx.result += fmt::format("{}}}\n", ctx.indent);
-// 		}
-// 		return;
-// 	}
-// 	vcase(Loop): {
-// 		auto &loop = value.as <Loop> ();
-// 		auto emit_body = [&](const SharedBlockReference &blk) {
-// 			auto prev = ctx.indent;
-// 			ctx.indent += "    ";
-// 			for (auto &nested : *blk) {
-// 				if (nested->is <Store> () || nested->is <Invocation> ()
-// 					|| nested->is <BuiltinIntrinsic> ()
-// 					|| nested->is <Branch> () || nested->is <Loop> ()
-// 					|| nested->is <Local> ())
-// 					statement(ctx, nested);
-// 			}
-// 			ctx.indent = prev;
-// 		};
-//
-// 		auto cond_expr = expression(ctx, loop.cond_value);
-//
-// 		if (loop.kind == LoopKind::eFor && loop.init.has_value())
-// 			emit_body(loop.init.value());
-//
-// 		auto loop_kw = (loop.kind == LoopKind::eFor) ? "for (;;)" : "while (true)";
-// 		ctx.result += fmt::format("{}{}\n", ctx.indent, loop_kw);
-// 		ctx.result += fmt::format("{}{{\n", ctx.indent);
-// 		emit_body(loop.cond);
-// 		ctx.result += fmt::format("{}    if (!({}))\n", ctx.indent, cond_expr);
-// 		ctx.result += fmt::format("{}        break;\n", ctx.indent);
-// 		emit_body(loop.body);
-// 		if (loop.kind == LoopKind::eFor && loop.step.has_value())
-// 			emit_body(loop.step.value());
-// 		ctx.result += fmt::format("{}}}\n", ctx.indent);
-// 		return;
-// 	}
-// 	default:
-// 		break;
-// 	}
-//
-// 	ctx.result += fmt::format("{}?\n", ctx.indent);
-// }
-//
-// void emit_preamble(GLSLContext &ctx)
-// {
-// 	ctx.result += "#version 460\n\n";
-// 	ctx.result += "#extension GL_EXT_scalar_block_layout : require\n";
-//
-// 	auto model = ctx.block.context.model;
-// 	if (model == ShaderStage::eTask or model == ShaderStage::eMesh) {
-// 		ctx.result += "#extension GL_EXT_mesh_shader : require\n";
-// 		ctx.result += "\n";
-// 	}
-// 	
-// 	if (model == ShaderStage::eCompute
-// 			or model == ShaderStage::eTask
-// 			or model == ShaderStage::eMesh) {
-// 		auto size = ctx.block.context.workgroup_size.value_or(
-// 			std::array <uint32_t, 3> { 1, 1, 1 }
-// 		);
-// 		ctx.result += fmt::format(
-// 			"layout (local_size_x = {}, local_size_y = {}, local_size_z = {}) in;\n\n",
-// 			size[0], size[1], size[2]
-// 		);
-// 	}
-//
-// 	if (model == ShaderStage::eMesh) {
-// 		if (!ctx.block.context.mesh_max_vertices.has_value()
-// 			|| !ctx.block.context.mesh_max_primitives.has_value()) {
-// 			std::println(std::cerr, "mesh shader missing MeshletPayload size information");
-// 			std::abort();
-// 		}
-// 		auto max_vertices = ctx.block.context.mesh_max_vertices.value();
-// 		auto max_primitives = ctx.block.context.mesh_max_primitives.value();
-// 		ctx.result += fmt::format(
-// 			"layout (max_vertices = {}, max_primitives = {}) out;\n",
-// 			max_vertices, max_primitives
-// 		);
-// 		ctx.result += "layout (triangles) out;\n\n";
-// 	}
-// }
-//
-// void emit_task_payload(GLSLContext &ctx)
-// {
-// 	if (!ctx.block.context.task_payload_type.has_value())
-// 		return;
-//
-// 	auto decl = type_repr(ctx, ctx.block.context.task_payload_type.value());
-// 	ctx.result += fmt::format("taskPayloadSharedEXT {} task_payload{};\n\n",
-// 		decl.base, decl.suffix);
-// }
-//
-// void collect_push_constant_indices(
-// 	const std::vector <const Block *> &blocks,
-// 	std::map <void *, uint32_t> &pc_indices
-// )
-// {
-// 	uint32_t pcounter = 0;
-// 	for (auto *blk : blocks) {
-// 		for (auto &[addr, refs] : blk->context.global_resources) {
-// 			for (auto &ref : refs) {
-// 				auto &grsrc = ref->as <GlobalResource> ();
-// 				if (grsrc.kind != GlobalResourceKind::ePushConstant)
-// 					continue;
-//
-// 				auto it = pc_indices.find(addr);
-// 				if (it == pc_indices.end())
-// 					it = pc_indices.emplace(addr, pcounter++).first;
-// 				grsrc.push_constant_index = it->second;
-// 			}
-// 		}
-// 	}
-// }
-//
-// std::string resource_key(const GlobalResource &grsrc)
-// {
-// 	if (grsrc.kind == GlobalResourceKind::eSampler) {
-// 		auto group = grsrc.group.value_or(0);
-// 		auto index = grsrc.index.value_or(0);
-// 		return fmt::format("sampler:{}:{}", group, index);
-// 	}
-//
-// 	if (grsrc.kind == GlobalResourceKind::ePushConstant) {
-// 		auto idx = grsrc.push_constant_index.value_or(0);
-// 		auto offset = grsrc.push_constant_offset.value_or(0);
-// 		return fmt::format("pc:{}:{}:{}:{}",
-// 			idx, offset, (int) grsrc.layout, (void *) grsrc.type.get());
-// 	}
-//
-// 	auto group = grsrc.group.value_or(0);
-// 	auto index = grsrc.index.value_or(0);
-// 	return fmt::format("buf:{}:{}:{}:{}:{}",
-// 		(int) grsrc.kind, group, index, (int) grsrc.layout, (int) grsrc.access);
-// }
-//
-// std::string resource_instance_name(const GlobalResource &grsrc)
-// {
-// 	return resource_base_name(grsrc);
-// }
-//
-// void emit_buffer_fields(GLSLContext &ctx, const AggregateType &agg)
-// {
-// 	for (size_t i = 0; i < agg.size(); i++) {
-// 		if (contains_unsized_array(agg[i]) && (i + 1 < agg.size())) {
-// 			std::println(std::cerr, "unsized array must be the last field in a buffer block");
-// 			std::abort();
-// 		}
-// 		auto decl = type_repr(ctx, agg[i]);
-// 		ctx.result += fmt::format("    {} f{}{};\n", decl.base, i, decl.suffix);
-// 	}
-// }
-//
-// void emit_resource_decl(GLSLContext &ctx, GlobalResource &grsrc)
-// {
-// 	if (grsrc.kind == GlobalResourceKind::eSampler) {
-// 		auto group = grsrc.group.value_or(0);
-// 		auto index = grsrc.index.value_or(0);
-// 		ctx.result += fmt::format("layout (set = {}, binding = {}) uniform sampler2D {};\n\n",
-// 			group, index, resource_base_name(grsrc));
-// 		return;
-// 	}
-//
-// 	if (grsrc.kind == GlobalResourceKind::ePushConstant) {
-// 		auto idx = grsrc.push_constant_index.value_or(0);
-// 		grsrc.push_constant_index = idx;
-// 		auto offset = grsrc.push_constant_offset.value_or(0);
-// 		auto decl = type_repr(ctx, grsrc.type);
-//
-// 		ctx.result += fmt::format("layout ({}push_constant) uniform PC{} {{\n",
-// 			layout_string(grsrc.layout), idx);
-// 		ctx.result += fmt::format("    layout (offset = {}) {} pc{}{};\n",
-// 			offset, decl.base, idx, decl.suffix);
-// 		ctx.result += "};\n\n";
-// 		return;
-// 	}
-//
-// 	std::string modifier;
-// 	switch (grsrc.kind) {
-// 	case GlobalResourceKind::eUniformBuffer: modifier = "uniform"; break;
-// 	case GlobalResourceKind::eStorageBuffer:
-// 		switch (grsrc.access) {
-// 		case GlobalResourceAccess::eRead: modifier = "readonly buffer"; break;
-// 		case GlobalResourceAccess::eWrite: modifier = "writeonly buffer"; break;
-// 		case GlobalResourceAccess::eReadWrite: modifier = "buffer"; break;
-// 		default: modifier = "buffer"; break;
-// 		}
-// 		break;
-// 	default:
-// 		std::println(std::cerr, "unsupported global resource kind");
-// 		std::abort();
-// 	}
-//
-// 	auto group = grsrc.group.value_or(0);
-// 	auto index = grsrc.index.value_or(0);
-// 	auto instance = resource_instance_name(grsrc);
-// 	ctx.result += fmt::format("layout ({}set = {}, binding = {}) {} R{}{} {{\n",
-// 		layout_string(grsrc.layout), group, index, modifier, group, index);
-// 	if (!grsrc.type || !grsrc.type->is <Type> ()) {
-// 		std::println(std::cerr, "invalid resource type");
-// 		std::abort();
-// 	}
-//
-// 	auto &type = grsrc.type->as <Type> ();
-// 	if (type.is <AggregateType> ()) {
-// 		emit_buffer_fields(ctx, type.as <AggregateType> ());
-// 	} else {
-// 		auto decl = type_repr(ctx, grsrc.type);
-// 		ctx.result += fmt::format("    {} value{};\n", decl.base, decl.suffix);
-// 	}
-// 	ctx.result += fmt::format("}} {};\n\n", instance);
-// }
-//
-// void emit_global_resources(GLSLContext &ctx)
-// {
-// 	std::vector <const Block *> blocks;
-// 	collect_blocks(ctx, blocks);
-//
-// 	std::map <void *, uint32_t> pc_indices;
-// 	collect_push_constant_indices(blocks, pc_indices);
-//
-// 	std::set <std::string> emitted;
-// 	for (auto *blk : blocks) {
-// 		for (auto &[_, refs] : blk->context.global_resources) {
-// 			for (auto &ref : refs) {
-// 				auto &grsrc = ref->as <GlobalResource> ();
-// 				auto key = resource_key(grsrc);
-// 				if (emitted.contains(key))
-// 					continue;
-// 				emitted.emplace(key);
-// 				emit_resource_decl(ctx, grsrc);
-// 			}
-// 		}
-// 	}
-// }
-//
-// std::string subroutine_return_type(GLSLContext &ctx, const Block &blk, uint32_t &out_argi)
-// {
-// 	// TODO: should have proper returns (and proper parameters instead of thread index)
-// 	out_argi = 0;
-// 	if (blk.context.thread_outputs.empty())
-// 		return "void";
-// 	if (blk.context.thread_outputs.size() > 1) {
-// 		std::println(std::cerr, "subroutine return with multiple outputs is not supported");
-// 		std::abort();
-// 	}
-//
-// 	auto &tout = blk.context.thread_outputs.front();
-// 	out_argi = tout.argi;
-//
-// 	auto repr = type_repr(ctx, tout.type);
-// 	return repr.base + repr.suffix;
-// }
-//
-// void emit_subroutine_function(GLSLContext &ctx, const Block &blk, const std::string &name)
-// {
-// 	set_active_block(ctx, blk);
-// 	ctx.argument_names.clear();
-// 	ctx.local_thread_outputs.clear();
-//
-// 	for (auto &arg : blk.context.arguments)
-// 		ctx.argument_names.push_back(fmt::format("arg{}", arg.argi));
-//
-// 	uint32_t ret_argi = 0;
-// 	auto return_type = subroutine_return_type(ctx, blk, ret_argi);
-//
-// 	ctx.result += fmt::format("{} {}(", return_type, name);
-// 	for (size_t i = 0; i < blk.context.arguments.size(); i++) {
-// 		auto &arg = blk.context.arguments[i];
-// 		auto decl = type_repr(ctx, arg.type);
-// 		ctx.result += fmt::format("{} {}{}", decl.base, ctx.argument_names[arg.argi], decl.suffix);
-// 		if (i + 1 < blk.context.arguments.size())
-// 			ctx.result += ", ";
-// 	}
-// 	ctx.result += ")\n{\n";
-//
-// 	// TODO: should just be one set of returns...
-// 	// for perf maybe even prefer out parameters for tuples
-// 	for (auto &tout : blk.context.thread_outputs) {
-// 		auto name = fmt::format("lout{}", tout.argi);
-// 		ctx.local_thread_outputs.emplace(tout.argi, name);
-// 		auto decl = type_repr(ctx, tout.type);
-// 		ctx.result += fmt::format("    {} {}{};\n", decl.base, name, decl.suffix);
-// 	}
-//
-// 	if (blk.context.thread_outputs.size())
-// 		ctx.result += "\n";
-//
-// 	emit_block_statements(ctx, blk);
-//
-// 	if (return_type != "void") {
-// 		auto name_it = ctx.local_thread_outputs.find(ret_argi);
-// 		auto local_name = (name_it != ctx.local_thread_outputs.end())
-// 			? name_it->second
-// 			: fmt::format("lout{}", ret_argi);
-// 		ctx.result += fmt::format("    return {};\n", local_name);
-// 	}
-//
-// 	ctx.result += "}\n\n";
-// 	set_active_block(ctx, ctx.block);
-// }
-//
-// void emit_subroutine_functions(GLSLContext &ctx)
-// {
-// 	std::vector <const Block *> order;
-// 	std::set <const Block *> visited;
-//
-// 	auto visit = [&](auto &&self, const Block &blk) -> void {
-// 		for (auto &instr : blk) {
-// 			if (instr->is <Invocation> ()) {
-// 				auto &inv = instr->as <Invocation> ();
-// 				const Block *callee = inv.sbr.get();
-// 				if (visited.contains(callee))
-// 					continue;
-// 				visited.emplace(callee);
-// 				self(self, *callee);
-// 				order.push_back(callee);
-// 			}
-// 		}
-// 	};
-//
-// 	visit(visit, ctx.block);
-//
-// 	for (auto *callee : order) {
-// 		if (callee->context.model != ShaderStage::eSubroutine)
-// 			continue;
-//
-// 		auto name = subroutine_name(ctx, callee);
-//
-// 		if (ctx.emitted_subroutines.contains(callee))
-// 			continue;
-//
-// 		ctx.emitted_subroutines.emplace(callee);
-// 		emit_subroutine_function(ctx, *callee, name);
-// 	}
-// }
-//
-// void emit_main_function(GLSLContext &ctx)
-// {
-// 	ctx.result += "void main()\n";
-// 	ctx.result += "{\n";
-//
-// 	emit_block_statements(ctx, ctx.block);
-//
-// 	ctx.result += "}";
-// }
-//
-// std::string generate(GLSLContext &ctx, size_t tabs)
-// {
-// 	if (ctx.block.context.model == ShaderStage::eSubroutine) {
-// 		emit_aggregate_decls(ctx);
-// 		auto name = subroutine_name(ctx, &ctx.block);
-// 		emit_subroutine_function(ctx, ctx.block, name);
-// 		return ctx.result;
-// 	} else {
-// 		emit_preamble(ctx);
-// 		emit_aggregate_decls(ctx);
-// 		emit_task_payload(ctx);
-// 		emit_thread_inputs(ctx);
-// 		emit_thread_outputs(ctx);
-// 		emit_global_resources(ctx);
-// 		emit_subroutine_functions(ctx);
-// 		emit_main_function(ctx);
-// 		return ctx.result;
-// 	}
-// }
-
-// auto collect_blocks(const SharedBlockReference &sbr)
-// {
-// 	std::set <SharedBlockReference> visited;
-//
-// 	auto visit = [&](auto &&self, const SharedBlockReference &sbr) -> void {
-// 		if (visited.contains(sbr))
-// 			return;
-//
-// 		visited.emplace(sbr);
-// 		for (auto &instr : *sbr) {
-// 			vswitch (*instr) {
-// 			vcase(Invocation): {
-// 				auto &inv = instr->as <Invocation> ();
-// 				self(self, inv.sbr);
-// 			}
-// 			vcase(Branch): {
-// 				auto &branch = instr->as <Branch> ();
-// 				for (auto &segment : branch.segments)
-// 					self(self, segment.body);
-// 				if (branch.fallback.has_value())
-// 					self(self, *branch.fallback);
-// 			}
-// 			vcase(Loop): {
-// 				auto &loop = instr->as <Loop> ();
-// 				if (loop.init.has_value())
-// 					self(self, *loop.init);
-// 				self(self, loop.cond);
-// 				if (loop.step.has_value())
-// 					self(self, *loop.step);
-// 				self(self, loop.body);
-// 			}
-// 			default:
-// 				break;
-// 			}
-// 		}
-// 	};
-//
-// 	visit(visit, sbr);
-//
-// 	return std::vector(visited.begin(), visited.end());
-// }
-
 bool is_unsized_type(const Type &type)
 {
 	vswitch (type) {
@@ -724,6 +202,8 @@ std::string grsrc_name(const GlobalResource &grsrc)
 	return fmt::format("r{}b{}", group, index);
 }
 
+std::string expr_repr(const GLSLEmitter &em, const Reference &ref);
+
 std::string lval_repr(const GLSLEmitter &em, const Reference &ref)
 {
 	vswitch (*ref) {
@@ -748,6 +228,26 @@ std::string lval_repr(const GLSLEmitter &em, const Reference &ref)
 		return type.is <AggregateType> ()
 			? base
 			: base + ".value";
+	}
+	vcase(FieldAccess): {
+		auto &facc = ref->as <FieldAccess> ();
+		return std::format("{}.f{}", expr_repr(em, facc.value), facc.fidx);
+	}
+	vcase(ArrayAccess): {
+		auto &aacc = ref->as <ArrayAccess> ();
+		if (aacc.value->is <GlobalIntrinsic> ()) {
+			auto &gintr = aacc.value->as <GlobalIntrinsic> ();
+			if (gintr == GlobalIntrinsic::eMeshVertices) {
+				return std::format(
+					"gl_MeshVerticesEXT[{}].gl_Position",
+					expr_repr(em, aacc.index)
+				);
+			}
+		}
+
+		return std::format("{}[{}]",
+			lval_repr(em, aacc.value),
+			expr_repr(em, aacc.index));
 	}
 	default:
 		break;
@@ -846,13 +346,6 @@ std::string expr_repr(const GLSLEmitter &em, const Reference &ref)
 		auto &opn = ref->as <Operation> ();
 		return opn_repr(em, opn);
 	}
-	vcase(FieldAccess): {
-		auto &facc = ref->as <FieldAccess> ();
-		return std::format("{}.f{}", expr_repr(em, facc.value), facc.fidx);
-	}
-	vcase(GlobalResource): {
-		return lval_repr(em, ref);
-	}
 	vcase(BuiltinIntrinsic): {
 		auto &bintr = ref->as <BuiltinIntrinsic> ();
 		auto ftn = g_intrinsic_code.at(std::to_underlying(bintr.code));
@@ -862,11 +355,11 @@ std::string expr_repr(const GLSLEmitter &em, const Reference &ref)
 		auto &swz = ref->as <Swizzle> ();
 		return std::format("{}.{}", expr_repr(em, swz.value), repr(swz.code));
 	}
-	vcase(ArrayAccess): {
-		auto &aacc = ref->as <ArrayAccess> ();
-		return std::format("{}[{}]",
-			expr_repr(em, aacc.value),
-			expr_repr(em, aacc.index));
+	vcase(ArrayAccess):
+	vcase(FieldAccess):
+	vcase(GlobalResource):
+	vcase(GlobalIntrinsic): {
+		return lval_repr(em, ref);
 	}
 	default:
 		break;
@@ -904,7 +397,7 @@ void emit_statement(GLSLEmitter &em, const Reference &ref)
 		em.emit_line("for (;;) {");
 		em.indentation++;
 
-		// TODO: loop.cond vs cond_value?? need to check out...
+		emit_body(em, loop.cond);
 		em.emit_fmt_line("if (!({})) break;", expr_repr(em, loop.cond_value));
 		emit_body(em, loop.body);
 		
@@ -912,9 +405,28 @@ void emit_statement(GLSLEmitter &em, const Reference &ref)
 			emit_body(em, *loop.step);
 		
 		em.indentation--;
-		em.emit_line("}");
+		return em.emit_line("}");
+	}
+	vcase(Branch): {
+		auto &branch = ref->as <Branch> ();
 
-		return em.emit_newline();
+		for (const auto &[i, b] : std::views::enumerate(branch.segments)) {
+			auto kw = (i == 0) ? "if" : "else if";
+			em.emit_fmt_line("{} ({}) {{", kw, expr_repr(em, b.cond));
+			em.indentation++;
+			emit_body(em, b.body);
+			em.indentation--;
+			em.emit_line("}");
+		}
+
+		if (branch.fallback) {
+			em.emit_line("else");
+			em.indentation++;
+			emit_body(em, branch.fallback.value());
+			em.indentation--;
+		}
+
+		return;
 	}
 	default:
 		break;
@@ -957,10 +469,14 @@ void emit_main(GLSLEmitter &em)
 	em.emit_line("}");
 }
 
-auto collect_extensions()
+auto collect_extensions(const GLSLEmitter &em)
 {
 	std::vector <std::string> extensions;
 	extensions.emplace_back("GL_EXT_scalar_block_layout");
+	
+	auto model = em.sbr->model;
+	if (model == ShaderStage::eMesh or model == ShaderStage::eTask)
+		extensions.emplace_back("GL_EXT_mesh_shader");
 
 	return extensions;
 }
@@ -1108,7 +624,7 @@ void emit_whole(GLSLEmitter &em)
 	em.emit_line("#version 460");
 	em.emit_newline();
 
-	auto extensions = collect_extensions();
+	auto extensions = collect_extensions(em);
 	for (auto &ext : extensions)
 		em.emit_fmt_line("#extension {} : require", ext);
 	em.emit_newline();
@@ -1118,6 +634,41 @@ void emit_whole(GLSLEmitter &em)
 
 	// Layout inputs and outputs
 	emit_stage_io(em);
+
+	// Workgroup shape
+	if (em.sbr->workgroup_size) {
+		auto &shape = em.sbr->workgroup_size.value();
+		em.emit_fmt_line(
+			"layout ("
+			"local_size_x = {}, "
+			"local_size_y = {}, "
+			"local_size_z = {}) in;",
+			shape[0], shape[1], shape[2]
+		);
+		em.emit_newline();
+	}
+
+	// Mesh shader output
+	if (em.sbr->model == ShaderStage::eMesh) {
+		auto &max_vertices = em.sbr->mesh_max_vertices.value();
+		auto &max_primitives = em.sbr->mesh_max_primitives.value();
+		em.emit_fmt_line("layout ("
+			"max_vertices = {}, "
+			"max_primitives = {}) out;",
+			max_vertices,
+			max_primitives);
+		em.emit_line("layout (triangles) out;");
+		em.emit_newline();
+	}
+
+	// Task payload
+	if (em.sbr->task_payload_type) {
+		auto &payload = em.sbr->task_payload_type.value();
+		auto repr = type_repr(em, payload);
+		em.emit_fmt_line("taskPayloadSharedEXT {} task_payload{};",
+			repr.base, repr.suffix);
+		em.emit_newline();
+	}
 
 	// Global shader resources
 	// NOTE: Top-level is sufficient because of context inheritence
