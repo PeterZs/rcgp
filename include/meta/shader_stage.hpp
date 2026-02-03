@@ -60,21 +60,52 @@ struct shader_stage : SharedBlockReference {
 };
 
 // Subroutine stages
+template <typename R>
+struct invocation_setup {};
+
+template <typename R>
+requires primitive <R> or aggregate <R>
+struct invocation_setup <R> {
+	static void locals(std::vector <Reference> &locals) {
+		auto type = reconstruct_type <R> ();
+		locals.emplace_back(jems::local(type));
+	}
+
+	static auto recover(const std::vector <Reference> &locals, size_t idx = 0) {
+		R tmp;
+		inject_reference(tmp, locals[idx]);
+		return tmp;
+	}
+};
+
+template <typename ... Ts>
+struct invocation_setup <std::tuple <Ts...>> {
+	static void locals(std::vector <Reference> &locals) {
+		(invocation_setup <Ts> ::locals(locals), ...);
+	}
+
+	static auto recover(const std::vector <Reference> &locals, size_t idx = 0) {
+		auto ftn = [&] <typename T> () {
+			return invocation_setup <T> ::recover(locals, idx++);
+		};
+
+		return std::make_tuple(ftn.template operator() <Ts> ()...);
+	}
+};
+
 template <typename R, typename ... Args>
 struct invocable : SharedBlockReference {
 	invocable(const SharedBlockReference &sbr)
 		: SharedBlockReference(sbr) {}
 	
-	// TODO: should preserve ref-ness and translate
-	// it in the backend IR to generate as in/out/inout for GLSL
-	auto operator()(Args ... args) {
-		auto inv = jems::invocation(*this, coerce_to_handle(args)...);
+	auto operator()(Args &&... args) {
+		std::vector <Reference> locals;
+		auto cargs = std::vector <Reference> { coerce_to_handle(args)... };
+		invocation_setup <R> ::locals(locals);
+		jems::invocation(*this, cargs, locals);
 
-		if constexpr (not std::is_same_v <R, void>) {
-			R result;
-			inject_reference(result, inv);
-			return result;
-		}
+		if constexpr (not std::is_same_v <R, void>)
+			return invocation_setup <R> ::recover(locals);
 	}
 };
 

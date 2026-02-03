@@ -3,6 +3,7 @@
 #include <functional>
 #include <string>
 #include <vector>
+#include <filesystem>
 
 #include <rcgp.hpp>
 
@@ -52,3 +53,5 @@ inline auto operator*(std::nullptr_t, std::function <void ()> &&fn)
 
 void assert_assembly_match(const SharedBlockReference &block, const std::string &str);
 void assert_glsl_match(const SharedBlockReference &block, const std::string &str);
+
+void assert_glsl_match_file(const SharedBlockReference &block, const std::filesystem::path &path);

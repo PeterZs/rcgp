@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstddef>
+#include <fstream>
 #include <string>
 #include <string_view>
 
@@ -168,6 +169,40 @@ void assert_assembly_match(const SharedBlockReference &block, const std::string 
 void assert_glsl_match(const SharedBlockReference &block, const std::string &str)
 {
 	auto expected = clean(str, 0);
+	auto act = generate_glsl(block);
+	if (act != expected) {
+		show_diff(expected, act);
+		if (tests.show_ground_truth) {
+			auto style = fmt::fg(fmt::color::gray)
+				| fmt::emphasis::italic;
+			fmt::print(style, "ground truth:\n{}\n", act);
+		}
+
+		mark_fail;
+	}
+}
+
+std::string read_file_contents(const std::filesystem::path &path)
+{
+	std::ifstream fin(path);
+        if (!fin.good()) {
+                std::println("failed to open file: {}", path.c_str());
+		std::abort();
+        }
+
+        std::stringstream s;
+        s << fin.rdbuf();
+        return s.str();
+}
+
+void assert_glsl_match_file(const SharedBlockReference &block, const std::filesystem::path &path)
+{
+	auto expected = read_file_contents("tests/dsl" / path);
+	if (expected.empty()) {
+		mark_fail;
+		return;
+	}
+
 	auto act = generate_glsl(block);
 	if (act != expected) {
 		show_diff(expected, act);

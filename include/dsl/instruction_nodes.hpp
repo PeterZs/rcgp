@@ -89,10 +89,7 @@ struct Construct {
 struct Invocation {
 	SharedBlockReference sbr;
 	std::vector <Reference> args;
-
-	template <typename ... Args>
-	Invocation(SharedBlockReference sbr_, Args ... args_)
-		: sbr(sbr_), args { args_ ... } {}
+	std::vector <Reference> returns;
 
 	std::string repr() const {
 		return "Invocation";

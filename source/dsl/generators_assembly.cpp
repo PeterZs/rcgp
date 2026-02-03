@@ -6,6 +6,7 @@
 #include <set>
 #include <source_location>
 #include <vector>
+#include <ranges>
 
 #include <fmt/format.h>
 
@@ -358,14 +359,27 @@ std::string stringify(AsmContext &ctx, Invocation x, Reference ref)
 	else
 		result = fmt::format("@{}(", (void *) x.sbr.get());
 	
-	for (size_t i = 0; i < x.args.size(); i++) {
-		result += stringify(ctx, x.args[i]);
+	for (const auto &[i, arg] : std::views::enumerate(x.args)) {
+		result += stringify(ctx, arg);
 		if (i + 1 < x.args.size())
 			result += ", ";
 	}
+
+	result += "; ";
+
+	if (x.returns.size()) {
+		for (const auto &[i, ret] : std::views::enumerate(x.returns)) {
+			result += stringify(ctx, ret);
+			if (i + 1 < x.returns.size())
+				result += ", ";
+		}
+	} else {
+		result += "nil";
+	}
+
 	result += ")";
 
-	return $assign result;
+	return result;
 }
 
 #undef $assign
@@ -498,6 +512,7 @@ std::string generate(AsmContext &ctx)
 	if (!ctx.sbr->name.empty())
 		result += fmt::format("    name: {},\n", ctx.sbr->name);
 
+	// TODO: show in a list...
 	for (auto arg : ctx.sbr->arguments) {
 		result += fmt::format("    argument {}: {},\n",
 			arg.argi, stringify(ctx, arg.type));

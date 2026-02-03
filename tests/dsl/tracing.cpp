@@ -208,8 +208,8 @@ add_test(vs_push_constant)
 
 add_test(sr_return_primitives)
 {
-	auto sr = $subroutine(sr)() {
-		return std::tuple { float3(1), uint2(12, 13) };
+	auto sr = $subroutine(sr)(f32 x, u32 y) {
+		return std::tuple { float3(x), uint2(y, 13) };
 	};
 	
 	assert_assembly_match(sr, R"(
@@ -217,31 +217,31 @@ add_test(sr_return_primitives)
 	  context {
 	    model: subroutine,
 	    name: sr,
-	    return 0: $0,
-	    return 1: $1,
+	    argument 0: $0,
+	    argument 1: $1,
+	    return 0: $2,
+	    return 1: $3,
 	  }
-	  $1 = UVec2
-	  $2 = UInt32
-	  $0 = Vec3
-	  $3 = Float
-	  $4 = local $3
-	  $5 = 1
-	  store $4 $5
-	  $6 = new $0($4, $4, $4)
-	  $7 = local $0
-	  store $7 $6
-	  $8 = local $2
-	  $9 = 13
-	  store $8 $9
-	  $10 = local $2
-	  $11 = 12
+	  $3 = UVec2
+	  $2 = Vec3
+	  $0 = Float
+	  $1 = UInt32
+	  $4 = local $1
+	  $5 = local $0
+	  $6 = argument $0:0
+	  $7 = argument $1:1
+	  $8 = new $2($6, $6, $6)
+	  $9 = local $2
+	  store $9 $8
+	  $10 = local $1
+	  $11 = 13
 	  store $10 $11
-	  $12 = new $1($10, $8)
-	  $13 = local $1
+	  $12 = new $3($7, $10)
+	  $13 = local $3
 	  store $13 $12
-	  $14 = return($0, 0)
-	  store $14 $7
-	  $15 = return($1, 1)
+	  $14 = return($2, 0)
+	  store $14 $9
+	  $15 = return($3, 1)
 	  store $15 $13
 	}
 	)");
@@ -249,10 +249,10 @@ add_test(sr_return_primitives)
 
 add_test(sr_return_aggregate)
 {
-	auto sr = $subroutine(sr)() {
+	auto sr = $subroutine(sr)(f32 z) {
 		return Ray {
 			float3(0),
-			normalize(float3(1, 1, 1)),
+			normalize(float3(1, z, 1)),
 		};
 	};
 	
@@ -261,35 +261,113 @@ add_test(sr_return_aggregate)
 	  context {
 	    model: subroutine,
 	    name: sr,
-	    return 0: $0,
+	    argument 0: $0,
+	    return 0: $1,
 	  }
-	  $1 = Vec3
-	  $2 = Float
-	  $3 = local $2
-	  $4 = 0
-	  store $3 $4
-	  $5 = new $1($3, $3, $3)
-	  $6 = local $1
-	  store $6 $5
-	  $7 = local $2
-	  $8 = 1
-	  store $7 $8
-	  $9 = local $2
+	  $2 = Vec3
+	  $0 = Float
+	  $3 = local $0
+	  $4 = argument $0:0
+	  $5 = local $0
+	  $6 = 0
+	  store $5 $6
+	  $7 = new $2($5, $5, $5)
+	  $8 = local $2
+	  store $8 $7
+	  $9 = local $0
 	  $10 = 1
 	  store $9 $10
-	  $11 = local $2
+	  $11 = local $0
 	  $12 = 1
 	  store $11 $12
-	  $13 = new $1($11, $9, $7)
-	  $14 = local $1
+	  $13 = new $2($11, $4, $9)
+	  $14 = local $2
 	  store $14 $13
 	  $15 = normalize($14)
-	  $0 = Ray($1, $1)
-	  $16 = return($0, 0)
-	  $17 = new $0($6, $15)
+	  $1 = Ray($2, $2)
+	  $16 = return($1, 0)
+	  $17 = new $1($8, $15)
 	  store $16 $17
 	}
 	)");
 };
 
-// TODO: subroutine invocation
+add_test(sr_invocation)
+{
+	auto sr1 = $subroutine(sr1)(f32 x) {
+		return float3(x);
+	};
+	
+	auto sr2 = $subroutine(sr2)(f32 x, u32 y) {
+		return std::tuple { float3(x), uint2(y, 13) };
+	};
+	
+	auto sr3 = $subroutine(sr3)(f32 z) {
+		return Ray {
+			float3(0),
+			normalize(float3(1, z, 1)),
+		};
+	};
+
+	auto vs = $shader(vertex, &)() {
+		auto r1 = $use(sr1)(1);
+		auto [r2a, r2b] = $use(sr2)(1.0f, 2);
+		auto r3 = $use(sr3)(2.0f);
+		return std::tuple { r1, r2a, r2b, r3.origin, r3.direction };
+	};
+
+	assert_assembly_match(vs, R"(
+	block {
+	  context {
+	    model: vertex shader,
+	    name: main,
+	    stage out 0: $0 (smooth),
+	    stage out 1: $0 (smooth),
+	    stage out 2: $1 (smooth),
+	    stage out 3: $0 (smooth),
+	    stage out 4: $0 (smooth),
+	  }
+	  $2 = Ray($0, $0)
+	  $1 = UVec2
+	  $3 = UInt32
+	  $0 = Vec3
+	  $4 = Float
+	  $5 = local $4
+	  $6 = 1
+	  store $5 $6
+	  $7 = local $0
+	  @sr1($5; $7)
+	  $8 = local $0
+	  $9 = local $3
+	  $10 = 2
+	  store $9 $10
+	  $11 = local $4
+	  $12 = 1
+	  store $11 $12
+	  $13 = local $0
+	  $14 = local $1
+	  @sr2($11, $9; $13, $14)
+	  $15 = local $1
+	  $16 = local $0
+	  $17 = local $4
+	  $18 = 2
+	  store $17 $18
+	  $19 = local $2
+	  @sr3($17; $19)
+	  $20 = local $0
+	  $21 = local $0
+	  $22 = field $19:0
+	  $23 = field $19:1
+	  $24 = stage out($0, 0, smooth)
+	  store $24 $7
+	  $25 = stage out($0, 1, smooth)
+	  store $25 $14
+	  $26 = stage out($1, 2, smooth)
+	  store $26 $13
+	  $27 = stage out($0, 3, smooth)
+	  store $27 $22
+	  $28 = stage out($0, 4, smooth)
+	  store $28 $23
+	}
+	)");
+};

@@ -142,19 +142,17 @@ static auto g_primitive_types = std::array {
 };
 
 struct GLSLEmitter {
-	// TODO: should instead store the blocks for each method...
-	const SharedBlockReference &sbr;
-
+	const SharedBlockReference &main;
+	std::set <SharedBlockReference> subroutines;
 	std::map <const Instruction *const, uint32_t> ids;
+	std::string result;
+	int32_t indentation;
 
 	std::string new_id(const Reference &ref) {
 		auto ptr = ref.get();
 		ids.emplace(ptr, ids.size());
 		return std::format("lvar{}", ids.at(ptr));
 	}
-
-	std::string result;
-	int32_t indentation;
 
 	void emit_line(const std::string &line) {
 		std::string space(4 * indentation, ' ');
@@ -346,6 +344,10 @@ std::string expr_repr(const GLSLEmitter &em, const Reference &ref)
 		auto &sin = ref->as <StageInput> ();
 		return fmt::format("lin{}", sin.argi);
 	}
+	vcase(Argument): {
+		auto &arg = ref->as <Argument> ();
+		return fmt::format("arg{}", arg.argi);
+	}
 	vcase(Operation): {
 		auto &opn = ref->as <Operation> ();
 		return opn_repr(em, opn);
@@ -432,6 +434,29 @@ void emit_statement(GLSLEmitter &em, const Reference &ref)
 
 		return;
 	}
+	vcase(Invocation): {
+		auto &inv = ref->as <Invocation> ();
+		
+		std::string decl = inv.sbr->name + "(";
+		for (const auto &[i, arg] : std::views::enumerate(inv.args)) {
+			decl += expr_repr(em, arg);
+			if (i + 1 < inv.args.size())
+				decl += ", ";
+		}
+
+		if (inv.args.size() and inv.returns.size())
+			decl += ", ";
+
+		for (const auto &[i, ret] : std::views::enumerate(inv.returns)) {
+			decl += lval_repr(em, ret);
+			if (i + 1 < inv.returns.size())
+				decl += ", ";
+		}
+
+		decl += ");";
+
+		return em.emit_line(decl);
+	}
 	default:
 		break;
 	}
@@ -464,6 +489,17 @@ void emit_body(GLSLEmitter &em, const SharedBlockReference &sbr)
 void emit_subroutine(GLSLEmitter &em, const SharedBlockReference &sbr)
 {
 	std::string args = "";
+
+	for (const auto &[i, arg] : std::views::enumerate(sbr->arguments)) {
+		auto repr = type_repr(em, arg.type);
+		args += std::format("{} arg{}{}", repr.base, i, repr.suffix);
+		if (i + 1 < sbr->returns.size())
+			args += ", ";
+	}
+
+	if (sbr->arguments.size() and sbr->returns.size())
+		args += ", ";
+
 	for (const auto &[i, ret] : std::views::enumerate(sbr->returns)) {
 		auto repr = type_repr(em, ret.type);
 		args += std::format("out {} ret{}{}", repr.base, i, repr.suffix);
@@ -476,7 +512,7 @@ void emit_subroutine(GLSLEmitter &em, const SharedBlockReference &sbr)
 	em.emit_line("{");
 	em.indentation++;
 
-	emit_body(em, em.sbr);
+	emit_body(em, em.main);
 	
 	em.indentation--;
 	em.emit_line("}");
@@ -488,7 +524,7 @@ void emit_main(GLSLEmitter &em)
 	em.emit_line("{");
 	em.indentation++;
 
-	emit_body(em, em.sbr);
+	emit_body(em, em.main);
 	
 	em.indentation--;
 	em.emit_line("}");
@@ -499,7 +535,7 @@ auto collect_extensions(const GLSLEmitter &em)
 	std::vector <std::string> extensions;
 	extensions.emplace_back("GL_EXT_scalar_block_layout");
 	
-	auto model = em.sbr->model;
+	auto model = em.main->model;
 	if (model == ShaderStage::eMesh or model == ShaderStage::eTask)
 		extensions.emplace_back("GL_EXT_mesh_shader");
 
@@ -508,7 +544,7 @@ auto collect_extensions(const GLSLEmitter &em)
 
 void emit_stage_io(GLSLEmitter &em)
 {
-	auto &tins = em.sbr->stage_inputs;
+	auto &tins = em.main->stage_inputs;
 	for (auto &tin : tins) {
 		auto repr = type_repr(em, tin.type);
 		em.emit_fmt_line("layout (location = {}) in {} lin{}{};",
@@ -518,7 +554,7 @@ void emit_stage_io(GLSLEmitter &em)
 	if (tins.size())
 		em.emit_newline();
 
-	auto &touts = em.sbr->stage_outputs;
+	auto &touts = em.main->stage_outputs;
 	for (auto &tout : touts) {
 		auto repr = type_repr(em, tout.type);
 		auto rate = g_rate_strings.at(std::to_underlying(tout.properties));
@@ -539,7 +575,7 @@ void emit_structs(GLSLEmitter &em)
 
 	// TODO: make this an iteration over all method blocks
 	std::set <AggregateType, decltype(cmp)> structs;
-	for (auto &instr : *em.sbr) {
+	for (auto &instr : *em.main) {
 		if (not instr->is <Type> ())
 			continue;
 
@@ -661,8 +697,8 @@ void emit_whole(GLSLEmitter &em)
 	emit_stage_io(em);
 
 	// Workgroup shape
-	if (em.sbr->workgroup_size) {
-		auto &shape = em.sbr->workgroup_size.value();
+	if (em.main->workgroup_size) {
+		auto &shape = em.main->workgroup_size.value();
 		em.emit_fmt_line(
 			"layout ("
 			"local_size_x = {}, "
@@ -674,9 +710,9 @@ void emit_whole(GLSLEmitter &em)
 	}
 
 	// Mesh shader output
-	if (em.sbr->model == ShaderStage::eMesh) {
-		auto &max_vertices = em.sbr->mesh_max_vertices.value();
-		auto &max_primitives = em.sbr->mesh_max_primitives.value();
+	if (em.main->model == ShaderStage::eMesh) {
+		auto &max_vertices = em.main->mesh_max_vertices.value();
+		auto &max_primitives = em.main->mesh_max_primitives.value();
 		em.emit_fmt_line("layout ("
 			"max_vertices = {}, "
 			"max_primitives = {}) out;",
@@ -687,8 +723,8 @@ void emit_whole(GLSLEmitter &em)
 	}
 
 	// Task payload
-	if (em.sbr->task_payload_type) {
-		auto &payload = em.sbr->task_payload_type.value();
+	if (em.main->task_payload_type) {
+		auto &payload = em.main->task_payload_type.value();
 		auto repr = type_repr(em, payload);
 		em.emit_fmt_line("taskPayloadSharedEXT {} task_payload{};",
 			repr.base, repr.suffix);
@@ -697,13 +733,55 @@ void emit_whole(GLSLEmitter &em)
 
 	// Global shader resources
 	// NOTE: Top-level is sufficient because of context inheritence
-	for (auto &[_, ref] : em.sbr->global_resources) {
+	for (auto &[_, ref] : em.main->global_resources) {
 		auto &grsrc = ref->as <GlobalResource> ();
 		emit_resource(em, grsrc);
 	}
 
+	// Subroutines
+	// TODO: top sort
+	for (auto &sr : em.subroutines) {
+		emit_subroutine(em, sr);
+		em.emit_newline();
+	}
+
 	// Main method
 	emit_main(em);
+}
+
+void collect_subroutines(GLSLEmitter &em, const SharedBlockReference &sbr)
+{
+	for (auto &inst : *sbr) {
+		vswitch (*inst) {
+		vcase(Invocation): {
+			auto &inv = inst->as <Invocation> ();
+			em.subroutines.insert(inv.sbr);
+			collect_subroutines(em, inv.sbr);
+			break;
+		}
+		vcase(Branch): {
+			auto &branch = inst->as <Branch> ();
+			for (auto &b : branch.segments)
+				collect_subroutines(em, b.body);
+			if (branch.fallback)
+				collect_subroutines(em, branch.fallback.value());
+			break;
+		}
+		vcase(Loop): {
+			auto &loop = inst->as <Loop> ();
+			if (loop.kind == LoopKind::eFor) {
+				collect_subroutines(em, loop.init.value());
+				collect_subroutines(em, loop.step.value());
+			}
+
+			collect_subroutines(em, loop.cond);
+			collect_subroutines(em, loop.body);
+			break;
+		}
+		default:
+			break;
+		}
+	}
 }
 
 std::string generate_glsl(const SharedBlockReference &sbr)
@@ -711,15 +789,17 @@ std::string generate_glsl(const SharedBlockReference &sbr)
 	TSCOPE("generating glsl code");
 
 	auto em = GLSLEmitter {
-		.sbr = sbr,
+		.main = sbr,
 		.result = "",
 		.indentation = 0,
 	};
 
-	if (sbr->model == ShaderStage::eSubroutine)
+	if (sbr->model == ShaderStage::eSubroutine) {
 		emit_subroutine(em, sbr);
-	else
+	} else {
+		collect_subroutines(em, sbr);
 		emit_whole(em);
+	}
 
 	return em.result;
 }
