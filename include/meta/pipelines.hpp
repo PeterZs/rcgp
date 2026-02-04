@@ -4,7 +4,7 @@
 #include "descriptor.hpp"
 #include "group_allocation.hpp"
 #include "index_buffer.hpp"
-#include "reference.hpp"
+#include "contract.hpp"
 
 namespace rcgp {
 
@@ -14,14 +14,14 @@ constexpr auto set_index_for(const Tlist <group_allocation_record <refs, Is>...>
 	// TODO: use constexpr_for?
 	constexpr auto matches = std::array {
 		std::same_as <
-			reference <ref>,
-			reference <refs>
+			contract <ref>,
+			contract <refs>
 		>...
 	};
 
 	constexpr auto index = first_on(matches);
 	if constexpr (index < 0) {
-		static_error("reference not in group allocation"_ss);
+		static_error("contract not in group allocation"_ss);
 		return 0;
 	} else {
 		return Is...[index];

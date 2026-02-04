@@ -1,14 +1,14 @@
 #pragma once
 
 #include "mirror.hpp"
-#include "reference.hpp"
+#include "contract.hpp"
 #include "resources.hpp"
 #include "symbolic_format.hpp"
 
 namespace rcgp {
 
 template <auto &... refs>
-constexpr auto sequence_to_vertex_bindings(const Tlist <reference <refs>...> &in)
+constexpr auto sequence_to_vertex_bindings(const Tlist <contract <refs>...> &in)
 {
 	auto desc = [] <typename T, template <typename> typename L, vk::VertexInputRate R>
 	(const AttributeStream <T, L, R> &) {
@@ -30,7 +30,7 @@ constexpr auto sequence_to_vertex_bindings(const Tlist <reference <refs>...> &in
 }
 
 template <auto &... refs>
-constexpr auto sequence_to_vertex_attributes(const Tlist <reference <refs>...> &in)
+constexpr auto sequence_to_vertex_attributes(const Tlist <contract <refs>...> &in)
 {
 	auto desc = [] <typename T, template <typename> typename L, vk::VertexInputRate R>
 	(const AttributeStream <T, L, R> &) {

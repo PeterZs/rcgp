@@ -88,17 +88,17 @@ using enable_if = std::conditional_t <B, T, std::nullptr_t>;
 #define $inherits(...) std::nullptr_t MAP(ICONTEXT_GENERATOR, /* N/A */, __VA_ARGS__)
 
 // TODO: move to separate header... contract_hell
-#define RCGP_REFERENCE_FROM_NAME(name) , reference <name> name
-#define RCGP_REFERENCE_FROM_TUPLE(name, ref) , reference <(ref)> name
+#define RCGP_CONTRACT_FROM_NAME(name) , contract <name> name
+#define RCGP_CONTRACT_FROM_TUPLE(name, ref) , contract <(ref)> name
 
 #define RCGP_CONTRACT_IS_ENABLE_IF(tag, ...) \
 	MACRO_CHECK(MACRO_CAT(RCGP_CONTRACT_IS_ENABLE_IF_PROBE_, tag))
 #define RCGP_CONTRACT_IS_ENABLE_IF_PROBE_ENABLE_IF MACRO_PROBE()
 
 #define RCGP_CONTRACT_ENABLE_IF_TUPLE(cond, name, ref) \
-	, std::conditional_t <cond, reference <(ref)>, std::nullptr_t> name
+	, std::conditional_t <cond, contract <(ref)>, std::nullptr_t> name
 #define RCGP_CONTRACT_ENABLE_IF_NAME(cond, name) \
-	, std::conditional_t <cond, reference <name>, std::nullptr_t> name
+	, std::conditional_t <cond, contract <name>, std::nullptr_t> name
 
 #define RCGP_CONTRACT_FROM_ENABLE_IF(tag, cond, arg) \
 	RCGP_CONTRACT_FROM_ENABLE_IF_ARG(cond, arg)
@@ -115,19 +115,19 @@ using enable_if = std::conditional_t <B, T, std::nullptr_t>;
 
 #define RCGP_CONTRACT_FROM_ENABLE_IF_WRAPPER(...) \
 	RCGP_CONTRACT_FROM_ENABLE_IF(__VA_ARGS__)
-#define RCGP_REFERENCE_FROM_TUPLE_WRAPPER(...) \
-	RCGP_REFERENCE_FROM_TUPLE(__VA_ARGS__)
-#define RCGP_REFERENCE_FROM_PAREN(...) \
+#define RCGP_CONTRACT_FROM_TUPLE_WRAPPER(...) \
+	RCGP_CONTRACT_FROM_TUPLE(__VA_ARGS__)
+#define RCGP_CONTRACT_FROM_PAREN(...) \
 	MACRO_IF(RCGP_CONTRACT_IS_ENABLE_IF(__VA_ARGS__)) \
 	(	\
 		RCGP_CONTRACT_FROM_ENABLE_IF_WRAPPER, \
-		RCGP_REFERENCE_FROM_TUPLE_WRAPPER \
+		RCGP_CONTRACT_FROM_TUPLE_WRAPPER \
 	)(__VA_ARGS__)
 
-#define RCGP_REFERENCE_FROM_ARG(arg) \
-	MACRO_IF(MACRO_IS_PAREN(arg))(RCGP_REFERENCE_FROM_PAREN arg, RCGP_REFERENCE_FROM_NAME(arg))
-#define REFERENCE_GENERATOR(ctx, arg) RCGP_REFERENCE_FROM_ARG(arg)
+#define RCGP_CONTRACT_FROM_ARG(arg) \
+	MACRO_IF(MACRO_IS_PAREN(arg))(RCGP_CONTRACT_FROM_PAREN arg, RCGP_CONTRACT_FROM_NAME(arg))
+#define CONTRACT_GENERATOR(ctx, arg) RCGP_CONTRACT_FROM_ARG(arg)
 
-#define $contracts(...) std::nullptr_t MAP(REFERENCE_GENERATOR, /* N/A */, __VA_ARGS__)
+#define $contracts(...) std::nullptr_t MAP(CONTRACT_GENERATOR, /* N/A */, __VA_ARGS__)
 
 } // namespace rcgp

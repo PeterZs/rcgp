@@ -58,7 +58,7 @@ struct BarrierEffect {
 
 // Dependency sequences for pipelines
 template <auto &... refs>
-consteval auto command_effects_for_streams(Tlist <reference <refs>...>)
+consteval auto command_effects_for_streams(Tlist <contract <refs>...>)
 {
 	return Tlist <Dependency <refs>...> {};
 }
@@ -66,7 +66,7 @@ consteval auto command_effects_for_streams(Tlist <reference <refs>...>)
 template <typename ... Wrappers>
 consteval auto command_effects_for_grcs(Tlist <Wrappers...>)
 {
-	return Tlist <Dependency <Wrappers::reference::handle>...> {};
+	return Tlist <Dependency <Wrappers::contract::handle>...> {};
 }
 
 template <Topology T, typename AS, typename GAMAP, typename GRCs>

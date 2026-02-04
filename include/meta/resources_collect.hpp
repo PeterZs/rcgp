@@ -1,17 +1,17 @@
 #pragma once
 
 #include "implicit_context.hpp"
-#include "reference.hpp"
+#include "contract.hpp"
 #include "resources.hpp"
 #include "shader_stage.hpp"
 
 namespace rcgp {
 
 template <auto &ref, ShaderStage ... Ss>
-struct stage_wrapper : reference <ref> {
+struct stage_wrapper : contract <ref> {
 	using stages = std::integer_sequence <ShaderStage, Ss...>;
-	using type = reference_base_t <ref>;
-	using reference = rcgp::reference <ref>;
+	using type = contract_base_t <ref>;
+	using contract = rcgp::contract <ref>;
 
 	template <ShaderStage S>
 	using append_stage = std::conditional_t <
@@ -25,12 +25,12 @@ struct stage_wrapper : reference <ref> {
 
 TYPE_TRAIT(is_push_constant_wrapper);
 	template <auto &ref, ShaderStage ... Ss>
-	requires (is_push_constant_v <reference_base_t <ref>>)
+	requires (is_push_constant_v <contract_base_t <ref>>)
 	TYPE_TRAIT_INCLUDES(is_push_constant_wrapper, stage_wrapper <ref, Ss...>);
 
 TYPE_TRAIT(is_descriptable_wrapper);
 	template <auto &ref, ShaderStage ... Ss>
-	requires (not is_push_constant_v <reference_base_t <ref>>)
+	requires (not is_push_constant_v <contract_base_t <ref>>)
 	TYPE_TRAIT_INCLUDES(is_descriptable_wrapper, stage_wrapper <ref, Ss...>);
 
 template <typename List>
@@ -43,15 +43,15 @@ template <typename T>
 struct is_attribute_stream_ref : std::false_type {};
 
 template <auto &ref>
-struct is_attribute_stream_ref <reference <ref>>
-	: std::bool_constant <is_attribute_stream_v <reference_base_t <ref>>> {};
+struct is_attribute_stream_ref <contract <ref>>
+	: std::bool_constant <is_attribute_stream_v <contract_base_t <ref>>> {};
 
 template <typename T>
 struct is_global_resource_ref : std::false_type {};
 
 template <auto &ref>
-struct is_global_resource_ref <reference <ref>>
-	: std::bool_constant <is_global_resource_v <reference_base_t <ref>>> {};
+struct is_global_resource_ref <contract <ref>>
+	: std::bool_constant <is_global_resource_v <contract_base_t <ref>>> {};
 
 template <ShaderStage S>
 struct stage_wrapper_from_ref {
@@ -59,7 +59,7 @@ struct stage_wrapper_from_ref {
 	struct apply;
 
 	template <auto &ref>
-	struct apply <reference <ref>> {
+	struct apply <contract <ref>> {
 		using type = stage_wrapper <ref, S>;
 	};
 };
@@ -86,11 +86,11 @@ consteval auto collect_gvrs(const IContext &)
 template <auto &ref, ShaderStage S, typename ... Ts>
 consteval auto merge_stage_wrapper(Tlist <Ts...>)
 {
-	constexpr auto exists = (std::same_as <reference <ref>, reference <Ts::handle>> || ...);
+	constexpr auto exists = (std::same_as <contract <ref>, contract <Ts::handle>> || ...);
 	if constexpr (exists) {
 		return Tlist <
 			std::conditional_t <
-				std::same_as <reference <Ts::handle>, reference <ref>>,
+				std::same_as <contract <Ts::handle>, contract <ref>>,
 				typename Ts::template append_stage <S>,
 				Ts
 			> ...

@@ -9,7 +9,7 @@ template <typename ... Ts>
 auto wrappers_to_gamap(const Tlist <Ts...> &)
 {
 	auto alloc = constexpr_for(Is, sizeof...(Ts),
-		return Tlist <group_allocation_record <Ts::reference::handle, Is>...> {}
+		return Tlist <group_allocation_record <Ts::contract::handle, Is>...> {}
 	);
 	
 	auto gamap = [&] <typename ... Records> (Tlist <Records...>) {

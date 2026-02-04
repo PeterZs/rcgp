@@ -115,7 +115,7 @@ auto bind_descriptors(const DescriptorFor <refs, true> &... descriptors)
 template <auto &... refs>
 auto bind_push_constants(const ResourceTypeFor <refs> &... constants)
 {
-	static_assert((is_push_constant_v <reference_base_t <refs>> && ...));
+	static_assert((is_push_constant_v <contract_base_t <refs>> && ...));
 
 	auto binder = [=](const CommandBuffer &cmd, SerializationContext &sctx) {
 		auto &cid = PipelineMappings::cache.at(sctx.pplid);
@@ -135,7 +135,7 @@ auto bind_push_constants(const ResourceTypeFor <refs> &... constants)
 template <auto &... refs>
 auto bind_vertex_buffers(const ResourceTypeFor <refs> &... buffers)
 {
-	static_assert((is_attribute_stream_v <reference_base_t <refs>> && ...));
+	static_assert((is_attribute_stream_v <contract_base_t <refs>> && ...));
 
 	auto binder = [...handles = buffers.handle](
 		const CommandBuffer &cmd,

@@ -2,13 +2,13 @@
 
 #include "../util/cti.hpp"
 #include "../util/tlist.hpp"
-#include "reference.hpp"
+#include "contract.hpp"
 
 namespace rcgp {
 
 template <auto &... refs>
 struct implicit_context {
-	using tlist = Tlist <reference <refs>...>;
+	using tlist = Tlist <contract <refs>...>;
 };
 
 TYPE_TRAIT(is_implicit_context);
@@ -29,7 +29,7 @@ template <typename T>
 using atomic_icontext = decltype([] {
 	if constexpr (is_implicit_context_v <T>)
 		return T();
-	else if constexpr (is_reference_v <T>)
+	else if constexpr (is_contract_v <T>)
 		return implicit_context <T::handle> ();
 	else
 		return implicit_context <> ();

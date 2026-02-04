@@ -4,7 +4,7 @@
 #include "implicit_context.hpp"
 #include "inject_reference.hpp"
 #include "reconstruct_type.hpp"
-#include "reference.hpp"
+#include "contract.hpp"
 #include "stage_intrinsics.hpp"
 #include "static_string.hpp"
 
@@ -90,7 +90,7 @@ void inject_resource_group_element(void *addr, T &value)
 }
 
 template <typename T, T &ref>
-void inject_resource_reference(reference <ref> &value)
+void inject_resource_reference(contract <ref> &value)
 {
 	if constexpr (is_resource_group_v <T>) {
 		// TODO: assert that its an aggregate
@@ -105,15 +105,15 @@ void inject_resource_reference(reference <ref> &value)
 		inject_reference(Tas <T &> (value), grsrc);
 	} else {
 		// Unknown cases
-		static_error("resource reference injector not implemented for "_ss + $ss_type(T));
+		static_error("resource contract injector not implemented for "_ss + $ss_type(T));
 	}
 }
 
 // Broader case with stage information
 template <ShaderStage S, auto &ref>
-void inject_one_argument(reference <ref> &value, InjectionCounters &counters)
+void inject_one_argument(contract <ref> &value, InjectionCounters &counters)
 {
-	using R = reference_base_t <ref>;
+	using R = contract_base_t <ref>;
 
 	if constexpr (is_attribute_stream_v <R>) {
 		// TODO: move to the else branch with a false static assert

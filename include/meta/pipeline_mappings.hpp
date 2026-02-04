@@ -18,7 +18,7 @@ struct PipelineMappings {
 };
 
 template <auto &... refs>
-void write_vb_offsets(PipelineMappings &dst, Tlist <reference <refs>...>)
+void write_vb_offsets(PipelineMappings &dst, Tlist <contract <refs>...>)
 {
 	size_t counter = 0;
 	(dst.vb_offsets.emplace(&refs, counter++), ...);
@@ -39,7 +39,7 @@ struct stage_flags_for_seq <
 	Tlist <stage_wrapper <other, Ss...>, Rest...>
 > {
 	static constexpr vk::ShaderStageFlags value =
-		std::same_as <reference <other>, reference <ref>>
+		std::same_as <contract <other>, contract <ref>>
 			? stage_flags_of <Ss...> ()
 			: stage_flags_for_seq <ref, Tlist <Rest...>> ::value;
 };
@@ -52,7 +52,7 @@ void write_pb_infos(PipelineMappings &dst, Tlist <Wrappers...>)
 {
 	using GRCs = Tlist <Wrappers...>;
 	auto write = [&] <auto &ref> () {
-		using Resource = reference_base_t <ref>;
+		using Resource = contract_base_t <ref>;
 
 		if constexpr (is_push_constant_v <Resource>) {
 			auto flags = stage_flags_for_v <ref, GRCs>;
@@ -62,7 +62,7 @@ void write_pb_infos(PipelineMappings &dst, Tlist <Wrappers...>)
 		}
 	};
 
-	(write.template operator() <Wrappers::reference::handle> (), ...);
+	(write.template operator() <Wrappers::contract::handle> (), ...);
 }
 
 template <Topology T, typename AS, typename GAMAP, typename GRCs>

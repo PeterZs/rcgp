@@ -2,7 +2,7 @@
 
 #include "../rhi/device.hpp"
 #include "../util/cti.hpp"
-#include "reference_introspection.hpp"
+#include "contract_introspection.hpp"
 #include "resources.hpp"
 #include "static_string.hpp"
 
@@ -64,7 +64,7 @@ void set_descriptor_write_and_union(
 // Descriptor write handler with temporary storage
 template <auto &ref, bool resolved>
 struct DescriptorWritePair {
-	using Reference = reference_base_t <ref>;
+	using Reference = contract_base_t <ref>;
 
 	const DescriptorFor <ref, resolved> &descriptor;
 	const ResourceTypeFor <ref> &resource;

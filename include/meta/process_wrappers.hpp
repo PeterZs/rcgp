@@ -6,7 +6,7 @@
 #include "../rhi/device.hpp"
 #include "../util/align.hpp"
 #include "../util/cti.hpp"
-#include "reference_introspection.hpp"
+#include "contract_introspection.hpp"
 #include "resources.hpp"
 #include "resources_collect.hpp"
 
@@ -21,7 +21,7 @@ consteval size_t push_constant_offset_for(Tlist <Wrappers...>)
 		using R = W::type;
 		using T = ResourceTypeFor <W::handle>;
 
-		if constexpr (std::same_as <typename W::reference, reference <ref>>)
+		if constexpr (std::same_as <typename W::contract, contract <ref>>)
 			passed = true;
 		if (not passed && is_push_constant_v <R>) {
 			offset = align_up(offset, alignof(T));
@@ -35,7 +35,7 @@ consteval size_t push_constant_offset_for(Tlist <Wrappers...>)
 template <auto &ref, ShaderStage ... Ss>
 auto one_wrapper_to_dsl(const Device &device, const stage_wrapper <ref, Ss...> &)
 {
-	using Reference = reference_base_t <ref>;
+	using Reference = contract_base_t <ref>;
 
 	auto stage_flags = (stage_to_flag(Ss) | ...);
 	if constexpr (is_resource_group_v <Reference>) {
@@ -125,7 +125,7 @@ auto wrappers_to_pcs(const Tlist <Wrappers...> &)
 				.setSize(sizeof(T))
 				.setStageFlags(W::flags);
 
-			map.emplace(W::reference::address, offset);
+			map.emplace(W::contract::address, offset);
 
 			offset += sizeof(T);
 		};
