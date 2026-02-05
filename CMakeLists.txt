@@ -59,11 +59,7 @@ target_link_libraries(rcgp PUBLIC
 	glslang::glslang-default-resource-limits
 )
 
-add_executable(test EXCLUDE_FROM_ALL
-	tests/dsl/main.cpp
-	tests/dsl/common.cpp
-	tests/dsl/recording.cpp
-	tests/dsl/tracing.cpp
-	tests/dsl/glsl.cpp
-)
+file(GLOB_RECURSE RCGP_DSL_TESTS
+	CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/tests/dsl/*.cpp")
+add_executable(test EXCLUDE_FROM_ALL ${RCGP_DSL_TESTS})
 target_link_libraries(test rcgp)

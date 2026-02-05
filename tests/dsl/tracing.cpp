@@ -62,23 +62,23 @@ add_test(vs_louts)
 	Block {
 	  Context {
 	    stage: Vertex,
-	    stage inputs: { Smooth $0, Flat $1 }
+	    stage outputs: { Smooth $0, Flat $1 }
 	  }
-	  $2 = Float
-	  $3 = Local $2
-	  $4 = 1
-	  Store $3 $4
+	  $2 = UInt32
 	  $0 = Vec3
-	  $5 = New $0($3, $3, $3)
-	  $6 = Local $0
-	  Store $6 $5
-	  $7 = StageOutput 0: Smooth $0
+	  $3 = Float
+	  $4 = Local $3
+	  $5 = 1
+	  Store $4 $5
+	  $6 = New $0($4, $4, $4)
+	  $7 = Local $0
 	  Store $7 $6
-	  $8 = UInt32
-	  $9 = Local $8
+	  $8 = StageOutput 0: Smooth $0
+	  Store $8 $7
+	  $9 = Local $2
 	  $10 = 4
 	  Store $9 $10
-	  $11 = Local $8
+	  $11 = Local $2
 	  $12 = 1
 	  Store $11 $12
 	  $1 = UVec2
@@ -106,14 +106,14 @@ add_test(vs_stream)
 	Block {
 	  Context {
 	    stage: Vertex,
-	    stage inputs: { $0 }
 	    stage inputs: { Smooth $0 }
+	    stage outputs: { Smooth $0 }
 	  }
 	  $1 = Vec4
 	  $2 = Float
 	  $0 = Vec3
 	  $3 = Local $0
-	  $4 = StageInput 0: $0
+	  $4 = StageInput 0: Smooth $0
 	  $5 = Local $2
 	  $6 = 1
 	  Store $5 $6
@@ -148,17 +148,17 @@ add_test(vs_multiple_io)
 	Block {
 	  Context {
 	    stage: Vertex,
-	    stage inputs: { $0, $0, $1 }
 	    stage inputs: { Smooth $0, Smooth $0, Smooth $1 }
+	    stage outputs: { Smooth $0, Smooth $0, Smooth $1 }
 	  }
 	  $0 = Vec3
 	  $1 = Vec2
 	  $2 = Local $1
 	  $3 = Local $0
 	  $4 = Local $0
-	  $5 = StageInput 0: $0
-	  $6 = StageInput 1: $0
-	  $7 = StageInput 2: $1
+	  $5 = StageInput 0: Smooth $0
+	  $6 = StageInput 1: Smooth $0
+	  $7 = StageInput 2: Smooth $1
 	  $8 = StageOutput 0: Smooth $0
 	  Store $8 $5
 	  $9 = StageOutput 1: Smooth $0
@@ -188,8 +188,8 @@ add_test(vs_push_constant)
 	Block {
 	  Context {
 	    stage: Vertex,
-	    stage inputs: { $0 }
 	    stage inputs: { Smooth $0 }
+	    stage outputs: { Smooth $0 }
 	    resources: { $1 },
 	  }
 	  $2 = Vec4
@@ -208,7 +208,7 @@ add_test(vs_push_constant)
 	  $13 = $1.model
 	  $14 = $1.view
 	  $15 = $1.proj
-	  $16 = StageInput 0: $0
+	  $16 = StageInput 0: Smooth $0
 	  $17 = Local $3
 	  $18 = 1
 	  Store $17 $18
@@ -349,7 +349,7 @@ add_test(sr_invocation)
 	Block {
 	  Context {
 	    stage: Vertex,
-	    stage inputs: { Smooth $0, Smooth $0, Smooth $1, Smooth $0, Smooth $0 }
+	    stage outputs: { Smooth $0, Smooth $0, Smooth $1, Smooth $0, Smooth $0 }
 	  }
 	  $2 = Ray { origin: $0, direction: $0 }
 	  $1 = UVec2

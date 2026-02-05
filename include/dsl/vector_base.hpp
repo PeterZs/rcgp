@@ -133,6 +133,12 @@ public:
 			jems::type_loc(loc, primitive_of <T, 4> ()),
 			xy, z, w
 		)) {}
+	
+	vector_base(const vector_base <T, 2> &xy, const vector_base <T, 2> &zw, $location)
+		: handle(wrap_in_local(loc,
+			jems::type_loc(loc, primitive_of <T, 4> ()),
+			xy, zw
+		)) {}
 
 	vector_base(const scalar <T> &x, const scalar <T> &y, const scalar <T> &z, const scalar <T> &w, $location)
 		: handle(wrap_in_local(loc,

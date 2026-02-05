@@ -1,72 +1,29 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
-
-#include <glslang/Public/ShaderLang.h>
-
 #include "../dsl/jems.hpp"
 #include "../util/tlist.hpp"
 #include "../util/cti.hpp"
 #include "implicit_context.hpp"
 #include "coerce_to_handle.hpp"
+#include "resources_collect.hpp"
 
 namespace rcgp {
-
-//  TODO: move these to some other file
-consteval vk::ShaderStageFlagBits stage_to_flag(ShaderStage S)
-{
-	switch (S) {
-	case ShaderStage::eVertex: return vk::ShaderStageFlagBits::eVertex;
-	case ShaderStage::eFragment: return vk::ShaderStageFlagBits::eFragment;
-	case ShaderStage::eCompute: return vk::ShaderStageFlagBits::eCompute;
-	case ShaderStage::eTask: return vk::ShaderStageFlagBits::eTaskEXT;
-	case ShaderStage::eMesh: return vk::ShaderStageFlagBits::eMeshEXT;
-	default:
-		return vk::ShaderStageFlagBits::eAll;
-	}
-}
-
-consteval EShLanguage stage_to_esh(ShaderStage S)
-{
-	switch (S) {
-	case ShaderStage::eVertex: return EShLangVertex;
-	case ShaderStage::eFragment: return EShLangFragment;
-	case ShaderStage::eCompute: return EShLangCompute;
-	case ShaderStage::eTask: return EShLangTask;
-	case ShaderStage::eMesh: return EShLangMesh;
-	default:
-		return EShLangCompute;
-	}
-}
-
-template <ShaderStage ... Ss>
-consteval vk::ShaderStageFlags stage_flags_of()
-{
-	return (stage_to_flag(Ss) | ... | vk::ShaderStageFlags());
-}
 
 // Entrypoint stages
 template <ShaderStage S, typename R, typename ... Args>
 struct shader_stage : SharedBlockReference {
-	static constexpr auto stage = S;
-	
-	using icontext = icontext_from_args_t <Args...>;
-
 	shader_stage(const SharedBlockReference &sbr)
 		: SharedBlockReference(sbr) {}
+
+	using icontext = icontext_from_args_t <Args...>;
+
+	static constexpr auto stage = S;
+	static constexpr auto gvrs = collect_gvrs <S> (icontext());
 
 	static shader_stage alloc() {
 		return std::make_shared <Block> ();
 	}
 };
-
-TYPE_TRAIT(is_vertex_shader);
-	template <typename R, typename ... Args>
-	TYPE_TRAIT_INCLUDES(is_vertex_shader, shader_stage <ShaderStage::eVertex, R, Args...>);
-
-TYPE_TRAIT(is_fragment_shader);
-	template <typename R, typename ... Args>
-	TYPE_TRAIT_INCLUDES(is_fragment_shader, shader_stage <ShaderStage::eFragment, R, Args...>);
 
 // Subroutine stages
 template <typename R>
@@ -158,5 +115,30 @@ auto context_unlock(implicit_context <refs...>, const shader_stage <ShaderStage:
 // TODO: The exception should be subroutines which dont take any
 // resource references/have no context should just be direct though
 #define $use(subroutine) context_unlock(_ctx, subroutine)
+
+// Traits for each kind of module
+TYPE_TRAIT(is_vertex_shader);
+	template <typename R, typename ... Args>
+	TYPE_TRAIT_INCLUDES(is_vertex_shader, shader_stage <ShaderStage::eVertex, R, Args...>);
+
+TYPE_TRAIT(is_fragment_shader);
+	template <typename R, typename ... Args>
+	TYPE_TRAIT_INCLUDES(is_fragment_shader, shader_stage <ShaderStage::eFragment, R, Args...>);
+
+TYPE_TRAIT(is_compute_shader);
+	template <typename R, typename ... Args>
+	TYPE_TRAIT_INCLUDES(is_compute_shader, shader_stage <ShaderStage::eCompute, R, Args...>);
+
+TYPE_TRAIT(is_mesh_shader);
+	template <typename R, typename ... Args>
+	TYPE_TRAIT_INCLUDES(is_mesh_shader, shader_stage <ShaderStage::eMesh, R, Args...>);
+
+TYPE_TRAIT(is_task_shader);
+	template <typename R, typename ... Args>
+	TYPE_TRAIT_INCLUDES(is_task_shader, shader_stage <ShaderStage::eTask, R, Args...>);
+
+TYPE_TRAIT(is_subroutine);
+	template <typename R, typename ... Args>
+	TYPE_TRAIT_INCLUDES(is_subroutine, shader_stage <ShaderStage::eSubroutine, R, Args...>);
 
 } // namespace rcgp

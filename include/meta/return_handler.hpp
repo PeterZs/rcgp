@@ -83,7 +83,7 @@ void return_handler(T &value, size_t &argi)
 		$tsb.add_stage_output(sout);
 		ref = jems::stage_output(sout);
 	} else if constexpr (S == ShaderStage::eFragment) {
-		auto sout = StageOutput(type, argi++, RateProperties::eNone);
+		auto sout = StageOutput(type, argi++);
 		$tsb.add_stage_output(sout);
 		ref = jems::stage_output(sout);
 	} else {

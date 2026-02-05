@@ -7,11 +7,11 @@ struct fwdxPointLight {
     float intensity;
 };
 
-layout (location = 0) in vec3 lin0;
-layout (location = 1) in vec3 lin1;
-layout (location = 2) in vec2 lin2;
+layout (location = 0) smooth in vec3 lin0;
+layout (location = 1) smooth in vec3 lin1;
+layout (location = 2) smooth in vec2 lin2;
 
-layout (location = 0)  out vec3 lout0;
+layout (location = 0) out vec3 lout0;
 
 layout (std430, set = 0, binding = 0) readonly buffer Buffer0x0 {
     int count;

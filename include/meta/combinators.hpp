@@ -19,6 +19,15 @@ struct DebugOptions {
 	bool dump_glsl = false;
 };
 
+template <typename VertexShader, typename FragmentShader>
+void transfer_io_rates(const VertexShader &vertex_shader, const FragmentShader &fragment_shader)
+{
+	for (const auto &[i, sin] : std::views::enumerate(fragment_shader->stage_inputs)) {
+		auto sout = vertex_shader->stage_outputs.at(i);
+		sin.properties = sout.properties;
+	}
+}
+
 template <typename ... Stage>
 auto shaders_to_modules(
 	const Device &device,
@@ -61,17 +70,15 @@ struct RasterizationCombinator {
 	auto operator()(VertexShader &vertex_shader, FragmentShader &fragment_shader) const {
 		TSCOPE("rasterization combinator");
 
-		// TODO: return a Tlist of error static strings...
+		// TODO: return a Tlist of error static strings?
 		// probably needs a error <auto s>
 		// [[maybe_unused]] constexpr bool interface_ok =
 		// 	vertex_fragment_interface <VRet, Bs...> ::value;
 
-		// TODO: we can get rid of these...
-		using vertex_icontext = VertexShader::icontext;
-		using fragment_icontext = FragmentShader::icontext;
+		transfer_io_rates(vertex_shader, fragment_shader);
 
 		// Collect vertex attribute streams
-		auto streams = collect_streams(vertex_icontext());
+		auto streams = collect_streams(typename VertexShader::icontext());
 
 		// Generate vertex input bindings and attributes
 		auto vertex_bindings = sequence_to_vertex_bindings(streams);
@@ -79,8 +86,8 @@ struct RasterizationCombinator {
 
 		// Collect global resources
 		auto gvrs = merge_stage_wrappers(tlist_concat(
-			collect_gvrs <ShaderStage::eVertex> (vertex_icontext()),
-			collect_gvrs <ShaderStage::eFragment> (fragment_icontext())
+			VertexShader::gvrs,
+			FragmentShader::gvrs
 		));
 
 		auto [layout, dsls, gamap] = apply_gvrs(
@@ -130,17 +137,16 @@ struct DynamicRasterizationCombinator {
 
 		// [[maybe_unused]] constexpr bool interface_ok =
 		// 	vertex_fragment_interface <VRet, Bs...> ::value;
+		
+		transfer_io_rates(vertex_shader, fragment_shader);
 
-		using vertex_icontext = VertexShader::icontext;
-		using fragment_icontext = FragmentShader::icontext;
-
-		auto streams = collect_streams(vertex_icontext());
+		auto streams = collect_streams(typename VertexShader::icontext());
 		auto vertex_bindings = sequence_to_vertex_bindings(streams);
 		auto vertex_attributes = sequence_to_vertex_attributes(streams);
 
 		auto gvrs = merge_stage_wrappers(tlist_concat(
-			collect_gvrs <ShaderStage::eVertex> (vertex_icontext()),
-			collect_gvrs <ShaderStage::eFragment> (fragment_icontext())
+			VertexShader::gvrs,
+			FragmentShader::gvrs
 		));
 
 		auto [layout, dsls, gamap] = apply_gvrs(
@@ -180,16 +186,15 @@ struct ComputeCombinator {
 	const ShaderCompiler &compiler;
 	DebugOptions debug;
 
-	template <typename Ret, typename ... As>
-	auto operator()(shader_stage <ShaderStage::eCompute, Ret, As...> &compute) const {
+	template <typename ComputeShader>
+	requires is_compute_shader_v <ComputeShader>
+	auto operator()(ComputeShader &compute_shader) const {
 		TSCOPE("compute combinator");
 
-		using icontext = icontext_from_args_t <As...>;
-
-		auto gvrs = collect_gvrs <ShaderStage::eCompute> (icontext());
-		auto [layout, dsls, gamap] = apply_gvrs(device, gvrs, compute);
+		auto gvrs = ComputeShader::gvrs;
+		auto [layout, dsls, gamap] = apply_gvrs(device, gvrs, compute_shader);
 		
-		auto [cmod] = shaders_to_modules(device, compiler, debug, compute);
+		auto [cmod] = shaders_to_modules(device, compiler, debug, compute_shader);
 
 		auto pipeline = compile_compute_pipeline(
 			device,
@@ -212,26 +217,14 @@ struct MeshShadingCombinator {
 	RasterizationOptions options;
 	DebugOptions debug;
 
-	template <
-		typename TRet, typename ... Ts,
-		typename MRet, typename ... Ms,
-		typename FRet, typename ... Fs
-	>
-	auto operator()(
-		shader_stage <ShaderStage::eTask, TRet, Ts...> &task,
-		shader_stage <ShaderStage::eMesh, MRet, Ms...> &mesh,
-		shader_stage <ShaderStage::eFragment, FRet, Fs...> &fragment
-	) const {
+	template <typename TaskShader, typename MeshShader, typename FragmentShader>
+	auto operator()(TaskShader &task, MeshShader &mesh, FragmentShader &fragment) const {
 		TSCOPE("mesh shading combinator");
 
-		using task_icontext = icontext_from_args_t <Ts...>;
-		using mesh_icontext = icontext_from_args_t <Ms...>;
-		using fragment_icontext = icontext_from_args_t <Fs...>;
-
 		auto gvrs = merge_stage_wrappers(tlist_concat(
-			collect_gvrs <ShaderStage::eTask> (task_icontext()),
-			collect_gvrs <ShaderStage::eMesh> (mesh_icontext()),
-			collect_gvrs <ShaderStage::eFragment> (fragment_icontext())
+			TaskShader::gvrs,
+			MeshShader::gvrs,
+			FragmentShader::gvrs
 		));
 
 		auto [layout, dsls, gamap] = apply_gvrs(device, gvrs, task, mesh, fragment);

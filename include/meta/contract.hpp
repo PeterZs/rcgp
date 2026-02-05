@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 #include "../util/cti.hpp"
 
 namespace rcgp {

@@ -1,5 +1,6 @@
 #include <set>
 #include <regex>
+#include <queue>
 
 #include "dsl/generators.hpp"
 #include "dsl/instructions.hpp"
@@ -10,8 +11,6 @@ namespace rcgp {
 
 // TODO: separate cpp file for this...
 static auto g_rate_strings = std::array {
-	// "?",
-	"", // TODO: sync the rate properties from outputs of vs/mesh and fragment shader?
 	"smooth",
 	"flat",
 	"noperspective",
@@ -132,15 +131,9 @@ static auto g_primitive_types = std::array {
 	"mat4",
 };
 
-// TODO: remove when we do top sort on the subroutines
-auto sbr_cmp = [](const SharedBlockReference &a, const SharedBlockReference &b)
-{
-	return a->name < b->name;
-};
-
 struct GLSLEmitter {
 	const SharedBlockReference &main;
-	std::set <SharedBlockReference, decltype(sbr_cmp)> subroutines;
+	std::vector <SharedBlockReference> subroutines;
 	std::map <const Instruction *const, uint32_t> ids;
 	std::string result;
 	int32_t indentation;
@@ -549,8 +542,14 @@ void emit_stage_io(GLSLEmitter &em)
 	auto &tins = em.main->stage_inputs;
 	for (auto &tin : tins) {
 		auto repr = type_repr(em, tin.type);
-		em.emit_fmt_line("layout (location = {}) in {} lin{}{};",
-			tin.argi, repr.base, tin.argi, repr.suffix);
+		if (em.main->stage == ShaderStage::eFragment) {
+			auto rate = g_rate_strings.at(std::to_underlying(tin.properties));
+			em.emit_fmt_line("layout (location = {}) {} in {} lin{}{};",
+				tin.argi, rate, repr.base, tin.argi, repr.suffix);
+		} else {
+			em.emit_fmt_line("layout (location = {}) in {} lin{}{};",
+				tin.argi, repr.base, tin.argi, repr.suffix);
+		}
 	}
 
 	if (tins.size())
@@ -559,9 +558,15 @@ void emit_stage_io(GLSLEmitter &em)
 	auto &touts = em.main->stage_outputs;
 	for (auto &tout : touts) {
 		auto repr = type_repr(em, tout.type);
-		auto rate = g_rate_strings.at(std::to_underlying(tout.properties));
-		em.emit_fmt_line("layout (location = {}) {} out {} lout{}{};",
-			tout.argi, rate, repr.base, tout.argi, repr.suffix);
+		if (em.main->stage == ShaderStage::eVertex
+			or em.main->stage == ShaderStage::eMesh) {
+			auto rate = g_rate_strings.at(std::to_underlying(tout.properties));
+			em.emit_fmt_line("layout (location = {}) {} out {} lout{}{};",
+				tout.argi, rate, repr.base, tout.argi, repr.suffix);
+		} else {
+			em.emit_fmt_line("layout (location = {}) out {} lout{}{};",
+				tout.argi, repr.base, tout.argi, repr.suffix);
+		}
 	}
 
 	if (touts.size())
@@ -752,33 +757,68 @@ void emit_whole(GLSLEmitter &em)
 	emit_main(em);
 }
 
-void collect_subroutines(GLSLEmitter &em, const SharedBlockReference &sbr)
+using SbrMap = std::map <SharedBlockReference, std::set <SharedBlockReference>>;
+
+void get_subroutines(SbrMap &call_to, SbrMap &call_from, const SharedBlockReference &sbr, const SharedBlockReference &whole)
 {
+	if (not call_to.contains(whole)) call_to[whole] = {};
+	if (not call_from.contains(whole)) call_from[whole] = {};
+
 	for (auto &inst : *sbr) {
 		vswitch (*inst) {
 		vcase(Invocation): {
 			auto &inv = inst->as <Invocation> ();
-			em.subroutines.insert(inv.sbr);
-			collect_subroutines(em, inv.sbr);
+			call_to[whole].insert(inv.sbr);
+			call_from[inv.sbr].insert(whole);
+			get_subroutines(call_to, call_from, inv.sbr, inv.sbr);
 			break;
 		}
 		vcase(Branch): {
 			auto &branch = inst->as <Branch> ();
 			for (auto &b : branch.segments)
-				collect_subroutines(em, b.body);
+				get_subroutines(call_to, call_from, b.body, whole);
 			if (branch.fallback)
-				collect_subroutines(em, branch.fallback.value());
+				get_subroutines(call_to, call_from, branch.fallback.value(), whole);
 			break;
 		}
 		vcase(Loop): {
 			auto &loop = inst->as <Loop> ();
-			collect_subroutines(em, loop.body);
+			get_subroutines(call_to, call_from, loop.body, whole);
 			break;
 		}
 		default:
 			break;
 		}
 	}
+}
+
+auto top_sort(SbrMap &call_to, SbrMap &call_from)
+{
+	// to: calling to
+	// from: invoked from
+	std::vector <SharedBlockReference> sorted;
+	sorted.reserve(call_to.size());
+
+	std::queue <SharedBlockReference> queue;
+	for (auto &[sbr, s] : call_to) {
+		if (s.empty())
+			queue.push(sbr);
+	}
+
+	while (queue.size()) {
+		auto &sbr = queue.front();
+		queue.pop();
+
+		sorted.push_back(sbr);
+
+		for (auto &callee : call_from[sbr]) {
+			call_to[callee].erase(sbr);
+			if (call_to[callee].empty())
+				queue.push(callee);
+		}
+	}
+
+	return sorted;
 }
 
 std::string generate_glsl(const SharedBlockReference &sbr)
@@ -794,7 +834,21 @@ std::string generate_glsl(const SharedBlockReference &sbr)
 	if (sbr->stage == ShaderStage::eSubroutine) {
 		emit_subroutine(em, sbr);
 	} else {
-		collect_subroutines(em, sbr);
+		// TODO: should happen at the
+		// end of function construction
+		// or at the end of a jems::scope...
+		SbrMap call_to;
+		SbrMap call_from;
+		get_subroutines(call_to, call_from, sbr, sbr);
+
+		if (call_to.size() > 1) {
+			// Don't involve main in the sorting
+			for (auto &[sbr, s] : call_from)
+				s.erase(em.main);
+
+			em.subroutines = top_sort(call_to, call_from);
+		}
+
 		emit_whole(em);
 	}
 

@@ -158,8 +158,9 @@ std::string emit_instr_value(AsmEmitter &em, const Reference &ref)
 	vcase(StageInput): {
 		auto &sin = ref->as <StageInput> ();
 		return std::format(
-			"StageInput {}: {}",
+			"StageInput {}: {} {}",
 			sin.argi,
+			repr(sin.properties),
 			em.ref(sin.type)
 		);
 	}
@@ -323,7 +324,7 @@ void emit_context(AsmEmitter &em, const SharedBlockReference &sbr)
 	if (sbr->stage_inputs.size()) {
 		std::string result;
 		for (const auto &[i, sin] : std::views::enumerate(sbr->stage_inputs)) {
-			result += std::format("{}", em.ref(sin.type));
+			result += std::format("{} {}", repr(sin.properties), em.ref(sin.type));
 			if (i + 1 < sbr->stage_inputs.size())
 				result += ", ";
 		}
@@ -339,7 +340,7 @@ void emit_context(AsmEmitter &em, const SharedBlockReference &sbr)
 				result += ", ";
 		}
 
-		em.emit_fmt_line("stage inputs: {{ {} }}", result);
+		em.emit_fmt_line("stage outputs: {{ {} }}", result);
 	}
 
 	if (sbr->global_resources.size()) {

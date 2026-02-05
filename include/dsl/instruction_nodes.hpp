@@ -165,6 +165,7 @@ struct Argument {
 struct StageInput {
 	Reference type;
 	uint32_t argi;
+	RateProperties properties;
 
 	std::string repr() const;
 };

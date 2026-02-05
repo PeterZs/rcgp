@@ -9,6 +9,7 @@
 #include "contract_introspection.hpp"
 #include "resources.hpp"
 #include "resources_collect.hpp"
+#include "shader_stage_conversion.hpp"
 
 namespace rcgp {
 

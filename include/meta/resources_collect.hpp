@@ -1,9 +1,8 @@
 #pragma once
 
-#include "implicit_context.hpp"
 #include "contract.hpp"
 #include "resources.hpp"
-#include "shader_stage.hpp"
+#include "shader_stage_conversion.hpp"
 
 namespace rcgp {
 

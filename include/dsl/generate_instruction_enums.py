@@ -62,7 +62,8 @@ def generate_cpp(enums: list[tuple[str, list[str]]]) -> list[str]:
     )
 
     for enum_name, entries in enums:
-        array_name = f"k{enum_name}Names"
+        enum_snake_name = re.sub('([a-z0-9])([A-Z])', r'\1_\2', enum_name)
+        array_name = f"g_{enum_snake_name}_names"
         lines.append(
             f"static constexpr std::array {array_name} = {{"
         )

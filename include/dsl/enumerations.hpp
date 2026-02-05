@@ -116,7 +116,6 @@ enum class SystemValue {
 std::string_view repr(SystemValue value);
 
 enum class RateProperties {
-	eNone,
 	eSmooth,
 	eFlat,
 	eNoPerspective,

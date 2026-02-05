@@ -366,6 +366,36 @@ add_test(sr_invocation)
 	assert_glsl_match_file(vs, "glsl/sr_invocation.glsl");
 };
 
+add_test(sr_dependencies)
+{
+	auto saxpy = $subroutine(b)(f32 alpha, f32 x, f32 y) {
+		return alpha * x + y;
+	};
+
+	auto saxpy2 = $subroutine(c, &)(float2 alpha, float2 x, float2 y) {
+		return float2(
+			$use(saxpy)(alpha.x, x.x, y.y),
+			$use(saxpy)(alpha.y, x.y, y.y)
+		);
+	};
+	
+	auto saxpy3 = $subroutine(a, &)(float4 alpha, float4 x, float4 y) {
+		return float4(
+			$use(saxpy2)(alpha.xy, x.xy, y.yy),
+			$use(saxpy2)(alpha.zw, x.zw, y.zw)
+		);
+	};
+
+	auto cs = $shader(compute, &)(WorkGroup <1> group) {
+		float4 x = float4(1);
+		float4 y = float4(2);
+		float4 alpha = float4(3);
+		auto z = $use(saxpy3)(alpha, x, y);
+	};
+
+	assert_glsl_match_file(cs, "glsl/sr_dependencies.glsl");
+};
+
 add_test(for_loop)
 {
 	auto sr = $subroutine(sr)(i32 limit, i32 step) {

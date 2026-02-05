@@ -110,7 +110,7 @@ std::string Argument::repr() const
 
 std::string StageInput::repr() const
 {
-	return std::format("StageInput({})", argi);
+	return std::format("StageInput({}, {})", argi, rcgp::repr(properties));
 }
 
 std::string StageOutput::repr() const
