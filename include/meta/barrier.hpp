@@ -6,7 +6,7 @@
 
 #include "resources.hpp"
 #include "contract.hpp"
-#include "contract_introspection.hpp"
+#include "witnesses.hpp"
 
 namespace rcgp {
 
@@ -122,7 +122,7 @@ template <typename T>
 consteval size_t buffer_bindings_for_group()
 {
 	using Structure = T::value_type;
-	static_assert(aggregate <Structure>);
+	static_assert(user_defined <Structure>);
 	size_t count = 0;
 	auto count_one = [&] <size_t I> () {
 		using Field = Structure::reflection::template field_type <I>;
@@ -137,7 +137,7 @@ consteval size_t buffer_bindings_for_group()
 
 template <auto &ref, typename SrcPhase, typename DstPhase>
 struct Barrier {
-	using Reference = contract_base_t <ref>;
+	using Reference = reference_base_of <ref>;
 	using src_phase = SrcPhase;
 	using dst_phase = DstPhase;
 
@@ -167,9 +167,9 @@ struct Barrier {
 };
 
 template <auto &ref, typename SrcPhase, typename DstPhase>
-requires is_resource_group_v <contract_base_t <ref>>
+requires is_resource_group_v <reference_base_of <ref>>
 struct Barrier <ref, SrcPhase, DstPhase> {
-	using Reference = contract_base_t <ref>;
+	using Reference = reference_base_of <ref>;
 
 	static constexpr size_t count = buffer_bindings_for_group <Reference> ();
 	std::array <vk::BufferMemoryBarrier2, count> barriers {};
@@ -178,7 +178,7 @@ struct Barrier <ref, SrcPhase, DstPhase> {
 
 	explicit Barrier(const ResourceTypeFor <ref> &resource) {
 		using Structure = Reference::value_type;
-		static_assert(aggregate <Structure>);
+		static_assert(user_defined <Structure>);
 
 		size_t idx = 0;
 		auto bind_one = [&] <size_t I> () {

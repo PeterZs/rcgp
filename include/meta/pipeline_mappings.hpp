@@ -52,7 +52,7 @@ void write_pb_infos(PipelineMappings &dst, Tlist <Wrappers...>)
 {
 	using GRCs = Tlist <Wrappers...>;
 	auto write = [&] <auto &ref> () {
-		using Resource = contract_base_t <ref>;
+		using Resource = reference_base_of <ref>;
 
 		if constexpr (is_push_constant_v <Resource>) {
 			auto flags = stage_flags_for_v <ref, GRCs>;

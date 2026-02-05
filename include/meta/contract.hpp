@@ -7,11 +7,13 @@
 namespace rcgp {
 
 template <auto &ref>
-using contract_base_t = std::decay_t <decltype(ref)>;
+using reference_base_of = std::decay_t <decltype(ref)>;
 
-// TODO: should enforce that base is a resource type
 template <auto &ref>
-struct contract : contract_base_t <ref> {
+using contract_base_of = std::decay_t <decltype(ref)> ::handle_type;
+
+template <auto &ref>
+struct contract : contract_base_of <ref> {
 	static inline auto address = &ref;
 	static constexpr auto &handle = ref;
 };

@@ -233,7 +233,7 @@ add_test(field_access)
 	auto sbr = record {
 		RecordingPair p;
 		auto type = reconstruct_type <RecordingPair> ();
-		inject_reference(p, jems::local(type));
+		p.override_reference(jems::local(type));
 		auto x = p.x;
 		auto y = p.y;
 		f32 z = x + y;
@@ -265,7 +265,7 @@ add_test(array_access)
 	auto sbr = record {
 		array <i32, 4> values;
 		auto type = reconstruct_type <array <i32, 4>> ();
-		inject_reference(values, jems::local(type));
+		values.override_reference(jems::local(type));
 		i32 v = values[2];
 	};
 

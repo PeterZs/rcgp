@@ -29,8 +29,7 @@ struct shader_stage : SharedBlockReference {
 template <typename R>
 struct invocation_setup {};
 
-template <typename R>
-requires primitive <R> or aggregate <R>
+template <traced R>
 struct invocation_setup <R> {
 	static void locals(std::vector <Reference> &locals) {
 		auto type = reconstruct_type <R> ();
@@ -39,7 +38,7 @@ struct invocation_setup <R> {
 
 	static auto recover(const std::vector <Reference> &locals, size_t idx = 0) {
 		R tmp;
-		inject_reference(tmp, locals[idx]);
+		tmp.override_reference(locals[idx]);
 		return tmp;
 	}
 };

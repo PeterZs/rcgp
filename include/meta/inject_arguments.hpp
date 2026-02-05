@@ -1,10 +1,10 @@
 #pragma once
 
 #include "../dsl/jems.hpp"
-#include "implicit_context.hpp"
-#include "inject_reference.hpp"
-#include "reconstruct_type.hpp"
 #include "contract.hpp"
+#include "implicit_context.hpp"
+#include "reconstruct_type.hpp"
+#include "resources.hpp"
 #include "stage_intrinsics.hpp"
 #include "static_string.hpp"
 
@@ -74,46 +74,44 @@ void inject_one_argument(TaskPayload <T> &value, InjectionCounters &)
 {
 	static_assert(S == ShaderStage::eMesh, "TaskPayload is only valid for mesh shaders");
 	$tsb.task_payload_type = reconstruct_type <T> ();
-	inject_reference(Tas <T &> (value), jems::system_value(SystemValue::eTaskPayload));
+	value.override_reference(jems::system_value(SystemValue::eTaskPayload));
 }
 
-template <aggregate T, size_t I>
-void inject_resource_group_element(void *addr, T &value)
+template <size_t I, user_defined S, typename T, T &ref>
+void inject_resource_group_element(void *addr, contract <ref> &value)
 {
-	auto &field = value.template _rcgp_get <I> ();
-	using R = std::decay_t <decltype(field)>;
-
+	using R = typename S::fields::template get <I>;
 	auto grsrc = resource_intrinsic(R(), I);
 	$tsb.add_global_resource(addr, grsrc);
-	inject_reference(field, grsrc);
+	value.template get <I> ().override_reference(grsrc);
 }
 
-template <typename T, T &ref>
+template <typename R, R &ref>
 void inject_resource_reference(contract <ref> &value)
 {
-	if constexpr (is_resource_group_v <T>) {
-		// TODO: assert that its an aggregate
-		using U = T::value_type;
-		constexpr_for(Is, U::field_count,
-			(inject_resource_group_element <U, Is> (&ref, value), ...)
+	if constexpr (is_resource_group_v <R>) {
+		using S = R::struct_type;
+		using U = R::handle_type;
+		constexpr_for(Is, S::field_count,
+			(inject_resource_group_element
+				<Is, S> (&ref, value),
+			...)
 		);
-	} else if constexpr (is_global_resource_v <T>) {
-		// Global resources
-		auto grsrc = resource_intrinsic(T(), 0);
+	} else if constexpr (is_global_resource_v <R>) {
+		using T = R::handle_type;
+		auto grsrc = resource_intrinsic(R(), 0);
 		$tsb.add_global_resource(&ref, grsrc);
-		inject_reference(Tas <T &> (value), grsrc);
+		value.override_reference(grsrc);
 	} else {
 		// Unknown cases
-		static_error("resource contract injector not implemented for "_ss + $ss_type(T));
+		static_error("resource contract injector not implemented for "_ss + $ss_type(R));
 	}
 }
 
 // Broader case with stage information
-template <ShaderStage S, auto &ref>
+template <ShaderStage S, typename R, R &ref>
 void inject_one_argument(contract <ref> &value, InjectionCounters &counters)
 {
-	using R = contract_base_t <ref>;
-
 	if constexpr (is_attribute_stream_v <R>) {
 		// TODO: move to the else branch with a false static assert
 		static_assert(
@@ -122,7 +120,7 @@ void inject_one_argument(contract <ref> &value, InjectionCounters &counters)
 		);
 
 		// Attribute streams for vertex shaders or subroutines
-		using T = R::value_type;
+		using T = R::handle_type;
 
 		auto type = reconstruct_type <T> ();
 
@@ -130,11 +128,11 @@ void inject_one_argument(contract <ref> &value, InjectionCounters &counters)
 		if constexpr (S == ShaderStage::eSubroutine) {
 			auto arg = Argument(type, counters.argidx++);
 			$tsb.add_argument(arg);
-			inject_reference(Tas <T &> (value), jems::argument(arg));
+			value.override_reference(jems::argument(arg));
 		} else {
 			auto tin = StageInput(type, counters.threadidx++);
 			$tsb.add_stage_input(tin);
-			inject_reference(Tas <T &> (value), jems::stage_input(tin));
+			value.override_reference(jems::stage_input(tin));
 		}
 	} else {
 		// Regular case
@@ -142,8 +140,7 @@ void inject_one_argument(contract <ref> &value, InjectionCounters &counters)
 	}
 }
 
-template <ShaderStage S, typename T>
-requires (primitive <T> or aggregate <T>)
+template <ShaderStage S, traced T>
 void inject_one_argument(T &value, InjectionCounters &counters)
 {
 	auto type = reconstruct_type <T> ();
@@ -152,12 +149,12 @@ void inject_one_argument(T &value, InjectionCounters &counters)
 		// Varying attribute
 		auto tin = StageInput(type, counters.threadidx++);
 		$tsb.add_stage_input(tin);
-		inject_reference(value, jems::stage_input(tin));
+		value.override_reference(jems::stage_input(tin));
 	} else if constexpr (S == ShaderStage::eSubroutine) {
 		// Function argument
 		auto arg = Argument(type, counters.argidx++);
 		$tsb.add_argument(arg);
-		inject_reference(value, jems::argument(arg));
+		value.override_reference(jems::argument(arg));
 	} else {
 		// Not supported
 		static_error("argument type "_ss + $ss_type(T)

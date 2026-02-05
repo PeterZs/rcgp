@@ -40,7 +40,7 @@ struct dynamic_path_of_list <Tlist <Ts...>, Seq> {
 	} ());
 };
 
-template <aggregate T, typename Seq>
+template <user_defined T, typename Seq>
 struct dynamic_path_of <T, Seq>
 	: dynamic_path_of_list <typename T::fields, Seq> {};
 

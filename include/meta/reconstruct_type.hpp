@@ -47,7 +47,7 @@ inline auto reconstructor_for(std::type_identity <std::nullptr_t>, $location)
 	return jems::handle();
 }
 
-template <aggregate T>
+template <user_defined T>
 auto reconstructor_for(std::type_identity <T>, $location)
 {
 	Struct st;

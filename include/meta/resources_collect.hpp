@@ -9,7 +9,7 @@ namespace rcgp {
 template <auto &ref, ShaderStage ... Ss>
 struct stage_wrapper : contract <ref> {
 	using stages = std::integer_sequence <ShaderStage, Ss...>;
-	using type = contract_base_t <ref>;
+	using type = reference_base_of <ref>;
 	using contract = rcgp::contract <ref>;
 
 	template <ShaderStage S>
@@ -24,12 +24,12 @@ struct stage_wrapper : contract <ref> {
 
 TYPE_TRAIT(is_push_constant_wrapper);
 	template <auto &ref, ShaderStage ... Ss>
-	requires (is_push_constant_v <contract_base_t <ref>>)
+	requires (is_push_constant_v <reference_base_of <ref>>)
 	TYPE_TRAIT_INCLUDES(is_push_constant_wrapper, stage_wrapper <ref, Ss...>);
 
 TYPE_TRAIT(is_descriptable_wrapper);
 	template <auto &ref, ShaderStage ... Ss>
-	requires (not is_push_constant_v <contract_base_t <ref>>)
+	requires (not is_push_constant_v <reference_base_of <ref>>)
 	TYPE_TRAIT_INCLUDES(is_descriptable_wrapper, stage_wrapper <ref, Ss...>);
 
 template <typename List>
@@ -43,14 +43,14 @@ struct is_attribute_stream_ref : std::false_type {};
 
 template <auto &ref>
 struct is_attribute_stream_ref <contract <ref>>
-	: std::bool_constant <is_attribute_stream_v <contract_base_t <ref>>> {};
+	: std::bool_constant <is_attribute_stream_v <reference_base_of <ref>>> {};
 
 template <typename T>
 struct is_global_resource_ref : std::false_type {};
 
 template <auto &ref>
 struct is_global_resource_ref <contract <ref>>
-	: std::bool_constant <is_global_resource_v <contract_base_t <ref>>> {};
+	: std::bool_constant <is_global_resource_v <reference_base_of <ref>>> {};
 
 template <ShaderStage S>
 struct stage_wrapper_from_ref {

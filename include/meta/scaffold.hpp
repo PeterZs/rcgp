@@ -23,9 +23,11 @@ using unsized_array = std::vector <T>;
 template <typename T, size_t N>
 struct scaffold_hint {
 	using type = T;
-	
 	static constexpr size_t value = N;
 };
+
+template <typename T>
+using scaffold_natural = scaffold_hint <T, 0>;
 
 // Scaffold for primitive/built-in types
 template <size_t Align, typename T, bool AlignTopLevel = false>
@@ -62,11 +64,6 @@ struct alignas(AlignTopLevel ? Align : 0) scaffold_structural : T {
 		T::operator=(rhs);
 		return *this;
 	}
-
-	// // TODO: remove?
-	// T cast() const {
-	// 	return *this;
-	// }
 };
 
 // Scaffold lookup procedure
@@ -77,21 +74,29 @@ struct scaffold_lookup {
 		+ $ss_type(View) + " }"_ss);
 };
 
-// Structural types
-template <typename Mapped, size_t Align, typename View, bool AlignTopLevel>
-struct scaffold_lookup <scaffold_hint <Mapped, Align>, View, AlignTopLevel> {
-	using type = scaffold_structural <Align, Mapped, AlignTopLevel>;
-};
-
 // Primitive/built-in types
 template <typename Mapped, size_t Align, typename View, bool AlignTopLevel>
 requires (std::is_fundamental_v <Mapped>)
 struct scaffold_lookup <scaffold_hint <Mapped, Align>, View, AlignTopLevel> {
-	using type = scaffold_fundamental <Align, Mapped, AlignTopLevel>;
+	using type = std::conditional_t <
+		Align == 0,
+		Mapped,
+		scaffold_fundamental <Align, Mapped, AlignTopLevel>
+	>;
 };
 
-// Aggregate types
-template <typename ... Ts, size_t Align, aggregate View, bool AlignTopLevel>
+// Structural types
+template <typename Mapped, size_t Align, typename View, bool AlignTopLevel>
+struct scaffold_lookup <scaffold_hint <Mapped, Align>, View, AlignTopLevel> {
+	using type = std::conditional_t <
+		Align == 0,
+		Mapped,
+		scaffold_structural <Align, Mapped, AlignTopLevel>
+	>;
+};
+
+// User-defined types
+template <typename ... Ts, size_t Align, user_defined View, bool AlignTopLevel>
 struct scaffold_lookup <scaffold_hint <Tlist <Ts...>, Align>, View, AlignTopLevel> {
 	using type = View::template scaffold <Align, AlignTopLevel, Ts...>;
 };
@@ -147,8 +152,16 @@ struct scaffold_lookup <
 		if constexpr (false) {}						\
 		MAP(GEN_SCAFFOLD_FIELD_GET, /* NA */, __VA_ARGS__)		\
 		else {								\
-			static_error("out of bounds scaffold access of "_ss	\
-				+ $ss_type(This));				\
+			static_error("bad scaffold get "_ss + $ss_type(This));	\
+		}								\
+	}									\
+	template <size_t D>							\
+	auto &get() & {								\
+		static constexpr size_t counter_base = __COUNTER__;		\
+		if constexpr (false) {}						\
+		MAP(GEN_SCAFFOLD_FIELD_GET, /* NA */, __VA_ARGS__)		\
+		else {								\
+			static_error("bad scaffold get "_ss + $ss_type(This));	\
 		}								\
 	}
 

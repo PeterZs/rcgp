@@ -10,6 +10,10 @@ rcgp:
 test: rcgp
 	cmake --build build -j -t test
 
+# Experimental program
+exp: rcgp
+	cmake --build build -j -t experimental
+
 # Tests for scaffold generation
 scaffold:
 	{{compiler}} {{cxxflags}} -c tests/scaffold/std430.cpp -o /tmp/std430.o

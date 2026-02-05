@@ -3,104 +3,135 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../dsl/jems.hpp"
+#include "../util/error.hpp"
 #include "../util/cti.hpp"
 #include "layouts.hpp"
 
 namespace rcgp {
 
-// Corresponds to vertex buffes
-template <typename T, template <typename> typename L = layouts::scalar, vk::VertexInputRate R = vk::VertexInputRate::eVertex>
-struct AttributeStream : T {
-	using value_type = T;
+struct resource_handle {
+	void override_reference(const Reference &ref) {
+		fatal("attempting to override raw resource handle");
+	}
 };
 
-// Resource groups
-// TODO: should not allow index/vertex buffers here
-template <typename T>
-struct ResourceGroup : T {
-	using value_type = T;
+template <
+	typename T,
+	template <typename> typename L = layouts::scalar,
+	vk::VertexInputRate R = vk::VertexInputRate::eVertex
+> struct AttributeStream {
+	using handle_type = T;
+};
+
+template <
+	typename T,
+	template <typename> typename L = layouts::std430
+> struct PushConstant : resource_handle {
+	using handle_type = T;
+};
+
+template <
+	typename T,
+	template <typename> typename L = layouts::std430
+> struct UniformBuffer : resource_handle {
+	using handle_type = T;
+};
+
+template <
+	typename T,
+	template <typename> typename L = layouts::std430,
+	GlobalResourceAccess A = GlobalResourceAccess::eReadWrite
+> struct StorageBuffer : resource_handle {
+	using handle_type = T;
+};
+
+template <native_scalar T, size_t D>
+struct Sampler : resource_handle {
+	struct handle_type : jems::handle {
+		auto sample(const vector <T, D> &x, $location) const {
+			auto result = jems::builtin_intrinsic_loc(
+				loc, BuiltinIntrinsicCode::eSample,
+				*this, x
+			);
+
+			return vector <T, 4> ::reinterpret(result);
+		}
+	};
 };
 
 // TODO: something similar for descriptor heaps with strided access
 
-// Push constants
-template <typename T, template <typename> typename L = layouts::std430>
-struct PushConstant : T {};
+TYPE_TRAIT(is_global_resource);
 
-// Uniform buffers
-template <typename T, template <typename> typename L = layouts::std430>
-struct UniformBuffer : T {};
+template <typename T, template <typename> typename L>
+TYPE_TRAIT_INCLUDES(is_global_resource, PushConstant <T, L>);
 
-// TODO: Read/write flags and aliases...
-template <typename T, template <typename> typename L = layouts::std430, GlobalResourceAccess A = GlobalResourceAccess::eReadWrite>
-struct StorageBuffer : T {};
+template <typename T, template <typename> typename L>
+TYPE_TRAIT_INCLUDES(is_global_resource, UniformBuffer  <T, L>);
 
-// TODO: aliases in a different header
-template <typename T, template <typename> typename L = layouts::std430, GlobalResourceAccess A = GlobalResourceAccess::eReadWrite>
-using ArrayBuffer = StorageBuffer <array <T>, L, A>;
+template <typename T, template <typename> typename L, GlobalResourceAccess A>
+TYPE_TRAIT_INCLUDES(is_global_resource, StorageBuffer  <T, L, A>);
 
-template <typename T, template <typename> typename L = layouts::std430>
-using RStorageBuffer = StorageBuffer <T, L, GlobalResourceAccess::eRead>;
+template <typename T, size_t D>
+TYPE_TRAIT_INCLUDES(is_global_resource, Sampler <T, D>);
 
-template <typename T, template <typename> typename L = layouts::std430>
-using WStorageBuffer = StorageBuffer <T, L, GlobalResourceAccess::eWrite>;
+namespace detail {
 
-template <typename T, template <typename> typename L = layouts::std430>
-using RWStorageBuffer = StorageBuffer <T, L, GlobalResourceAccess::eReadWrite>;
+template <typename T>
+struct resource_group_builder {};
 
-template <native_scalar T, size_t D>
-struct Sampler : jems::handle {
-	auto sample(vector <T, D> x, $location) const
-	requires native_float_scalar <T> {
-		auto result = jems::builtin_intrinsic_loc(
-			loc, BuiltinIntrinsicCode::eSample,
-			*this, x
-		);
+template <typename T>
+using resource_group_t = resource_group_builder <T> ::type;
 
-		return vector <T, 4> ::reinterpret(result);
-	}
+// TODO: global_resource concept?
+template <typename T>
+requires is_global_resource_v <T>
+struct resource_group_builder <T> {
+	using type = T::handle_type;
 };
 
-// Aliases for the common case
-using Sampler1D = Sampler <float, 1>;
-using Sampler2D = Sampler <float, 2>;
-using Sampler3D = Sampler <float, 3>;
+template <user_defined T>
+struct resource_group_builder <T> {
+	using translated = T::fields::template map <resource_group_t>;
+	using hints = translated::template map <scaffold_natural>;
+	using type = scaffold_lookup <scaffold_natural <hints>, T> ::type;
+};
+
+} // namespace detail
+
+template <user_defined T>
+struct ResourceGroup {
+	using struct_type = T;
+	using handle_type = detail::resource_group_t <T>;
+};
+
+template <typename T>
+TYPE_TRAIT_INCLUDES(is_global_resource, ResourceGroup <T>);
 
 // Type traits for these resources
 TYPE_TRAIT(is_attribute_stream);
-	template <typename T, template <typename> typename L, vk::VertexInputRate R>
-	TYPE_TRAIT_INCLUDES(is_attribute_stream, AttributeStream <T, L, R>);
+
+template <typename T, template <typename> typename L, vk::VertexInputRate R>
+TYPE_TRAIT_INCLUDES(is_attribute_stream, AttributeStream <T, L, R>);
 
 TYPE_TRAIT(is_resource_group);
-	template <typename T>
-	TYPE_TRAIT_INCLUDES(is_resource_group, ResourceGroup <T>);
+
+template <typename T>
+TYPE_TRAIT_INCLUDES(is_resource_group, ResourceGroup <T>);
 
 TYPE_TRAIT(is_push_constant);
-	template <typename T, template <typename> typename L>
-	TYPE_TRAIT_INCLUDES(is_push_constant, PushConstant <T, L>);
+
+template <typename T, template <typename> typename L>
+TYPE_TRAIT_INCLUDES(is_push_constant, PushConstant <T, L>);
 
 TYPE_TRAIT(is_storage_buffer);
-	template <typename T, template <typename> typename L, GlobalResourceAccess A>
-	TYPE_TRAIT_INCLUDES(is_storage_buffer, StorageBuffer <T, L, A>);
+
+template <typename T, template <typename> typename L, GlobalResourceAccess A>
+TYPE_TRAIT_INCLUDES(is_storage_buffer, StorageBuffer <T, L, A>);
 
 TYPE_TRAIT(is_sampler);
-	template <typename T, size_t D>
-	TYPE_TRAIT_INCLUDES(is_sampler, Sampler <T, D>);
 
-TYPE_TRAIT(is_global_resource);
-	template <typename T>
-	TYPE_TRAIT_INCLUDES(is_global_resource, ResourceGroup <T>);
-
-	template <typename T, template <typename> typename L>
-	TYPE_TRAIT_INCLUDES(is_global_resource, PushConstant <T, L>);
-	
-	template <typename T, template <typename> typename L>
-	TYPE_TRAIT_INCLUDES(is_global_resource, UniformBuffer  <T, L>);
-	
-	template <typename T, template <typename> typename L, GlobalResourceAccess A>
-	TYPE_TRAIT_INCLUDES(is_global_resource, StorageBuffer  <T, L, A>);
-	
-	template <typename T, size_t D>
-	TYPE_TRAIT_INCLUDES(is_global_resource, Sampler <T, D>);
+template <typename T, size_t D>
+TYPE_TRAIT_INCLUDES(is_sampler, Sampler <T, D>);
 
 } // namespace rcgp

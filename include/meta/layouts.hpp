@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithm>
-#include <type_traits>
 
 #include "../dsl/array.hpp"
 #include "../dsl/matrix.hpp"
@@ -81,7 +80,7 @@ struct layout_rules_list <Policy, Tlist <Ts...>> {
 	>;
 };
 
-template <typename Policy, aggregate T>
+template <typename Policy, user_defined T>
 struct layout_rules <Policy, T> : layout_rules_list <Policy, typename T::fields> {};
 
 template <typename Policy, typename T, int64_t N>

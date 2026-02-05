@@ -3,6 +3,7 @@
 #include <type_traits>
 
 #include "../util/tlist.hpp"
+#include "concepts.hpp"
 #include "macro_hell.hpp"
 #include "scaffold.hpp"
 #include "this_injection.hpp"
@@ -34,11 +35,13 @@ using snipped_tlist = rcgp::Tlist <Ts...>;
 	}
 
 // Generating the override reference method
-#define GEN_OVERRIDE_FIELD_REFERENCE(T, field)	\
-	field.override_reference(jems::field_access(ref, __COUNTER__ - counter_base - 1));
+#define GEN_OVERRIDE_FIELD_REFERENCE(T, field)					\
+	field.override_reference(jems::field_access(				\
+		ref, __COUNTER__ - counter_base - 1				\
+	));
 
 #define DEFINE_OVERRIDE_REFERENCE(...)						\
-	void override_reference(const Reference &ref) {				\
+	void override_reference(const auto &ref) {				\
 		static constexpr size_t counter_base = __COUNTER__;		\
 		MAP(GEN_OVERRIDE_FIELD_REFERENCE, /* ... */, __VA_ARGS__)	\
 	}
@@ -54,7 +57,7 @@ using snipped_tlist = rcgp::Tlist <Ts...>;
 // Full reflection information for aggregates
 #define $reflection(...)					\
 	DEFINE_THIS();						\
-	using _rcgp_aggregate = std::type_identity <This>;	\
+	using _rcgp_user_defined = std::type_identity <This>;	\
 								\
 	DEFINE_FIELD_TYPE_LIST(__VA_ARGS__);			\
 	DEFINE_SCAFFOLD(__VA_ARGS__);				\

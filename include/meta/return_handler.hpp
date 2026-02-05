@@ -47,28 +47,28 @@ void interpolation_return_handler(Interpolant <T, P> &ret, size_t &argi)
 }
 
 // TODO: shorten using type traits
-template <ShaderStage S, primitive T>
+template <ShaderStage S, builtin T>
 void return_handler(Smooth <T> &ret, size_t &argi)
 {
 	static_assert(S == ShaderStage::eVertex);
 	interpolation_return_handler(ret, argi);
 }
 
-template <ShaderStage S, primitive T>
+template <ShaderStage S, builtin T>
 void return_handler(Flat <T> &ret, size_t &argi)
 {
 	static_assert(S == ShaderStage::eVertex);
 	interpolation_return_handler(ret, argi);
 }
 
-template <ShaderStage S, primitive T>
+template <ShaderStage S, builtin T>
 void return_handler(NoPerspective <T> &ret, size_t &argi)
 {
 	static_assert(S == ShaderStage::eVertex);
 	interpolation_return_handler(ret, argi);
 }
 
-template <ShaderStage S, primitive T>
+template <ShaderStage S, builtin T>
 void return_handler(T &value, size_t &argi)
 {
 	auto type = reconstruct_type <T> ();
@@ -93,7 +93,7 @@ void return_handler(T &value, size_t &argi)
 	jems::store(ref, value);
 }
 
-template <ShaderStage S, aggregate T>
+template <ShaderStage S, user_defined T>
 void return_handler(T &value, size_t &argi)
 {
 	static_assert(S == ShaderStage::eSubroutine);

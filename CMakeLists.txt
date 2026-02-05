@@ -62,4 +62,9 @@ target_link_libraries(rcgp PUBLIC
 file(GLOB_RECURSE RCGP_DSL_TESTS
 	CONFIGURE_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/tests/dsl/*.cpp")
 add_executable(test EXCLUDE_FROM_ALL ${RCGP_DSL_TESTS})
+target_precompile_headers(test REUSE_FROM rcgp)
 target_link_libraries(test rcgp)
+
+add_executable(experimental EXCLUDE_FROM_ALL tests/experimental.cpp)
+target_precompile_headers(experimental REUSE_FROM rcgp)
+target_link_libraries(experimental rcgp)

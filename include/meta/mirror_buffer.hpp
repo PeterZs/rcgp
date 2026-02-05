@@ -2,8 +2,7 @@
 
 #include "../rhi/buffer.hpp"
 #include "dynamic.hpp"
-#include "mirror.hpp"
-#include "resources.hpp"
+#include "witnesses.hpp"
 
 namespace rcgp {
 
@@ -22,10 +21,6 @@ template <non_dynamic T, template <typename> typename L, vk::BufferUsageFlagBits
 struct MirrorBuffer <T, L, F> : Buffer {
 	using symbolic_type = T;
 	using value_type = TypeMirror <T, L>;
-
-	value_type new_value() const {
-		return value_type();
-	}
 
 	auto &write(const value_type &data) const {
 		Buffer::write(&data, sizeof(value_type), 0);
@@ -56,9 +51,11 @@ struct MirrorBuffer <T, L, F> : Buffer {
 			.setRange(sizeof(value_type));
 	}
 
-	static MirrorBuffer from(const Device &device,
-			  	 vk::MemoryPropertyFlags properties,
-			  	 vk::BufferUsageFlags extra_usage = vk::BufferUsageFlagBits(0)) {
+	static MirrorBuffer from(
+		const Device &device,
+		vk::MemoryPropertyFlags properties,
+		vk::BufferUsageFlags extra_usage = vk::BufferUsageFlagBits(0)
+	) {
 		auto base = Buffer::from(device, sizeof(value_type), F | extra_usage, properties);
 
 		MirrorBuffer result;
@@ -72,10 +69,6 @@ struct MirrorBuffer <T, L, F> : Buffer {
 	using symbolic_type = T;
 	using value_type = TypeMirror <T, L>;
 	using element_type = dynamic_element_of_mirror <T, L>;
-	
-	value_type new_value() const {
-		return value_type();
-	}
 
 	auto &write(const value_type &data) const {
 		// TODO: handle flushing if not host coherent
@@ -109,10 +102,12 @@ struct MirrorBuffer <T, L, F> : Buffer {
 		return *this;
 	}
 
-	static MirrorBuffer from(const Device &device,
-			  	 size_t max_elements,
-			  	 vk::MemoryPropertyFlags properties,
-			  	 vk::BufferUsageFlags extra_usage = vk::BufferUsageFlagBits(0)) {
+	static MirrorBuffer from(
+		const Device &device,
+		size_t max_elements,
+		vk::MemoryPropertyFlags properties,
+		vk::BufferUsageFlags extra_usage = vk::BufferUsageFlagBits(0)
+	) {
 		// TODO: dynamic_offset() static constexpr method
 		value_type data;
 		auto [dyn, offset] = dynamic_part <T> (data);
@@ -143,20 +138,5 @@ using UniformMirrorBuffer = MirrorBuffer <T, L, vk::BufferUsageFlagBits::eUnifor
 
 template <typename T, template <typename> typename L>
 using StorageMirrorBuffer = MirrorBuffer <T, L, vk::BufferUsageFlagBits::eStorageBuffer>;
-
-// Now we can add some specializations for resource translation
-template <typename T, template <typename> typename L>
-struct resource_translator <UniformBuffer <T, L>> {
-	using type = UniformMirrorBuffer <T, L>;
-	using value_type = type::value_type;
-	using element_type = std::nullptr_t;
-};
-
-template <typename T, template <typename> typename L, GlobalResourceAccess A>
-struct resource_translator <StorageBuffer <T, L, A>> {
-	using type = StorageMirrorBuffer <T, L>;
-	using value_type = type::value_type;
-	using element_type = std::nullptr_t;
-};
 
 } // namespace rcgp

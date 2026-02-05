@@ -6,7 +6,7 @@
 #include "../rhi/device.hpp"
 #include "../util/align.hpp"
 #include "../util/cti.hpp"
-#include "contract_introspection.hpp"
+#include "witnesses.hpp"
 #include "resources.hpp"
 #include "resources_collect.hpp"
 #include "shader_stage_conversion.hpp"
@@ -36,12 +36,12 @@ consteval size_t push_constant_offset_for(Tlist <Wrappers...>)
 template <auto &ref, ShaderStage ... Ss>
 auto one_wrapper_to_dsl(const Device &device, const stage_wrapper <ref, Ss...> &)
 {
-	using Reference = contract_base_t <ref>;
+	using Reference = reference_base_of <ref>;
 
 	auto stage_flags = (stage_to_flag(Ss) | ...);
 	if constexpr (is_resource_group_v <Reference>) {
 		using Structure = Reference::value_type;
-		static_assert(aggregate <Structure>);
+		static_assert(user_defined <Structure>);
 
 		constexpr size_t bindings = Structure::field_count;
 		std::array <vk::DescriptorSetLayoutBinding, bindings> dslbs {};

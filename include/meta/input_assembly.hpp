@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mirror.hpp"
+#include "witnesses.hpp"
 #include "contract.hpp"
 #include "resources.hpp"
 #include "symbolic_format.hpp"

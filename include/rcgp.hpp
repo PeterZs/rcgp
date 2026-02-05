@@ -14,6 +14,7 @@
 #include "meta/directives.hpp"
 #include "meta/function_construction.hpp"
 #include "meta/reflection.hpp"
+#include "meta/resource_aliases.hpp"
 #include "meta/resource_intrinsic.hpp"
 #include "meta/resource_translations.hpp"
 #include "meta/return_handler.hpp"

@@ -4,29 +4,18 @@
 
 namespace rcgp {
 
-template <typename T>
-jems::handle coerce_to_handle(const T &value)
-{
-	static_error(
-		"unable to coerce value of type "_ss
-		+ $ss_type(T)
-		+ " into a jems::handle"_ss
-	);
-}
-
-template <typename T>
-requires std::is_base_of_v <jems::handle, T>
-auto coerce_to_handle(const T &value)
-{
-	return value;
-}
-
 inline auto coerce_to_handle(std::nullptr_t value)
 {
 	return jems::handle();
 }
 
-template <aggregate T>
+template <builtin T>
+auto coerce_to_handle(const T &value)
+{
+	return value;
+}
+
+template <user_defined T>
 auto coerce_to_handle(const T &value)
 {
 	auto field_handler = [&] <size_t I> () {

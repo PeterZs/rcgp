@@ -1,25 +1,22 @@
 #pragma once
 
-#include "../dsl/array.hpp"
-#include "../dsl/matrix.hpp"
-#include "../dsl/scalar.hpp"
-#include "../dsl/vector.hpp"
-#include "../util/tlist.hpp"
-#include "../util/cti.hpp"
 #include <type_traits>
+
+#include "../dsl/array.hpp"
+#include "../util/cti.hpp"
 
 namespace rcgp {
 
 // Primitive types
 template <typename T>
-concept primitive = std::is_base_of_v <jems::handle, T>;
+concept builtin = std::is_base_of_v <jems::handle, T>;
 
 // User-defined types
 template <typename T>
-concept aggregate = requires {
-	typename T::_rcgp_aggregate;
+concept user_defined = requires {
+	typename T::_rcgp_user_defined;
 } && std::is_same_v <
-	typename T::_rcgp_aggregate,
+	typename T::_rcgp_user_defined,
 	std::type_identity <T>
 >;
 
@@ -28,7 +25,7 @@ TYPE_TRAIT(is_dynamic);
 	template <typename T>
 	TYPE_TRAIT_INCLUDES(is_dynamic, array <T, -1>);
 
-template <aggregate T>
+template <user_defined T>
 struct is_dynamic <T> {
 	static constexpr bool value = [] {
 		return constexpr_for(Is, T::field_count,
@@ -44,5 +41,11 @@ concept dynamic = is_dynamic_v <T>;
 
 template <typename T>
 concept non_dynamic = not is_dynamic_v <T>;
+
+// Anything (builtin or user_defined) that is traced in our JIT system
+template <typename T>
+concept traced = requires (T &value, const Reference &ref) {
+	{ value.override_reference(ref) };
+};
 
 } // namespace rcgp

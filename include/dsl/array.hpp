@@ -10,7 +10,7 @@ struct array : public jems::handle {
 	T operator[](const U &idx) const {
 		T result;
 		auto access = jems::array_access(_ref, project(idx));
-		inject_reference(result, access);
+		result.override_reference(access);
 		return result;
 	}
 };

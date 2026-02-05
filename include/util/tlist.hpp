@@ -24,6 +24,12 @@ struct Tlist {
 
 	template <template <typename ...> typename F>
 	using invoke = F <Args...>;
+	
+	template <template <typename ...> typename F>
+	using map = Tlist <F <Args>...>;
+
+	template <template <typename> typename F>
+	static constexpr bool all = (F <Args> ::value && ...);
 };
 
 // Tlist concatenation

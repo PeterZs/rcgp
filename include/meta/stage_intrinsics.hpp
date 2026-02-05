@@ -7,13 +7,12 @@
 #include "../dsl/aliases.hpp"
 #include "../dsl/projection.hpp"
 #include "reconstruct_type.hpp"
-#include "inject_reference.hpp"
 
 namespace rcgp {
 
 // TODO: move intrinsics definition to a dedicated header
 // TODO: should also mark the stage so that we check at shader module definion...
-template <SystemValue G, ShaderStage S, primitive T>
+template <SystemValue G, ShaderStage S, builtin T>
 struct read_only_intrinsic {
 	// NOTE: for aggregates, we may need to inject...
 	operator T() const {
@@ -21,7 +20,7 @@ struct read_only_intrinsic {
 	}
 };
 
-template <SystemValue G, ShaderStage S, primitive T>
+template <SystemValue G, ShaderStage S, builtin T>
 struct write_only_intrinsic {
 	auto &operator=(const T &value) {
 		auto self = jems::system_value(G);
@@ -67,7 +66,7 @@ struct TaskGroup : WorkGroup <X, Y, Z> {
 };
 
 // Interpolation qualifiers for varying attributes
-template <primitive T, RateProperties P>
+template <builtin T, RateProperties P>
 struct Interpolant : jems::handle {
 	Interpolant() = default;
 
@@ -83,43 +82,41 @@ struct Interpolant : jems::handle {
 };
 
 // Smooth interpolation
-template <primitive T>
+template <builtin T>
 struct Smooth : Interpolant <T, RateProperties::eSmooth> {
 	using Interpolant <T, RateProperties::eSmooth> ::Interpolant;
 };
 
-template <primitive T>
+template <builtin T>
 Smooth(const T &) -> Smooth <T>;
 
 // Flat (no) interpolation
-template <primitive T>
+template <builtin T>
 struct Flat : Interpolant <T, RateProperties::eFlat> {
 	using Interpolant <T, RateProperties::eFlat> ::Interpolant;
 };
 
-template <primitive T>
+template <builtin T>
 Flat(const T &) -> Flat <T>;
 
 // Smooth (without perspective correction) interpolation
-template <primitive T>
+template <builtin T>
 struct NoPerspective : Interpolant <T, RateProperties::eNoPerspective> {
 	using Interpolant <T, RateProperties::eNoPerspective> ::Interpolant;
 };
 
-template <primitive T>
+template <builtin T>
 NoPerspective(const T &) -> NoPerspective <T>;
 
 // Required result of the task shader
-template <typename T>
+template <traced T>
 struct TaskPayload : T {
 	TaskPayload() {
-		inject_reference(static_cast <T &> (*this),
-			jems::system_value(SystemValue::eTaskPayload)
-		);
+		this->override_reference(jems::system_value(SystemValue::eTaskPayload));
 	}
 };
 
-template <typename T>
+template <traced T>
 struct mesh_vertex_positions : jems::handle {
 	mesh_vertex_positions() : handle(jems::system_value(SystemValue::eMeshVertices)) {}
 
@@ -127,7 +124,7 @@ struct mesh_vertex_positions : jems::handle {
 	T operator[](const U &idx) const {
 		T result;
 		auto access = jems::array_access(_ref, project(idx));
-		inject_reference(result, access);
+		result.override_reference(access);
 		return result;
 	}
 };
@@ -141,12 +138,12 @@ struct mesh_primitive_triangles : jems::handle {
 	T operator[](const U &idx) const {
 		T result;
 		auto access = jems::array_access(_ref, project(idx));
-		inject_reference(result, access);
+		result.override_reference(access);
 		return result;
 	}
 };
 
-template <template <primitive> typename Q>
+template <template <builtin> typename Q>
 struct rate_properties_for;
 
 template <>
@@ -164,7 +161,7 @@ struct rate_properties_for <NoPerspective> {
 	static constexpr RateProperties value = RateProperties::eNoPerspective;
 };
 
-template <primitive T, template <primitive> typename Q = Smooth>
+template <builtin T, template <builtin> typename Q = Smooth>
 struct PerVertex : jems::handle {
 	using element_type = T;
 	static constexpr RateProperties properties = rate_properties_for <Q> ::value;
@@ -173,12 +170,12 @@ struct PerVertex : jems::handle {
 	T operator[](const U &idx) const {
 		T result;
 		auto access = jems::array_access(_ref, project(idx));
-		inject_reference(result, access);
+		result.override_reference(access);
 		return result;
 	}
 };
 
-template <primitive T, template <primitive> typename Q = Smooth>
+template <builtin T, template <builtin> typename Q = Smooth>
 struct PerPrimitive : jems::handle {
 	using element_type = T;
 	static constexpr RateProperties properties = rate_properties_for <Q> ::value;
@@ -187,17 +184,17 @@ struct PerPrimitive : jems::handle {
 	T operator[](const U &idx) const {
 		T result;
 		auto access = jems::array_access(_ref, project(idx));
-		inject_reference(result, access);
+		result.override_reference(access);
 		return result;
 	}
 };
 
 TYPE_TRAIT(is_perprimitive_output);
-	template <primitive T, template <primitive> typename Q>
+	template <builtin T, template <builtin> typename Q>
 	TYPE_TRAIT_INCLUDES(is_perprimitive_output, PerPrimitive <T, Q>);
 
 TYPE_TRAIT(is_pervertex_output);
-	template <primitive T, template <primitive> typename Q>
+	template <builtin  T, template <builtin> typename Q>
 	TYPE_TRAIT_INCLUDES(is_pervertex_output, PerVertex <T, Q>);
 
 template <typename T>
@@ -205,12 +202,12 @@ struct unwrap_output_type {
 	using type = T;
 };
 
-template <primitive T, template <primitive> typename Q>
+template <builtin T, template <builtin> typename Q>
 struct unwrap_output_type <PerVertex <T, Q>> {
 	using type = T;
 };
 
-template <primitive T, template <primitive> typename Q>
+template <builtin T, template <builtin> typename Q>
 struct unwrap_output_type <PerPrimitive <T, Q>> {
 	using type = T;
 };
@@ -253,7 +250,7 @@ struct MeshletPayload : T {
 		if (Tracer::singleton.records.empty())
 			return;
 
-		static_assert(aggregate <T>,
+		static_assert(user_defined <T>,
 			"MeshletPayload extra outputs must be an aggregate");
 
 		constexpr_for(Is, T::field_count,
@@ -272,8 +269,7 @@ struct MeshletPayload : T {
 				$tsb.add_stage_output(tout);
 				$tsb.mesh_perprimitive_outputs.emplace(tout.argi, perprimitive);
 
-				auto &field = this->template _rcgp_get <Is> ();
-				inject_reference(field, jems::stage_output(tout));
+				this->template _rcgp_get <Is> ().override_reference(jems::stage_output(tout));
 			}(), ...)
 		);
 	}
