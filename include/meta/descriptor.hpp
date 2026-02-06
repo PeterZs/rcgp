@@ -18,7 +18,7 @@ struct DescriptorFor {
 template <typename T>
 constexpr size_t number_of_bindings = [] constexpr {
 	if constexpr (is_resource_group_v <T>) {
-		return number_of_bindings <typename T::value_type>;
+		return number_of_bindings <typename T::struct_type>;
 	} else if constexpr (user_defined <T>) {
 		// TODO: need to iterate through the fields themself
 		return T::field_count;
@@ -74,11 +74,10 @@ struct DescriptorWritePair {
 	
 	void bind(const std::span <vk::WriteDescriptorSet, bindings> &writes)
 	requires is_resource_group_v <Reference> {
-		using Structure = Reference::value_type;
-		static_assert(user_defined <Structure>);
+		using T = Reference::struct_type;
 
 		auto bind_one = [&] <size_t I> () {
-			using Resource = Structure::fields::template get <I>;
+			using Resource = T::fields::template get <I>;
 
 			set_descriptor_write_and_union <Resource, I> (
 				resource.template get <I> (),

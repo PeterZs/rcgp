@@ -40,14 +40,13 @@ auto one_wrapper_to_dsl(const Device &device, const stage_wrapper <ref, Ss...> &
 
 	auto stage_flags = (stage_to_flag(Ss) | ...);
 	if constexpr (is_resource_group_v <Reference>) {
-		using Structure = Reference::value_type;
-		static_assert(user_defined <Structure>);
+		using T = Reference::struct_type;
 
-		constexpr size_t bindings = Structure::field_count;
+		constexpr size_t bindings = T::field_count;
 		std::array <vk::DescriptorSetLayoutBinding, bindings> dslbs {};
 
 		auto fill_one = [&] <size_t I> () {
-			using Resource = Structure::fields::template get <I>;
+			using Resource = T::fields::template get <I>;
 
 			vk::DescriptorType dtype = vk::DescriptorType::eUniformBuffer;
 			if constexpr (is_sampler_v <Resource>) {
