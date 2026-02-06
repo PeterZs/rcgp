@@ -1,15 +1,15 @@
-#include "rhi/pipelines.hpp"
 #include <cstdlib>
 #include <iostream>
 #include <print>
 
+#include "rhi/pipelines.hpp"
 #include "util/timer.hpp"
 
 namespace rcgp {
 
 vk::Pipeline compile_rasterization_pipeline(
 	const Device &device,
-	const vk::RenderPass &render_pass,
+	const RenderState &render_state,
 	const vk::PrimitiveTopology topology,
 	const vk::ShaderModule &vertex_shader_module,
 	const vk::ShaderModule &fragment_shader_module,
@@ -112,142 +112,16 @@ vk::Pipeline compile_rasterization_pipeline(
 		.setPDepthStencilState(&depth_stencil)
 		.setPViewportState(&viewport_state)
 		.setStages(shader_stages)
-		.setRenderPass(render_pass)
 		.setSubpass(0);
+
+	if (render_state.is <vk::RenderPass> ())
+		pipeline_info.setRenderPass(render_state.as <vk::RenderPass> ());
+	else
+		pipeline_info.setPNext(&render_state.as <vk::PipelineRenderingCreateInfo> ());
 
 	auto [result, pipeline] = device.logical.createGraphicsPipeline(nullptr, pipeline_info, nullptr);
 	if (result != vk::Result::eSuccess) {
 		std::println(std::cerr, "failed to compile pipeline");
-		std::abort();
-	}
-
-	return pipeline;
-}
-
-vk::Pipeline compile_rasterization_pipeline_dynamic(
-	const Device &device,
-	const RasterizationRenderingFormats &formats,
-	const vk::PrimitiveTopology topology,
-	const vk::ShaderModule &vertex_shader_module,
-	const vk::ShaderModule &fragment_shader_module,
-	const char *vertex_entry,
-	const char *fragment_entry,
-	const vk::PipelineLayout &layout,
-	const vk::ArrayProxy <vk::VertexInputBindingDescription> &vertex_bindings,
-	const vk::ArrayProxy <vk::VertexInputAttributeDescription> &vertex_attributes,
-	const RasterizationOptions &options
-)
-{
-	TSCOPE("compile rasterization pipeline (dynamic rendering)");
-
-	auto shader_stages = std::array {
-		vk::PipelineShaderStageCreateInfo()
-			.setStage(vk::ShaderStageFlagBits::eVertex)
-			.setModule(vertex_shader_module)
-			.setPName(vertex_entry),
-		vk::PipelineShaderStageCreateInfo()
-			.setStage(vk::ShaderStageFlagBits::eFragment)
-			.setModule(fragment_shader_module)
-			.setPName(fragment_entry),
-	};
-
-	auto vertex_input = vk::PipelineVertexInputStateCreateInfo()
-		.setVertexBindingDescriptions(vertex_bindings)
-		.setVertexAttributeDescriptions(vertex_attributes);
-
-	auto input_assembly = vk::PipelineInputAssemblyStateCreateInfo()
-		.setTopology(topology)
-		.setPrimitiveRestartEnable(false);
-
-	auto viewport = vk::Viewport()
-		.setX(0.0f)
-		.setY(0.0f)
-		.setWidth(float(options.extent.width))
-		.setHeight(float(options.extent.height))
-		.setMinDepth(0.0f)
-		.setMaxDepth(1.0f);
-
-	auto scissor = vk::Rect2D()
-		.setOffset({ 0, 0 })
-		.setExtent(options.extent);
-
-	auto viewport_state = vk::PipelineViewportStateCreateInfo()
-		.setViewports(viewport)
-		.setScissors(scissor);
-
-	auto rasterization = vk::PipelineRasterizationStateCreateInfo()
-		.setDepthClampEnable(false)
-		.setRasterizerDiscardEnable(false)
-		.setPolygonMode(options.polygon_mode)
-		.setCullMode(options.cull_mode)
-		.setFrontFace(vk::FrontFace::eCounterClockwise)
-		.setDepthBiasEnable(false)
-		.setLineWidth(1.0f);
-
-	auto multisampling = vk::PipelineMultisampleStateCreateInfo()
-		.setRasterizationSamples(vk::SampleCountFlagBits::e1)
-		.setSampleShadingEnable(false)
-		.setMinSampleShading(1.0f);
-
-	auto color_blend_attachment = vk::PipelineColorBlendAttachmentState()
-		.setBlendEnable(options.alpha_blend)
-		.setColorWriteMask(
-			vk::ColorComponentFlagBits::eR
-			| vk::ColorComponentFlagBits::eG
-			| vk::ColorComponentFlagBits::eB
-			| vk::ColorComponentFlagBits::eA
-		);
-
-	if (options.alpha_blend) {
-		color_blend_attachment
-			.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
-			.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
-			.setColorBlendOp(vk::BlendOp::eAdd)
-			.setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
-			.setDstAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
-			.setAlphaBlendOp(vk::BlendOp::eAdd);
-	}
-
-	auto color_blend = vk::PipelineColorBlendStateCreateInfo()
-		.setAttachments(color_blend_attachment);
-
-	auto depth_stencil = vk::PipelineDepthStencilStateCreateInfo()
-		.setDepthTestEnable(options.depth_test)
-		.setDepthWriteEnable(options.depth_test)
-		.setDepthCompareOp(vk::CompareOp::eLess)
-		.setDepthBoundsTestEnable(false)
-		.setStencilTestEnable(false);
-
-	auto rendering_info = vk::PipelineRenderingCreateInfo();
-	auto color_format = formats.color_format;
-
-	if (color_format != vk::Format::eUndefined) {
-		rendering_info
-			.setColorAttachmentFormats(color_format);
-	}
-
-	if (formats.depth_format != vk::Format::eUndefined) {
-		rendering_info
-			.setDepthAttachmentFormat(formats.depth_format);
-	}
-
-	auto pipeline_info = vk::GraphicsPipelineCreateInfo()
-		.setPNext(&rendering_info)
-		.setLayout(layout)
-		.setPInputAssemblyState(&input_assembly)
-		.setPVertexInputState(&vertex_input)
-		.setPRasterizationState(&rasterization)
-		.setPMultisampleState(&multisampling)
-		.setPColorBlendState(&color_blend)
-		.setPDepthStencilState(&depth_stencil)
-		.setPViewportState(&viewport_state)
-		.setStages(shader_stages)
-		.setRenderPass(vk::RenderPass())
-		.setSubpass(0);
-
-	auto [result, pipeline] = device.logical.createGraphicsPipeline(nullptr, pipeline_info, nullptr);
-	if (result != vk::Result::eSuccess) {
-		std::println(std::cerr, "failed to compile dynamic rendering pipeline");
 		std::abort();
 	}
 

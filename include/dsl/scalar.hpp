@@ -56,19 +56,19 @@ public:
 	}
 
 	friend scalar operator+(const scalar &a, const scalar &b) {
-		return scalar(jems::operation(OperationCode::eAdd, a, b));
+		return reinterpret(jems::operation(OperationCode::eAdd, a, b));
 	}
 
 	friend scalar operator-(const scalar &a, const scalar &b) {
-		return scalar(jems::operation(OperationCode::eSubtract, a, b));
+		return reinterpret(jems::operation(OperationCode::eSubtract, a, b));
 	}
 
 	friend scalar operator*(const scalar &a, const scalar &b) {
-		return scalar(jems::operation(OperationCode::eMultiply, a, b));
+		return reinterpret(jems::operation(OperationCode::eMultiply, a, b));
 	}
 
 	friend scalar operator/(const scalar &a, const scalar &b) {
-		return scalar(jems::operation(OperationCode::eDivide, a, b));
+		return reinterpret(jems::operation(OperationCode::eDivide, a, b));
 	}
 
 	scalar &operator++() {
@@ -94,12 +94,12 @@ public:
 	}
 
 	friend scalar operator-(const scalar &v) {
-		return scalar(jems::operation(OperationCode::eMultiply, scalar <T> (-1), v));
+		return reinterpret(jems::operation(OperationCode::eMultiply, scalar <T> (-1), v));
 	}
 	
 	friend scalar operator!(const scalar &v)
 	requires std::is_same_v <T, bool> {
-		return scalar(jems::operation(OperationCode::eLogicalNot, v));
+		return reinterpret(jems::operation(OperationCode::eLogicalNot, v));
 	}
 
 	static auto reinterpret(const jems::handle &h) {

@@ -5,34 +5,29 @@
 #include "matrix.hpp"
 #include "aliases.hpp"
 
-namespace rcgp {
+#define builtin(code, ...) jems::builtin_intrinsic(BuiltinIntrinsicCode::code, __VA_ARGS__)
 
-// TODO: move to builtin
+namespace rcgp {
 
 template <native_scalar T>
 scalar <T> abs(const scalar <T> &v)
 {
-	return scalar <T> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eAbs, v));
+	return scalar <T> ::reinterpret(builtin(eAbs, v));
 }
 
 template <native_scalar T, size_t N>
 vector <T, N> abs(const vector <T, N> &v)
 {
-	return vector <T, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eAbs, v));
+	return vector <T, N> ::reinterpret(builtin(eAbs, v));
 }
 
 template <typename T, typename U>
 requires projectively_equivalent <T, U>
-// TODO: needs to be a scalar? (or vector/matrix)
-// projectively_scalar..., projectively_vector <T, D>, ... projectively_vector_dim <D>, _type <T>
 auto max(const T &a, const U &b)
 {
 	using result = projection_t <T>;
 	return result::reinterpret(
-		jems::builtin_intrinsic(
-			BuiltinIntrinsicCode::eMax,
-			project(a), project(b)
-		)
+		builtin(eMax, project(a), project(b))
 	);
 }
 
@@ -42,10 +37,7 @@ auto min(const T &a, const U &b)
 {
 	using result = projection_t <T>;
 	return result::reinterpret(
-		jems::builtin_intrinsic(
-			BuiltinIntrinsicCode::eMin,
-			project(a), project(b)
-		)
+		builtin(eMin, project(a), project(b))
 	);
 }
 
@@ -69,137 +61,139 @@ auto pow(const T &a, const U &b)
 {
 	using result = projection_t <T>;
 	return result::reinterpret(
-		jems::builtin_intrinsic(
-			BuiltinIntrinsicCode::ePow,
-			project(a), project(b)
-		)
+		builtin(ePow, project(a), project(b))
 	);
 }
 
 inline f32 to_float(const u32 &v)
 {
-	return f32::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eToFloat, v));
+	return f32::reinterpret(builtin(eToFloat, v));
 }
 
 inline f32 to_float(const i32 &v)
 {
-	return f32::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eToFloat, v));
+	return f32::reinterpret(builtin(eToFloat, v));
 }
 
 template <native_float_scalar T>
 scalar <T> sin(const scalar <T> &v)
 {
-	return scalar <T> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eSin, v));
+	return scalar <T> ::reinterpret(builtin(eSin, v));
 }
 
 template <native_float_scalar T>
 scalar <T> cos(const scalar <T> &v)
 {
-	return scalar <T> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eCos, v));
+	return scalar <T> ::reinterpret(builtin(eCos, v));
 }
 
 template <native_float_scalar T>
 scalar <T> sqrt(const scalar <T> &v)
 {
-	return scalar <T> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eSqrt, v));
+	return scalar <T> ::reinterpret(builtin(eSqrt, v));
 }
 
 template <native_float_scalar T, size_t N>
 vector <T, N> sin(const vector <T, N> &v)
 {
-	return vector <T, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eSin, v));
+	return vector <T, N> ::reinterpret(builtin(eSin, v));
 }
 
 template <native_scalar T, size_t D>
 scalar <T> dot(const vector <T, D> &a, const vector <T, D> &b)
 {
-	return scalar <T> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eDot, a, b));
+	return scalar <T> ::reinterpret(builtin(eDot, a, b));
 }
 
 template <native_float_scalar T, size_t N>
 vector <T, N> normalize(const vector <T, N> &v)
 {
-	return vector <T, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eNormalize, v));
+	return vector <T, N> ::reinterpret(builtin(eNormalize, v));
 }
 
 template <native_float_scalar T, size_t N>
 scalar <T> length(const vector <T, N> &v)
 {
-	return scalar <T> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eLength, v));
+	return scalar <T> ::reinterpret(builtin(eLength, v));
 }
 
 template <native_float_scalar T>
 vector <T, 3> cross(const vector <T, 3> &a, const vector <T, 3> &b)
 {
-	return vector <T, 3> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eCross, a, b));
+	return vector <T, 3> ::reinterpret(builtin(eCross, a, b));
 }
 
 template <native_scalar T, size_t N, size_t M>
 matrix <T, M, N> transpose(const matrix <T, N, M> &m)
 {
-	return matrix <T, M, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eTranspose, m));
+	return matrix <T, M, N> ::reinterpret(builtin(eTranspose, m));
 }
 
 template <native_float_scalar T, size_t N>
 matrix <T, N, N> inverse(const matrix <T, N, N> &m)
 {
-	return matrix <T, N, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eInverse, m));
+	return matrix <T, N, N> ::reinterpret(builtin(eInverse, m));
 }
 
 template <native_float_scalar T>
 scalar <T> dFdx(const scalar <T> &v)
 {
-	return scalar <T> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eDFdx, v));
+	return scalar <T> ::reinterpret(builtin(eDFdx, v));
 }
 
 template <native_float_scalar T>
 scalar <T> dFdy(const scalar <T> &v)
 {
-	return scalar <T> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eDFdy, v));
+	return scalar <T> ::reinterpret(builtin(eDFdy, v));
 }
 
 template <native_float_scalar T>
 scalar <T> dFdxFine(const scalar <T> &v)
 {
-	return scalar <T> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eDFdxFine, v));
+	return scalar <T> ::reinterpret(builtin(eDFdxFine, v));
 }
 
 template <native_float_scalar T>
 scalar <T> dFdyFine(const scalar <T> &v)
 {
-	return scalar <T> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eDFdyFine, v));
+	return scalar <T> ::reinterpret(builtin(eDFdyFine, v));
 }
 
 template <native_float_scalar T, size_t N>
 vector <T, N> dFdx(const vector <T, N> &v)
 {
-	return vector <T, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eDFdx, v));
+	return vector <T, N> ::reinterpret(builtin(eDFdx, v));
 }
 
 template <native_float_scalar T, size_t N>
 vector <T, N> dFdy(const vector <T, N> &v)
 {
-	return vector <T, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eDFdy, v));
+	return vector <T, N> ::reinterpret(builtin(eDFdy, v));
 }
 
 template <native_float_scalar T, size_t N>
 vector <T, N> dFdxFine(const vector <T, N> &v)
 {
-	return vector <T, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eDFdxFine, v));
+	return vector <T, N> ::reinterpret(builtin(eDFdxFine, v));
 }
 
 template <native_float_scalar T, size_t N>
 vector <T, N> dFdyFine(const vector <T, N> &v)
 {
-	return vector <T, N> ::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eDFdyFine, v));
+	return vector <T, N> ::reinterpret(builtin(eDFdyFine, v));
 }
 
 template <typename T>
 T select(const boolean &cond, const T &a, const T &b)
 {
-	return T::reinterpret(jems::builtin_intrinsic(BuiltinIntrinsicCode::eSelect, cond, a, b));
+	return T::reinterpret(builtin(eSelect, cond, a, b));
 }
 
-// TODO: shorthand for jems::builtin_intrinsic(BuiltinIntrinsicCode:...);
+inline f32 smoothstep(const f32 &x, const f32 &a, const f32 &b)
+{
+	return f32::reinterpret(builtin(eSmoothstep, x, a, b));
+}
 
 } // namespace rcgp
+
+#undef builtin

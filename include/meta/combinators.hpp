@@ -60,7 +60,7 @@ template <Topology T>
 struct RasterizationCombinator {
 	const Device &device;
 	const ShaderCompiler &compiler;
-	const vk::RenderPass &render_pass;
+	const RenderState &render_state;
 	RasterizationOptions options;
 	DebugOptions debug;
 
@@ -102,67 +102,7 @@ struct RasterizationCombinator {
 
 		auto pipeline = compile_rasterization_pipeline(
 			device,
-			render_pass,
-			translate_topology(T),
-			vmod, fmod,
-			"main", "main",
-			layout,
-			vertex_bindings,
-			vertex_attributes,
-			options
-		);
-
-		return RasterizationPipeline <
-			T,
-			decltype(streams),
-			decltype(gamap),
-			decltype(gvrs)
-		> (device.logical, pipeline, layout, dsls);
-	}
-};
-
-template <Topology T>
-struct DynamicRasterizationCombinator {
-	const Device &device;
-	const ShaderCompiler &compiler;
-	RasterizationRenderingFormats formats;
-	RasterizationOptions options;
-	DebugOptions debug;
-
-	template <typename VertexShader, typename FragmentShader>
-	requires is_vertex_shader_v <VertexShader>
-		and is_fragment_shader_v <FragmentShader>
-	auto operator()(VertexShader &vertex_shader, FragmentShader &fragment_shader) const {
-		TSCOPE("dynamic rasterization combinator");
-
-		// [[maybe_unused]] constexpr bool interface_ok =
-		// 	vertex_fragment_interface <VRet, Bs...> ::value;
-		
-		transfer_io_rates(vertex_shader, fragment_shader);
-
-		auto streams = collect_streams(typename VertexShader::icontext());
-		auto vertex_bindings = sequence_to_vertex_bindings(streams);
-		auto vertex_attributes = sequence_to_vertex_attributes(streams);
-
-		auto gvrs = merge_stage_wrappers(tlist_concat(
-			VertexShader::gvrs,
-			FragmentShader::gvrs
-		));
-
-		auto [layout, dsls, gamap] = apply_gvrs(
-			device, gvrs,
-			vertex_shader,
-			fragment_shader
-		);
-
-		auto [vmod, fmod] = shaders_to_modules(
-			device, compiler, debug,
-			vertex_shader, fragment_shader
-		);
-
-		auto pipeline = compile_rasterization_pipeline_dynamic(
-			device,
-			formats,
+			render_state,
 			translate_topology(T),
 			vmod, fmod,
 			"main", "main",
