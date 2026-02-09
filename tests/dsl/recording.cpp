@@ -55,6 +55,8 @@ add_test(binary_op)
 	  $4 = 2
 	  Store $3 $4
 	  $5 = Add $1 $3
+	  $6 = Local $0
+	  Store $6 $5
 	}
 	)");
 };
@@ -80,6 +82,8 @@ add_test(unary_op)
 	  $4 = -1
 	  Store $3 $4
 	  $5 = Multiply $3 $1
+	  $6 = Local $0
+	  Store $6 $5
 	}
 	)");
 };
@@ -132,22 +136,30 @@ add_test(increment_decrement)
 	  $4 = 1
 	  Store $3 $4
 	  $5 = Add $1 $3
-	  Store $1 $5
 	  $6 = Local $0
-	  $7 = 1
-	  Store $6 $7
-	  $8 = Add $1 $6
-	  Store $1 $8
-	  $9 = Local $0
-	  $10 = 1
-	  Store $9 $10
-	  $11 = Subtract $1 $9
-	  Store $1 $11
-	  $12 = Local $0
-	  $13 = 1
-	  Store $12 $13
-	  $14 = Subtract $1 $12
+	  Store $6 $5
+	  Store $1 $6
+	  $7 = Local $0
+	  $8 = 1
+	  Store $7 $8
+	  $9 = Add $1 $7
+	  $10 = Local $0
+	  Store $10 $9
+	  Store $1 $10
+	  $11 = Local $0
+	  $12 = 1
+	  Store $11 $12
+	  $13 = Subtract $1 $11
+	  $14 = Local $0
+	  Store $14 $13
 	  Store $1 $14
+	  $15 = Local $0
+	  $16 = 1
+	  Store $15 $16
+	  $17 = Subtract $1 $15
+	  $18 = Local $0
+	  Store $18 $17
+	  Store $1 $18
 	}
 	)");
 };
@@ -336,20 +348,24 @@ add_test(while_loop)
 	    $13 = Local $12
 	    Store $13 $11
 	    $14 = LogicalNot $13
-	    $15 = Block {
+	    $15 = Local $12
+	    Store $15 $14
+	    $16 = Block {
 	      Break
 	    }
-	    Branch $14: $15
-	    $16 = Add $6 $8
-	    $17 = Local $1
-	    Store $17 $16
-	    Store $6 $17
-	    $18 = Add $8 $5
-	    Store $8 $18
+	    Branch $15: $16
+	    $17 = Add $6 $8
+	    $18 = Local $1
+	    Store $18 $17
+	    Store $6 $18
+	    $19 = Add $8 $5
+	    $20 = Local $0
+	    Store $20 $19
+	    Store $8 $20
 	  }
 	  Loop $10
-	  $19 = Return 0: $1
-	  Store $19 $6
+	  $21 = Return 0: $1
+	  Store $21 $6
 	}
 	)");
 };
@@ -400,20 +416,24 @@ add_test(for_loop)
 	    $13 = Local $12
 	    Store $13 $11
 	    $14 = LogicalNot $13
-	    $15 = Block {
+	    $15 = Local $12
+	    Store $15 $14
+	    $16 = Block {
 	      Break
 	    }
-	    Branch $14: $15
-	    $16 = Add $6 $8
-	    $17 = Local $1
-	    Store $17 $16
-	    Store $6 $17
-	    $18 = Add $8 $5
-	    Store $8 $18
+	    Branch $15: $16
+	    $17 = Add $6 $8
+	    $18 = Local $1
+	    Store $18 $17
+	    Store $6 $18
+	    $19 = Add $8 $5
+	    $20 = Local $0
+	    Store $20 $19
+	    Store $8 $20
 	  }
 	  Loop $10
-	  $19 = Return 0: $1
-	  Store $19 $6
+	  $21 = Return 0: $1
+	  Store $21 $6
 	}
 	)");
 };
@@ -470,25 +490,31 @@ add_test(branching)
 	    $20 = 1
 	    Store $19 $20
 	    $21 = Add $1 $19
-	    Store $1 $21
+	    $22 = Local $0
+	    Store $22 $21
+	    Store $1 $22
 	  }
-	  $22 = Block {
+	  $23 = Block {
 	    $0 = Int32
-	    $23 = Local $0
-	    $24 = 2
-	    Store $23 $24
-	    $25 = Add $1 $23
-	    Store $1 $25
-	  }
-	  $26 = Block {
-	    $0 = Int32
+	    $24 = Local $0
+	    $25 = 2
+	    Store $24 $25
+	    $26 = Add $1 $24
 	    $27 = Local $0
-	    $28 = 3
-	    Store $27 $28
-	    $29 = Add $1 $27
-	    Store $1 $29
+	    Store $27 $26
+	    Store $1 $27
 	  }
-	  Branch $17: $18, $13: $22, else: $26
+	  $28 = Block {
+	    $0 = Int32
+	    $29 = Local $0
+	    $30 = 3
+	    Store $29 $30
+	    $31 = Add $1 $29
+	    $32 = Local $0
+	    Store $32 $31
+	    Store $1 $32
+	  }
+	  Branch $17: $18, $13: $23, else: $28
 	}
 	)");
 };
@@ -527,13 +553,15 @@ add_test(vector_store)
 	  $13 = -1
 	  Store $12 $13
 	  $14 = Multiply $12 $11
-	  $15 = Swizzle($9: x)
-	  $16 = Local $0
-	  Store $16 $15
-	  $17 = New $3($16, $14)
-	  $18 = Local $3
-	  Store $18 $17
-	  Store $9 $18
+	  $15 = Local $0
+	  Store $15 $14
+	  $16 = Swizzle($9: x)
+	  $17 = Local $0
+	  Store $17 $16
+	  $18 = New $3($17, $15)
+	  $19 = Local $3
+	  Store $19 $18
+	  Store $9 $19
 	}
 	)");
 };

@@ -72,35 +72,47 @@ void main()
     while (true) {
         bool lvar10;
         lvar10 = (lvar9 < r0b0.value[task_payload.meshlet].vertex_count);
-        if ((!lvar10)) {
+        bool lvar11;
+        lvar11 = (!lvar10);
+        if (lvar11) {
             break;
         }
-        uint lvar11;
-        vec4 lvar12;
-        vec4 lvar13;
-        lvar13 = (pc.view_proj * r0b0.value[r0b0.value[(r0b0.value[task_payload.meshlet].vertex_offset + lvar9)]]);
+        uint lvar12;
+        lvar12 = (r0b0.value[task_payload.meshlet].vertex_offset + lvar9);
+        uint lvar13;
         vec4 lvar14;
-        gl_MeshVerticesEXT[lvar9].gl_Position = lvar13;
-        vec3 lvar15;
-        vec3 lvar16;
+        vec4 lvar15;
+        lvar15 = (pc.view_proj * r0b0.value[r0b0.value[lvar12]]);
+        vec4 lvar16;
+        gl_MeshVerticesEXT[lvar9].gl_Position = lvar15;
+        vec3 lvar17;
+        vec3 lvar18;
         lout0[lvar9] = r0b0.value[task_payload.meshlet];
-        uint lvar17;
-        lvar17 = 1;
-        lvar9 = (lvar9 + lvar17);
+        uint lvar19;
+        lvar19 = 1;
+        uint lvar20;
+        lvar20 = (lvar9 + lvar19);
+        lvar9 = lvar20;
     }
-    uint lvar18;
-    lvar18 = 0;
+    uint lvar21;
+    lvar21 = 0;
     while (true) {
-        bool lvar19;
-        lvar19 = (lvar18 < r0b0.value[task_payload.meshlet].primitive_count);
-        if ((!lvar19)) {
+        bool lvar22;
+        lvar22 = (lvar21 < r0b0.value[task_payload.meshlet].primitive_count);
+        bool lvar23;
+        lvar23 = (!lvar22);
+        if (lvar23) {
             break;
         }
-        uvec3 lvar20;
-        uvec3 lvar21;
-        gl_PrimitiveTriangleIndicesEXT[lvar18] = r0b0.value[(r0b0.value[task_payload.meshlet].primitive_offset + lvar18)];
-        uint lvar22;
-        lvar22 = 1;
-        lvar18 = (lvar18 + lvar22);
+        uint lvar24;
+        lvar24 = (r0b0.value[task_payload.meshlet].primitive_offset + lvar21);
+        uvec3 lvar25;
+        uvec3 lvar26;
+        gl_PrimitiveTriangleIndicesEXT[lvar21] = r0b0.value[lvar24];
+        uint lvar27;
+        lvar27 = 1;
+        uint lvar28;
+        lvar28 = (lvar21 + lvar27);
+        lvar21 = lvar28;
     }
 }

@@ -419,13 +419,17 @@ add_test(for_loop)
 	    while (true) {
 	        bool lvar4;
 	        lvar4 = (lvar3 < arg0);
-	        if ((!lvar4)) {
+	        bool lvar5;
+	        lvar5 = (!lvar4);
+	        if (lvar5) {
 	            break;
 	        }
-	        float lvar5;
-	        lvar5 = (lvar2 + lvar3);
-	        lvar2 = lvar5;
-	        lvar3 = (lvar3 + arg1);
+	        float lvar6;
+	        lvar6 = (lvar2 + lvar3);
+	        lvar2 = lvar6;
+	        int lvar7;
+	        lvar7 = (lvar3 + arg1);
+	        lvar3 = lvar7;
 	    }
 	    ret0 = lvar2;
 	}

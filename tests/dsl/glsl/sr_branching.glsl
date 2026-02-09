@@ -19,16 +19,22 @@ void sr()
     if (lvar7) {
         int lvar8;
         lvar8 = 1;
-        lvar0 = (lvar0 + lvar8);
+        int lvar9;
+        lvar9 = (lvar0 + lvar8);
+        lvar0 = lvar9;
     }
     else if (lvar5) {
-        int lvar9;
-        lvar9 = 2;
-        lvar0 = (lvar0 + lvar9);
+        int lvar10;
+        lvar10 = 2;
+        int lvar11;
+        lvar11 = (lvar0 + lvar10);
+        lvar0 = lvar11;
     }
     else {
-        int lvar10;
-        lvar10 = 3;
-        lvar0 = (lvar0 + lvar10);
+        int lvar12;
+        lvar12 = 3;
+        int lvar13;
+        lvar13 = (lvar0 + lvar12);
+        lvar0 = lvar13;
     }
 }
