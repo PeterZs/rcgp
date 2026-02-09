@@ -4,10 +4,24 @@
 #include <iostream>
 #include <print>
 
+#include <GLFW/glfw3.h>
+
 #include "rhi/session.hpp"
-#include "rhi/glfw.hpp"
 
 namespace rcgp {
+
+void glfw_boot()
+{
+	glfwInit();
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+}
+
+void glfw_load_extensions(std::vector <const char *> &list)
+{
+	uint32_t count = 0;
+	const char **extensions = glfwGetRequiredInstanceExtensions(&count);
+	list.insert(list.end(), extensions, extensions + count);
+}
 
 VKAPI_ATTR VKAPI_CALL
 vk::Bool32 general_validation_callback(
@@ -43,7 +57,7 @@ auto Session::from(const Options &options) -> std::tuple <
 
 	auto &[session, dld] = product;
 
-	glfw::boot();
+	glfw_boot();
 
 	vk::detail::DynamicLoader dl;
 	auto vkGetInstanceProcAddr = dl.getProcAddress
@@ -59,7 +73,7 @@ auto Session::from(const Options &options) -> std::tuple <
 		VK_KHR_SURFACE_EXTENSION_NAME,
 	};
 
-	glfw::load_extensions(extensions);
+	glfw_load_extensions(extensions);
 	if (options.validation) {
 		extensions.emplace_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 		extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);

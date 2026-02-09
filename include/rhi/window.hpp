@@ -6,44 +6,52 @@
 #include <vector>
 
 #include <vulkan/vulkan.hpp>
-#include <GLFW/glfw3.h>
 
-#include "device.hpp"
 #include "image.hpp"
+
+struct GLFWwindow;
 
 namespace rcgp {
 
+// Keep GLFW-compatible values without exposing GLFW in the public header.
 enum class Key : int {
-	W = GLFW_KEY_W,
-	A = GLFW_KEY_A,
-	S = GLFW_KEY_S,
-	D = GLFW_KEY_D,
-	Q = GLFW_KEY_Q,
-	E = GLFW_KEY_E,
-	R = GLFW_KEY_R,
-	Space = GLFW_KEY_SPACE,
-	Escape = GLFW_KEY_ESCAPE,
-	Up = GLFW_KEY_UP,
-	Down = GLFW_KEY_DOWN,
-	Left = GLFW_KEY_LEFT,
-	Right = GLFW_KEY_RIGHT,
-	ShiftLeft = GLFW_KEY_LEFT_SHIFT,
-	ShiftRight = GLFW_KEY_RIGHT_SHIFT,
-	ControlLeft = GLFW_KEY_LEFT_CONTROL,
-	ControlRight = GLFW_KEY_RIGHT_CONTROL,
-	AltLeft = GLFW_KEY_LEFT_ALT,
-	AltRight = GLFW_KEY_RIGHT_ALT,
-	Tab = GLFW_KEY_TAB,
-	Enter = GLFW_KEY_ENTER,
-	Backspace = GLFW_KEY_BACKSPACE,
-	F12 = GLFW_KEY_F12,
+	Space = 32,
+	A = 65,
+	D = 68,
+	E = 69,
+	Q = 81,
+	R = 82,
+	S = 83,
+	W = 87,
+	Escape = 256,
+	Enter = 257,
+	Tab = 258,
+	Backspace = 259,
+	Right = 262,
+	Left = 263,
+	Down = 264,
+	Up = 265,
+	F12 = 301,
+	ShiftLeft = 340,
+	ControlLeft = 341,
+	AltLeft = 342,
+	ShiftRight = 344,
+	ControlRight = 345,
+	AltRight = 346,
 };
 
 enum class MouseButton : int {
-	Left = GLFW_MOUSE_BUTTON_LEFT,
-	Right = GLFW_MOUSE_BUTTON_RIGHT,
-	Middle = GLFW_MOUSE_BUTTON_MIDDLE,
+	Left = 0,
+	Right = 1,
+	Middle = 2,
 };
+
+enum class InputMode : int {
+	RawMouseMotion = 0x00033005,
+};
+
+struct Session;
+struct Device;
 
 struct Frame {
 	vk::SwapchainKHR swapchain;
@@ -77,7 +85,7 @@ struct Window {
 	
 	bool alive() const;
 	bool is_pressed(Key key) const;
-	void set_input_mode(int mode, int value) const;
+	void set_input_mode(InputMode mode, bool value) const;
 
 	vk::Extent2D extent() const;
 

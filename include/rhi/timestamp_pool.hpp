@@ -1,8 +1,11 @@
 #pragma once
 
-#include <cstdlib>
-#include <iostream>
-#include <print>
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <vector>
+
+#include <vulkan/vulkan.hpp>
 
 namespace rcgp {
 
@@ -11,22 +14,7 @@ struct TimestampQueryResult {
 	vk::QueryResultFlags flags;
 	double period;
 
-	std::optional <double> delta(size_t a, size_t b) const {
-		if (!ready()) {
-			std::println(std::cerr, "cannot query deltas for unready time stamps");
-			std::abort();
-		}
-
-		auto K = period / 1'000'000.0f;
-		if (flags & vk::QueryResultFlagBits::eWithAvailability) {
-			if (stamps[2 * a + 1] != 0 && stamps[2 * b - 1] != 0)
-				return double(stamps[2 * b] - stamps[2 * a]) * K;
-			else
-				return std::nullopt;
-		} else {
-			return double(stamps[b] - stamps[a]) * K;
-		}
-	}
+	std::optional <double> delta(size_t a, size_t b) const;
 
 	bool ready() const {
 		return not stamps.empty();

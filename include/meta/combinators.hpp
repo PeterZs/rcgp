@@ -4,7 +4,6 @@
 #include "../rhi/device.hpp"
 #include "../rhi/pipelines.hpp"
 #include "../rhi/shader_compiler.hpp"
-#include "../rhi/shader_compiler.hpp"
 #include "../util/timer.hpp"
 #include "input_assembly.hpp"
 #include "pipelines.hpp"
@@ -48,7 +47,7 @@ auto shaders_to_modules(
 		if (debug.dump_glsl)
 			printf("glsl:\n%s\n", glsl.c_str());
 		
-		auto spirv = compiler.glsl_to_spirv(glsl, stage_to_esh(stage));
+		auto spirv = compiler.glsl_to_spirv(glsl, stage);
 
 		return device.new_shader_module(spirv);
 	};

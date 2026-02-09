@@ -1,6 +1,39 @@
 #include "rhi/image.hpp"
+#include "rhi/device.hpp"
 
 namespace rcgp {
+
+auto Image::extent() const -> vk::Extent3D
+{
+	return description.extent;
+}
+
+auto Image::layers() const -> vk::ImageSubresourceLayers
+{
+	return vk::ImageSubresourceLayers()
+		.setAspectMask(description.aspect)
+		.setMipLevel(0)
+		.setBaseArrayLayer(0)
+		.setLayerCount(1);
+}
+
+auto Image::range() const -> vk::ImageSubresourceRange
+{
+	return vk::ImageSubresourceRange()
+		.setAspectMask(description.aspect)
+		.setBaseArrayLayer(0)
+		.setBaseMipLevel(0)
+		.setLayerCount(1)
+		.setLevelCount(1);
+}
+
+vk::DescriptorImageInfo Image::descriptor_info(const vk::Sampler &sampler) const
+{
+	return vk::DescriptorImageInfo()
+		.setSampler(sampler)
+		.setImageView(view)
+		.setImageLayout(layout);
+}
 
 void Image::destroy()
 {

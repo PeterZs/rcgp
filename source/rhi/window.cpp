@@ -1,5 +1,9 @@
 #include "rhi/window.hpp"
+#include "rhi/device.hpp"
 
+#include <GLFW/glfw3.h>
+
+#include <unordered_map>
 #include <utility>
 
 namespace rcgp {
@@ -85,9 +89,9 @@ bool Window::is_pressed(Key key) const
 	return glfwGetKey(handle, std::to_underlying(key)) == GLFW_PRESS;
 }
 
-void Window::set_input_mode(int mode, int value) const
+void Window::set_input_mode(InputMode mode, bool value) const
 {
-	glfwSetInputMode(handle, mode, value);
+	glfwSetInputMode(handle, std::to_underlying(mode), value ? GLFW_TRUE : GLFW_FALSE);
 }
 
 vk::Extent2D Window::extent() const
@@ -215,5 +219,4 @@ Window Window::from(const Session &session, const Device &device, const Options 
 
 	return result;
 }
-
 } // namespace rcgp

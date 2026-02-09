@@ -1,12 +1,11 @@
 #pragma once
 
-#include <array>
+#include <initializer_list>
 #include <map>
+#include <string>
 #include <vector>
 
 #include <vulkan/vulkan.hpp>
-
-#include "../util/cti.hpp"
 
 namespace rcgp {
 
@@ -19,94 +18,26 @@ struct Attachments {
 	vk::AttachmentReference reference(const std::string &key, vk::ImageLayout layout) const;
 };
 
-template <size_t N>
-struct color_attachments : std::array <vk::AttachmentReference, N> {
-	template <typename ... Ts>
-	requires (sizeof...(Ts) == N)
-	color_attachments(Ts ... args)
-		: std::array <vk::AttachmentReference, N> {
-			Tas <vk::AttachmentReference> (args)...
-		} {}
+struct Subpass {
+	std::vector <vk::AttachmentReference> colors;
+	std::vector <vk::AttachmentReference> depths;
+	std::vector <vk::AttachmentReference> resolves;
+	std::vector <vk::AttachmentReference> inputs;
 };
 
-template <typename ... Ts>
-color_attachments(Ts...) -> color_attachments <sizeof...(Ts)>;
-
-color_attachments() -> color_attachments <0>;
-
-template <size_t N>
-struct depth_attachments : std::array <vk::AttachmentReference, N> {
-	template <typename ... Ts>
-	requires (sizeof...(Ts) == N)
-	depth_attachments(Ts ... args)
-		: std::array <vk::AttachmentReference, N> {
-			Tas <vk::AttachmentReference> (args)...
-		} {}
-};
-
-template <typename ... Ts>
-depth_attachments(Ts...) -> depth_attachments <sizeof...(Ts)>;
-
-depth_attachments() -> depth_attachments <0>;
-
-template <size_t N>
-struct input_attachments : std::array <vk::AttachmentReference, N> {
-	template <typename ... Ts>
-	requires (sizeof...(Ts) == N)
-	input_attachments(Ts ... args)
-		: std::array <vk::AttachmentReference, N> {
-			Tas <vk::AttachmentReference> (args)...
-		} {}
-};
-
-template <typename ... Ts>
-input_attachments(Ts...) -> input_attachments <sizeof...(Ts)>;
-
-input_attachments() -> input_attachments <0>;
-
-template <size_t Colors, size_t Depths, size_t Resolves, size_t Inputs>
-struct Subpass : vk::SubpassDescription {
-	color_attachments <Colors> colors {};
-	depth_attachments <Depths> depths {};
-	color_attachments <Resolves> resolves {};
-	input_attachments <Inputs> inputs {};
-
-	Subpass(
-		color_attachments <Colors> colors_,
-		depth_attachments <Depths> depths_ = {},
-		color_attachments <Resolves> resolves_ = {},
-		input_attachments <Inputs> inputs_ = {}
-	)
-		: colors(colors_), depths(depths_), resolves(resolves_), inputs(inputs_)
-	{
-		setPipelineBindPoint(vk::PipelineBindPoint::eGraphics);
-
-		if constexpr (Colors > 0)
-			setColorAttachments(this->colors);
-
-		if constexpr (Depths > 0)
-			setPDepthStencilAttachment(&this->depths.front());
-
-		if constexpr (Resolves > 0)
-			setResolveAttachments(this->resolves);
-
-		if constexpr (Inputs > 0)
-			setInputAttachments(this->inputs);
-	}
-};
-
-template <size_t C, size_t D, size_t R, size_t I>
-auto subpass(
-	color_attachments <C> colors,
-	depth_attachments <D> depths,
-	color_attachments <R> resolves,
-	input_attachments <I> inputs
-)
+inline auto subpass(
+	std::initializer_list <vk::AttachmentReference> colors,
+	std::initializer_list <vk::AttachmentReference> depths = {},
+	std::initializer_list <vk::AttachmentReference> resolves = {},
+	std::initializer_list <vk::AttachmentReference> inputs = {}
+) -> Subpass
 {
-	return Subpass <C, D, R, I> (colors, depths, resolves, inputs);
+	return Subpass {
+		.colors = std::vector <vk::AttachmentReference> (colors),
+		.depths = std::vector <vk::AttachmentReference> (depths),
+		.resolves = std::vector <vk::AttachmentReference> (resolves),
+		.inputs = std::vector <vk::AttachmentReference> (inputs),
+	};
 }
-
-template <typename ... Ts>
-struct RenderPass : vk::RenderPass {};
 
 } // namespace rcgp

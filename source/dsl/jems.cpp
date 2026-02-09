@@ -6,12 +6,12 @@ namespace rcgp::jems {
 
 scope::scope(const SharedBlockReference &sbr)
 {
-	Tracer::singleton.records.emplace(sbr);
+	Tracer::singleton.records.emplace_back(sbr);
 }
 
 scope::~scope()
 {
-	Tracer::singleton.records.pop();
+	Tracer::singleton.records.pop_back();
 }
 
 scope::operator bool() const

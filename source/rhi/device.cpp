@@ -50,6 +50,40 @@ auto Device::new_descriptor_sets(const DescriptorPool &dpool, const vk::ArrayPro
 
 	return logical.allocateDescriptorSets(info);
 }
+
+auto Device::new_render_pass(
+	const Attachments &attachments,
+	std::span <const Subpass> subpasses
+) const -> vk::RenderPass
+{
+	auto descriptions = std::vector <vk::SubpassDescription> {};
+	descriptions.reserve(subpasses.size());
+
+	for (const auto &subpass : subpasses) {
+		auto description = vk::SubpassDescription()
+			.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics);
+
+		if (!subpass.colors.empty())
+			description.setColorAttachments(subpass.colors);
+
+		if (!subpass.depths.empty())
+			description.setPDepthStencilAttachment(&subpass.depths.front());
+
+		if (!subpass.resolves.empty())
+			description.setResolveAttachments(subpass.resolves);
+
+		if (!subpass.inputs.empty())
+			description.setInputAttachments(subpass.inputs);
+
+		descriptions.push_back(description);
+	}
+
+	auto rp_info = vk::RenderPassCreateInfo()
+		.setAttachments(attachments.descriptions)
+		.setSubpasses(descriptions);
+
+	return logical.createRenderPass(rp_info);
+}
 	
 void Device::wait_for_frame(const Frame &frame, uint64_t timeout) const
 {

@@ -1,18 +1,21 @@
 #pragma once
 
-#include <stack>
+#include <cstdlib>
 #include <unordered_map>
+#include <vector>
 
 #include "instruction_nodes.hpp"
 
 namespace rcgp {
 
 struct Tracer {
-	std::stack <SharedBlockReference> records;
+	std::vector <SharedBlockReference> records;
 	std::unordered_map <std::string, Reference> type_cache;
 
 	Block &active() {
-		return *records.top();
+		if (records.empty())
+			std::abort();
+		return *records.back();
 	}
 
 	static thread_local Tracer singleton;

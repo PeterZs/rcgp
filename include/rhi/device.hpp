@@ -60,15 +60,11 @@ struct Device {
 
 		return logical.createShaderModule(info);
 	}
-	
-	template <typename ... Ts>
-	auto new_render_pass(const Attachments &attachments, Ts ... subpasses) const {
-		auto rp_info = vk::RenderPassCreateInfo()
-			.setAttachments(attachments.descriptions)
-			.setSubpasses(subpasses...);
 
-		return RenderPass <Ts...> (logical.createRenderPass(rp_info));
-	}
+	auto new_render_pass(
+		const Attachments &attachments,
+		std::span <const Subpass> subpasses
+	) const -> vk::RenderPass;
 
 	template <auto &...refs, bool ... rs>
 	[[nodiscard]] auto update_descriptors(DescriptorWritePair <refs, rs> &&... dwpairs);

@@ -2,9 +2,9 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include "device.hpp"
-
 namespace rcgp {
+
+struct Device;
 
 struct Image {
 	struct Description {
@@ -23,34 +23,10 @@ struct Image {
 	vk::ImageLayout layout = vk::ImageLayout::eUndefined;
 	Description description;
 
-	auto extent() const -> vk::Extent3D {
-		return description.extent;
-	}
-
-	auto layers() const -> vk::ImageSubresourceLayers {
-		return vk::ImageSubresourceLayers()
-			.setAspectMask(description.aspect)
-			.setMipLevel(0)
-			.setBaseArrayLayer(0)
-			.setLayerCount(1);
-	}
-
-	auto range() const -> vk::ImageSubresourceRange {
-		return vk::ImageSubresourceRange()
-			.setAspectMask(description.aspect)
-			.setBaseArrayLayer(0)
-			.setBaseMipLevel(0)
-			.setLayerCount(1)
-			.setLevelCount(1);
-	}
-	
-	vk::DescriptorImageInfo descriptor_info(const vk::Sampler &sampler) const {
-		return vk::DescriptorImageInfo()
-			.setSampler(sampler)
-			.setImageView(view)
-			.setImageLayout(layout);
-	}
-
+	auto extent() const -> vk::Extent3D;
+	auto layers() const -> vk::ImageSubresourceLayers;
+	auto range() const -> vk::ImageSubresourceRange;
+	vk::DescriptorImageInfo descriptor_info(const vk::Sampler &sampler) const;
 	void destroy();
 
 	static Image from(const Device &device, const Description &info);
