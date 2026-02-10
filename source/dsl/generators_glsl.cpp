@@ -2,10 +2,11 @@
 #include <regex>
 #include <queue>
 
+#include <fmt/format.h>
+
 #include "dsl/generators.hpp"
 #include "dsl/block.hpp"
 #include "dsl/instructions.hpp"
-#include "util/timer.hpp"
 #include "util/error.hpp"
 
 namespace rcgp {
@@ -711,8 +712,6 @@ auto top_sort(SbrMap &call_to, SbrMap &call_from)
 
 std::string generate_glsl(const SharedBlockReference &sbr)
 {
-	TSCOPE("generating glsl code");
-
 	auto em = GLSLEmitter {
 		.main = sbr,
 		.result = "",

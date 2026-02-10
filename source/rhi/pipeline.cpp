@@ -3,7 +3,6 @@
 #include <print>
 
 #include "rhi/pipelines.hpp"
-#include "util/timer.hpp"
 
 namespace rcgp {
 
@@ -21,8 +20,6 @@ vk::Pipeline compile_rasterization_pipeline(
 	const RasterizationOptions &options
 )
 {
-	TSCOPE("compile rasterization pipeline");
-
 	// Building the pipeline
 	auto shader_stages = std::array {
 		vk::PipelineShaderStageCreateInfo()
@@ -135,8 +132,6 @@ vk::Pipeline compile_compute_pipeline(
 	const vk::PipelineLayout &layout
 )
 {
-	TSCOPE("compile compute pipeline");
-
 	auto stage = vk::PipelineShaderStageCreateInfo()
 		.setStage(vk::ShaderStageFlagBits::eCompute)
 		.setModule(compute_shader_module)
@@ -168,8 +163,6 @@ vk::Pipeline compile_mesh_shading_pipeline(
 	const RasterizationOptions &options
 )
 {
-	TSCOPE("compile mesh shading pipeline");
-
 	auto shader_stages = std::array {
 		vk::PipelineShaderStageCreateInfo()
 			.setStage(vk::ShaderStageFlagBits::eTaskEXT)

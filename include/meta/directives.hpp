@@ -19,7 +19,7 @@ namespace rcgp {
 
 // TODO: later encode the number of attachments, and subpass progression
 template <size_t N>
-inline auto begin_render_pass(
+auto begin_render_pass(
 	const vk::RenderPass &render_pass,
 	const vk::Framebuffer &framebuffer,
 	const vk::Rect2D &render_area,
@@ -155,7 +155,7 @@ auto bind_vertex_buffers(const ResourceTypeFor <refs> &... buffers)
 }
 
 template <Topology T, typename Symbolic>
-inline auto bind_index_buffer(const IndexMirrorBuffer <Symbolic, layouts::scalar> &ibuffer)
+auto bind_index_buffer(const IndexMirrorBuffer <Symbolic, layouts::scalar> &ibuffer)
 {
 	auto binder = [=](const CommandBuffer &cmd, SerializationContext &) {
 		if constexpr (std::is_same_v <Symbolic, array <vector <uint32_t, 3>>> ) {
@@ -277,19 +277,19 @@ inline auto barriers(const Barrier <refs, SrcPhases, DstPhases> &... barriers)
 }
 
 template <typename ... Es, auto &ref, typename SrcPhase, typename DstPhase>
-inline auto operator|(const Commands <Es...> &cmds, const Barrier <ref, SrcPhase, DstPhase> &b)
+auto operator|(const Commands <Es...> &cmds, const Barrier <ref, SrcPhase, DstPhase> &b)
 {
 	return cmds | barriers(b);
 }
 
 template <auto &ref, typename SrcPhase, typename DstPhase, typename ... Es>
-inline auto operator|(const Barrier <ref, SrcPhase, DstPhase> &b, const Commands <Es...> &cmds)
+auto operator|(const Barrier <ref, SrcPhase, DstPhase> &b, const Commands <Es...> &cmds)
 {
 	return barriers(b) | cmds;
 }
 
 template <auto &ref, typename SrcPhase, typename DstPhase>
-inline auto operator|(const std::nullptr_t &, const Barrier <ref, SrcPhase, DstPhase> &b)
+auto operator|(const std::nullptr_t &, const Barrier <ref, SrcPhase, DstPhase> &b)
 {
 	return barriers(b);
 }
@@ -306,14 +306,11 @@ inline auto dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1)
 
 template <typename T, typename F>
 requires is_commands_v <std::invoke_result_t <F, T>>
-inline auto foreach(const std::vector <T> &container, F &&ftn)
+auto foreach(const std::vector <T> &container, F &&ftn)
 {
 	using C = std::invoke_result_t <F, T>;
 
 	auto binder = [=](const CommandBuffer &cmd, SerializationContext &sctx) {
-		TSCOPE("foreach serialization");
-		TNOTE("container size of {}", container.size());
-
 		for (auto &&value : container)
 			ftn(value).serialize(cmd, sctx);
 	};

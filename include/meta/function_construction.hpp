@@ -1,10 +1,10 @@
 #pragma once
 
 #include <functional>
+#include <string>
 #include <type_traits>
 
 #include "../dsl/jems.hpp"
-#include "../util/timer.hpp"
 #include "inject_arguments.hpp"
 #include "macro_hell.hpp"
 #include "return_handler.hpp"
@@ -27,8 +27,6 @@ template <ShaderStage S>
 // TODO: must be invocable
 auto trace(auto ftn)
 {
-	TSCOPE("JIT tracing DSL code");
-
 	using F = decltype(infer_shader_signature <S> (std::function(ftn)));
 
 	Tracer::singleton.type_cache.clear();
@@ -37,7 +35,6 @@ auto trace(auto ftn)
 
 	result->stage = S;
 	if (auto s = jems::scope(result)) {
-		TSCOPE("primary trace");
 		typename F::args args;
 		inject_arguments <S> (args);
 		

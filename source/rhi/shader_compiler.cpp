@@ -6,13 +6,10 @@
 
 #include "dsl/enumerations.hpp"
 #include "rhi/shader_compiler.hpp"
-#include "util/timer.hpp"
 
 namespace rcgp {
 
-namespace {
-
-EShLanguage to_glslang_stage(ShaderStage stage)
+EShLanguage esh_stage(ShaderStage stage)
 {
 	switch (stage) {
 	case ShaderStage::eVertex: return EShLangVertex;
@@ -25,14 +22,10 @@ EShLanguage to_glslang_stage(ShaderStage stage)
 	}
 }
 
-} // namespace
-
 std::vector <uint32_t> ShaderCompiler::glsl_to_spirv(const std::string &glsl, ShaderStage stage) const
 {
 	auto defaults = GetDefaultResources();
-	auto glslang_stage = to_glslang_stage(stage);
-
-	TSCOPE("compile glsl to spirv");
+	auto glslang_stage = esh_stage(stage);
 
 	const char *cstr[] = { glsl.c_str() };
 
