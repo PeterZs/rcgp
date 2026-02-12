@@ -211,6 +211,57 @@ inline auto end_rendering()
 	return Commands <> { binder };
 }
 
+inline auto set_viewport(
+	const vk::Viewport &viewport,
+	uint32_t first_viewport = 0
+)
+{
+	auto binder = [=](const CommandBuffer &cmd, SerializationContext &) {
+		cmd.setViewport(first_viewport, std::array { viewport });
+	};
+
+	return Commands <> { binder };
+}
+
+inline auto set_scissor(
+	const vk::Rect2D &scissor,
+	uint32_t first_scissor = 0
+)
+{
+	auto binder = [=](const CommandBuffer &cmd, SerializationContext &) {
+		cmd.setScissor(first_scissor, std::array { scissor });
+	};
+
+	return Commands <> { binder };
+}
+
+inline auto set_viewport_scissor(
+	vk::Extent2D extent,
+	vk::Offset2D offset = vk::Offset2D(0, 0),
+	float min_depth = 0.0f,
+	float max_depth = 1.0f
+)
+{
+	auto binder = [=](const CommandBuffer &cmd, SerializationContext &) {
+		auto viewport = vk::Viewport()
+			.setX(float(offset.x))
+			.setY(float(offset.y))
+			.setWidth(float(extent.width))
+			.setHeight(float(extent.height))
+			.setMinDepth(min_depth)
+			.setMaxDepth(max_depth);
+
+		auto scissor = vk::Rect2D()
+			.setOffset(offset)
+			.setExtent(extent);
+
+		cmd.setViewport(0, std::array { viewport });
+		cmd.setScissor(0, std::array { scissor });
+	};
+
+	return Commands <> { binder };
+}
+
 inline auto reset_query_pool(const TimestampQueryPool &tqpool, uint32_t first, uint32_t count)
 {
 	auto binder = [=](const CommandBuffer &cmd, SerializationContext &) {

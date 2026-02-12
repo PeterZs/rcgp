@@ -104,6 +104,16 @@ vk::Extent2D Window::extent() const
 	return vk::Extent2D(width, height);
 }
 
+vk::Extent2D Window::logical_extent() const
+{
+	int width;
+	int height;
+
+	glfwGetWindowSize(handle, &width, &height);
+
+	return vk::Extent2D(width, height);
+}
+
 Frame Window::next_frame()
 {
 	frame_index = (frame_index + 1) % frames_in_flight;

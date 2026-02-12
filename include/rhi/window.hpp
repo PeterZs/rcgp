@@ -88,6 +88,8 @@ struct Window {
 	void set_input_mode(InputMode mode, bool value) const;
 
 	vk::Extent2D extent() const;
+	// TODO: remove when we implement resizing callbacks
+	vk::Extent2D logical_extent() const;
 
 	float aspect_ratio() const {
 		return float(extent().width) / extent().height;

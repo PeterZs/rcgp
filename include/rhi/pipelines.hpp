@@ -1,13 +1,15 @@
 #pragma once
 
+#include <optional>
+
 #include "device.hpp"
 #include "../util/variant.hpp"
 
 namespace rcgp {
 
 struct RasterizationOptions {
-	// TODO: dynamic extent or fixed extent
-	vk::Extent2D extent;
+	// If omitted, viewport/scissor are expected to be set dynamically.
+	std::optional <vk::Extent2D> extent;
 	bool depth_test;
 	vk::CullModeFlags cull_mode;
 	vk::PolygonMode polygon_mode;

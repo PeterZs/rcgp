@@ -20,6 +20,8 @@ vk::Pipeline compile_rasterization_pipeline(
 	const RasterizationOptions &options
 )
 {
+	bool dynamic_viewport_scissor = !options.extent.has_value();
+
 	// Building the pipeline
 	auto shader_stages = std::array {
 		vk::PipelineShaderStageCreateInfo()
@@ -40,21 +42,38 @@ vk::Pipeline compile_rasterization_pipeline(
 		.setTopology(topology)
 		.setPrimitiveRestartEnable(false);
 
-	auto viewport = vk::Viewport()
-		.setX(0.0f)
-		.setY(0.0f)
-		.setWidth(float(options.extent.width))
-		.setHeight(float(options.extent.height))
-		.setMinDepth(0.0f)
-		.setMaxDepth(1.0f);
+	auto viewport_state = vk::PipelineViewportStateCreateInfo();
+	auto viewport = vk::Viewport();
+	auto scissor = vk::Rect2D();
+	auto dynamic_states = std::array {
+		vk::DynamicState::eViewport,
+		vk::DynamicState::eScissor,
+	};
+	auto dynamic_state = vk::PipelineDynamicStateCreateInfo()
+		.setDynamicStates(dynamic_states);
 
-	auto scissor = vk::Rect2D()
-		.setOffset({ 0, 0 })
-		.setExtent(options.extent);
+	if (options.extent.has_value()) {
+		auto extent = options.extent.value();
+		viewport = vk::Viewport()
+			.setX(0.0f)
+			.setY(0.0f)
+			.setWidth(float(extent.width))
+			.setHeight(float(extent.height))
+			.setMinDepth(0.0f)
+			.setMaxDepth(1.0f);
 
-	auto viewport_state = vk::PipelineViewportStateCreateInfo()
-		.setViewports(viewport)
-		.setScissors(scissor);
+		scissor = vk::Rect2D()
+			.setOffset({ 0, 0 })
+			.setExtent(extent);
+
+		viewport_state
+			.setViewports(viewport)
+			.setScissors(scissor);
+	} else {
+		viewport_state
+			.setViewportCount(1)
+			.setScissorCount(1);
+	}
 
 	auto rasterization = vk::PipelineRasterizationStateCreateInfo()
 		.setDepthClampEnable(false)
@@ -111,6 +130,9 @@ vk::Pipeline compile_rasterization_pipeline(
 		.setStages(shader_stages)
 		.setSubpass(0);
 
+	if (dynamic_viewport_scissor)
+		pipeline_info.setPDynamicState(&dynamic_state);
+
 	if (render_state.is <vk::RenderPass> ())
 		pipeline_info.setRenderPass(render_state.as <vk::RenderPass> ());
 	else
@@ -163,6 +185,8 @@ vk::Pipeline compile_mesh_shading_pipeline(
 	const RasterizationOptions &options
 )
 {
+	bool dynamic_viewport_scissor = !options.extent.has_value();
+
 	auto shader_stages = std::array {
 		vk::PipelineShaderStageCreateInfo()
 			.setStage(vk::ShaderStageFlagBits::eTaskEXT)
@@ -178,21 +202,38 @@ vk::Pipeline compile_mesh_shading_pipeline(
 			.setPName(fragment_entry),
 	};
 
-	auto viewport = vk::Viewport()
-		.setX(0.0f)
-		.setY(0.0f)
-		.setWidth(float(options.extent.width))
-		.setHeight(float(options.extent.height))
-		.setMinDepth(0.0f)
-		.setMaxDepth(1.0f);
+	auto viewport_state = vk::PipelineViewportStateCreateInfo();
+	auto viewport = vk::Viewport();
+	auto scissor = vk::Rect2D();
+	auto dynamic_states = std::array {
+		vk::DynamicState::eViewport,
+		vk::DynamicState::eScissor,
+	};
+	auto dynamic_state = vk::PipelineDynamicStateCreateInfo()
+		.setDynamicStates(dynamic_states);
 
-	auto scissor = vk::Rect2D()
-		.setOffset({ 0, 0 })
-		.setExtent(options.extent);
+	if (options.extent.has_value()) {
+		auto extent = options.extent.value();
+		viewport = vk::Viewport()
+			.setX(0.0f)
+			.setY(0.0f)
+			.setWidth(float(extent.width))
+			.setHeight(float(extent.height))
+			.setMinDepth(0.0f)
+			.setMaxDepth(1.0f);
 
-	auto viewport_state = vk::PipelineViewportStateCreateInfo()
-		.setViewports(viewport)
-		.setScissors(scissor);
+		scissor = vk::Rect2D()
+			.setOffset({ 0, 0 })
+			.setExtent(extent);
+
+		viewport_state
+			.setViewports(viewport)
+			.setScissors(scissor);
+	} else {
+		viewport_state
+			.setViewportCount(1)
+			.setScissorCount(1);
+	}
 
 	auto rasterization = vk::PipelineRasterizationStateCreateInfo()
 		.setDepthClampEnable(false)
@@ -244,6 +285,9 @@ vk::Pipeline compile_mesh_shading_pipeline(
 		.setStages(shader_stages)
 		.setRenderPass(render_pass)
 		.setSubpass(0);
+
+	if (dynamic_viewport_scissor)
+		pipeline_info.setPDynamicState(&dynamic_state);
 
 	auto [result, pipeline] = device.logical.createGraphicsPipeline(nullptr, pipeline_info, nullptr);
 	if (result != vk::Result::eSuccess) {
