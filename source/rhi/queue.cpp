@@ -1,4 +1,5 @@
 #include "rhi/queue.hpp"
+#include "rhi/window.hpp"
 
 namespace rcgp {
 
@@ -23,17 +24,21 @@ void Queue::submit(
 }
 
 vk::Result Queue::present(
-	const vk::SwapchainKHR &swapchain,
+	Window &window,
 	uint32_t index,
 	const vk::ArrayProxy <vk::Semaphore> &semaphores
 ) const
 {
 	auto info = vk::PresentInfoKHR()
-		.setSwapchains(swapchain)
+		.setSwapchains(window.swapchain)
 		.setImageIndices(index)
 		.setWaitSemaphores(semaphores);
 
-	return presentKHR(info);
+	auto result = presentKHR(info);
+	if (result == vk::Result::eErrorOutOfDateKHR
+		|| result == vk::Result::eSuboptimalKHR)
+		window.swapchain_rebuild_requested = true;
+	return result;
 }
 
 } // namespace rcgp

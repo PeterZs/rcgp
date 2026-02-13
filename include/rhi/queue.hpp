@@ -4,6 +4,8 @@
 
 namespace rcgp {
 
+struct Window;
+
 struct Queue : vk::Queue {
 	uint32_t family_index;
 	uint32_t queue_index;
@@ -18,7 +20,7 @@ struct Queue : vk::Queue {
 
 	// TODO: overload for list of pairs of swapchains and image indices
 	vk::Result present(
-		const vk::SwapchainKHR &swapchain,
+		Window &window,
 		uint32_t index,
 		const vk::ArrayProxy <vk::Semaphore> &semaphores
 	) const;

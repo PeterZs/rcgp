@@ -16,6 +16,13 @@ struct Frame;
 struct CommandBuffer;
 struct TimestampQueryPool;
 struct TimestampQueryResult;
+struct Window;
+
+enum class FrameAcquireStatus {
+	Ok,
+	Suboptimal,
+	OutOfDate,
+};
 
 template <auto &ref, bool resolved>
 struct DescriptorWritePair;
@@ -70,7 +77,9 @@ struct Device {
 	[[nodiscard]] auto update_descriptors(DescriptorWritePair <refs, rs> &&... dwpairs);
 
 	void wait_for_frame(const Frame &frame, uint64_t timeout = UINT64_MAX) const;
-	bool acquire_image_for_frame(Frame &frame, uint64_t timeout = UINT64_MAX) const;
+	void reset_frame_fence(const Frame &frame) const;
+	FrameAcquireStatus acquire_image_for_frame(Window &window, Frame &frame, uint64_t timeout = UINT64_MAX) const;
+	bool rebuild_swapchain(Window &window) const;
 
 	// Timestamp pool
 	TimestampQueryPool new_timestamp_pool(vk::QueryResultFlags flags, size_t count) const;

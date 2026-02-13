@@ -11,6 +11,7 @@ namespace rcgp {
 struct HandlerTable {
 	int dragging_button = -1;
 	bool cursor_initialized = false;
+	bool framebuffer_resized = false;
 	double last_x = 0.0;
 	double last_y = 0.0;
 
@@ -33,6 +34,19 @@ void dispatch_mouse_button(GLFWwindow *w, int button, int action, int mods)
 	if (action == GLFW_PRESS) {
 		ht.dragging_button = button;
 		glfwGetCursorPos(w, &ht.last_x, &ht.last_y);
+		int framebuffer_width = 0;
+		int framebuffer_height = 0;
+		int window_width = 0;
+		int window_height = 0;
+		glfwGetFramebufferSize(w, &framebuffer_width, &framebuffer_height);
+		glfwGetWindowSize(w, &window_width, &window_height);
+
+		if (window_width > 0 && window_height > 0) {
+			auto sx = double(framebuffer_width) / double(window_width);
+			auto sy = double(framebuffer_height) / double(window_height);
+			ht.last_x *= sx;
+			ht.last_y *= sy;
+		}
 		ht.cursor_initialized = true;
 	} else if (action == GLFW_RELEASE) {
 		if (ht.dragging_button == button)
@@ -47,26 +61,51 @@ void dispatch_cursor_pos(GLFWwindow *w, double xpos, double ypos)
 
 	auto &ht = handler_tables[handler_index];
 
+	double fx = xpos;
+	double fy = ypos;
+
+	int framebuffer_width = 0;
+	int framebuffer_height = 0;
+	int window_width = 0;
+	int window_height = 0;
+
+	glfwGetFramebufferSize(w, &framebuffer_width, &framebuffer_height);
+	glfwGetWindowSize(w, &window_width, &window_height);
+
+	if (window_width > 0 && window_height > 0) {
+		auto sx = double(framebuffer_width) / double(window_width);
+		auto sy = double(framebuffer_height) / double(window_height);
+		fx *= sx;
+		fy *= sy;
+	}
+
 	double dx = 0.0;
 	double dy = 0.0;
 	if (ht.cursor_initialized) {
-		dx = xpos - ht.last_x;
-		dy = ypos - ht.last_y;
+		dx = fx - ht.last_x;
+		dy = fy - ht.last_y;
 	}
 
-	ht.last_x = xpos;
-	ht.last_y = ypos;
+	ht.last_x = fx;
+	ht.last_y = fy;
 	ht.cursor_initialized = true;
 	for (auto &cb : ht.cursor_move)
-		cb(xpos, ypos, dx, dy);
+		cb(fx, fy, dx, dy);
 
 	if (ht.dragging_button != -1) {
 		auto it = ht.drag.find(ht.dragging_button);
 		if (it != ht.drag.end()) {
 			for (auto &cb : it->second)
-				cb(xpos, ypos, dx, dy);
+				cb(fx, fy, dx, dy);
 		}
 	}
+}
+
+void dispatch_framebuffer_size(GLFWwindow *w, int, int)
+{
+	auto user = glfwGetWindowUserPointer(w);
+	auto handler_index = reinterpret_cast <std::intptr_t> (user);
+	handler_tables[handler_index].framebuffer_resized = true;
 }
 
 void Window::poll() const
@@ -96,29 +135,30 @@ void Window::set_input_mode(InputMode mode, bool value) const
 
 vk::Extent2D Window::extent() const
 {
-	int width;
-	int height;
-
-	glfwGetFramebufferSize(handle, &width, &height);
-
-	return vk::Extent2D(width, height);
+	return swapchain_extent;
 }
 
-vk::Extent2D Window::logical_extent() const
+float Window::aspect_ratio() const
 {
-	int width;
-	int height;
+	auto e = extent();
+	return e.height > 0 ? (float(e.width) / float(e.height)) : 1.0f;
+}
 
-	glfwGetWindowSize(handle, &width, &height);
+bool Window::needs_swapchain_rebuild()
+{
+	if (handler_tables[handler_index].framebuffer_resized) {
+		swapchain_rebuild_requested = true;
+		handler_tables[handler_index].framebuffer_resized = false;
+	}
 
-	return vk::Extent2D(width, height);
+	return swapchain_rebuild_requested;
 }
 
 Frame Window::next_frame()
 {
 	frame_index = (frame_index + 1) % frames_in_flight;
 	auto &frame = frames[frame_index];
-	frame.extent = extent();
+	frame.extent = swapchain_extent;
 	return frame;
 }
 
@@ -143,9 +183,6 @@ void Window::on_drag(MouseButton button, DragHandler handler)
 
 Window Window::from(const Session &session, const Device &device, const Options &options)
 {
-	auto &ldev = device.logical;
-	auto &pdev = device.physical;
-
 	Window result;
 
 	result.handle = glfwCreateWindow(options.width, options.height, options.title, nullptr, nullptr);
@@ -156,76 +193,22 @@ Window Window::from(const Session &session, const Device &device, const Options 
 	glfwSetWindowUserPointer(result.handle, user);
 	glfwSetMouseButtonCallback(result.handle, dispatch_mouse_button);
 	glfwSetCursorPosCallback(result.handle, dispatch_cursor_pos);
+	glfwSetFramebufferSizeCallback(result.handle, dispatch_framebuffer_size);
 
 	VkSurfaceKHR surface;
 	glfwCreateWindowSurface(session.handle, result.handle, nullptr, &surface);
 	result.surface = surface;
 
 	result.format = vk::Format::eB8G8R8A8Unorm;
-
-	auto surface_capabilities = pdev.getSurfaceCapabilitiesKHR(surface);
-
-	auto swapchain_info = vk::SwapchainCreateInfoKHR()
-		.setImageArrayLayers(1)
-		.setImageColorSpace(vk::ColorSpaceKHR::eSrgbNonlinear)
-		.setImageExtent(result.extent())
-		.setImageFormat(result.format)
-		.setMinImageCount(surface_capabilities.minImageCount)
-		.setOldSwapchain(nullptr)
-		.setPresentMode(options.present_mode)
-		.setImageUsage(
-			vk::ImageUsageFlagBits::eColorAttachment
-			| vk::ImageUsageFlagBits::eTransferDst
-		)
-		.setSurface(surface);
-
-	result.swapchain = ldev.createSwapchainKHR(swapchain_info);
-
-	auto swapchain_images = ldev.getSwapchainImagesKHR(result.swapchain);
-
-	result.images.reserve(swapchain_images.size());
-	for (auto &handle : swapchain_images) {
-		Image image;
-		image.device = device.logical;
-		image.handle = handle;
-		image.layout = vk::ImageLayout::ePresentSrcKHR;
-		image.description.extent = vk::Extent3D(result.extent(), 1);
-		image.description.format = result.format;
-		image.description.aspect = vk::ImageAspectFlagBits::eColor;
-
-		auto view_info = vk::ImageViewCreateInfo()
-			.setImage(handle)
-			.setViewType(vk::ImageViewType::e2D)
-			.setSubresourceRange(
-				vk::ImageSubresourceRange()
-					.setAspectMask(vk::ImageAspectFlagBits::eColor)
-					.setBaseArrayLayer(0)
-					.setBaseMipLevel(0)
-					.setLayerCount(1)
-					.setLevelCount(1)
-			)
-			.setFormat(result.format);
-
-		image.view = ldev.createImageView(view_info);
-
-		result.images.push_back(image);
-	}
-
+	result.present_mode = options.present_mode;
+	result.swapchain = nullptr;
+	result.frames_in_flight = 0;
 	result.frame_index = 0;
-	result.frames_in_flight = result.images.size();
+	result.swapchain_rebuild_requested = true;
 
-	auto fence_info = vk::FenceCreateInfo()
-		.setFlags(vk::FenceCreateFlagBits::eSignaled);
-
-	auto semaphore_info = vk::SemaphoreCreateInfo();
-
-	result.frames.resize(result.frames_in_flight);
-	for (auto &frame : result.frames) {
-		frame.swapchain = result.swapchain;
-		frame.fence = ldev.createFence(fence_info);
-		frame.rendered = ldev.createSemaphore(semaphore_info);
-		frame.presented = ldev.createSemaphore(semaphore_info);
-	}
+	handler_tables[result.handler_index].framebuffer_resized = true;
+	while (not device.rebuild_swapchain(result))
+		glfwWaitEvents();
 
 	return result;
 }

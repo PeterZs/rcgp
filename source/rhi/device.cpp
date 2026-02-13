@@ -1,8 +1,12 @@
 #include <ranges>
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <print>
 #include <set>
+
+#include <GLFW/glfw3.h>
 
 #include "rhi/command_buffer.hpp"
 #include "rhi/command_pool.hpp"
@@ -14,6 +18,44 @@
 #include "util/cti.hpp"
 
 namespace rcgp {
+
+static vk::Extent2D framebuffer_extent_of(GLFWwindow *window)
+{
+	int width = 0;
+	int height = 0;
+	glfwGetFramebufferSize(window, &width, &height);
+	return vk::Extent2D(uint32_t(width), uint32_t(height));
+}
+
+static vk::Extent2D choose_swapchain_extent(
+	const vk::SurfaceCapabilitiesKHR &capabilities,
+	vk::Extent2D framebuffer_extent
+)
+{
+	if (capabilities.currentExtent.width != std::numeric_limits <uint32_t> ::max())
+		return capabilities.currentExtent;
+
+	return vk::Extent2D(
+		std::clamp(
+			framebuffer_extent.width,
+			capabilities.minImageExtent.width,
+			capabilities.maxImageExtent.width
+		),
+		std::clamp(
+			framebuffer_extent.height,
+			capabilities.minImageExtent.height,
+			capabilities.maxImageExtent.height
+		)
+	);
+}
+
+static uint32_t choose_swapchain_image_count(const vk::SurfaceCapabilitiesKHR &capabilities)
+{
+	auto count = capabilities.minImageCount + 1;
+	if (capabilities.maxImageCount > 0)
+		count = std::min(count, capabilities.maxImageCount);
+	return count;
+}
 
 auto Device::find_memory_type(uint32_t filter, vk::MemoryPropertyFlags flags) const
 	-> uint32_t
@@ -87,11 +129,19 @@ auto Device::new_render_pass(
 	
 void Device::wait_for_frame(const Frame &frame, uint64_t timeout) const
 {
-	auto result = logical.waitForFences(frame.fence, true, timeout);
+	auto wait = logical.waitForFences(frame.fence, true, timeout);
+	if (wait != vk::Result::eSuccess && wait != vk::Result::eTimeout) {
+		std::println(std::cerr, "waitForFences failed ({})", vk::to_string(wait));
+		std::abort();
+	}
+}
+
+void Device::reset_frame_fence(const Frame &frame) const
+{
 	logical.resetFences(frame.fence);
 }
 
-bool Device::acquire_image_for_frame(Frame &frame, uint64_t timeout) const
+FrameAcquireStatus Device::acquire_image_for_frame(Window &window, Frame &frame, uint64_t timeout) const
 {
 	auto acq = logical.acquireNextImageKHR(
 		frame.swapchain,
@@ -100,9 +150,125 @@ bool Device::acquire_image_for_frame(Frame &frame, uint64_t timeout) const
 		nullptr
 	);
 
-	frame.image_index = acq.value;
+	if (acq.result == vk::Result::eSuccess) {
+		frame.image_index = acq.value;
+		return FrameAcquireStatus::Ok;
+	}
 
-	return !(acq.result == vk::Result::eErrorOutOfDateKHR || acq.result == vk::Result::eSuboptimalKHR);
+	if (acq.result == vk::Result::eSuboptimalKHR) {
+		frame.image_index = acq.value;
+		window.swapchain_rebuild_requested = true;
+		return FrameAcquireStatus::Suboptimal;
+	}
+
+	if (acq.result == vk::Result::eErrorOutOfDateKHR) {
+		window.swapchain_rebuild_requested = true;
+		return FrameAcquireStatus::OutOfDate;
+	}
+
+	std::println(std::cerr, "acquireNextImageKHR failed ({})", vk::to_string(acq.result));
+	std::abort();
+}
+
+bool Device::rebuild_swapchain(Window &window) const
+{
+	auto framebuffer = framebuffer_extent_of(window.handle);
+	if (framebuffer.width == 0 || framebuffer.height == 0)
+		return false;
+
+	auto capabilities = physical.getSurfaceCapabilitiesKHR(window.surface);
+	auto new_extent = choose_swapchain_extent(capabilities, framebuffer);
+	if (new_extent.width == 0 || new_extent.height == 0)
+		return false;
+
+	auto new_swapchain_info = vk::SwapchainCreateInfoKHR()
+		.setImageArrayLayers(1)
+		.setImageColorSpace(vk::ColorSpaceKHR::eSrgbNonlinear)
+		.setImageExtent(new_extent)
+		.setImageFormat(window.format)
+		.setMinImageCount(choose_swapchain_image_count(capabilities))
+		.setOldSwapchain(window.swapchain)
+		.setPresentMode(window.present_mode)
+		.setImageUsage(
+			vk::ImageUsageFlagBits::eColorAttachment
+			| vk::ImageUsageFlagBits::eTransferDst
+		)
+		.setSurface(window.surface);
+
+	auto new_swapchain = logical.createSwapchainKHR(new_swapchain_info);
+	auto swapchain_images = logical.getSwapchainImagesKHR(new_swapchain);
+
+	auto new_images = std::vector <Image> ();
+	new_images.reserve(swapchain_images.size());
+	for (auto &handle : swapchain_images) {
+		Image image;
+		image.device = logical;
+		image.handle = handle;
+		image.layout = vk::ImageLayout::ePresentSrcKHR;
+		image.description.extent = vk::Extent3D(new_extent, 1);
+		image.description.format = window.format;
+		image.description.aspect = vk::ImageAspectFlagBits::eColor;
+
+		auto view_info = vk::ImageViewCreateInfo()
+			.setImage(handle)
+			.setViewType(vk::ImageViewType::e2D)
+			.setSubresourceRange(
+				vk::ImageSubresourceRange()
+					.setAspectMask(vk::ImageAspectFlagBits::eColor)
+					.setBaseArrayLayer(0)
+					.setBaseMipLevel(0)
+					.setLayerCount(1)
+					.setLevelCount(1)
+			)
+			.setFormat(window.format);
+
+		image.view = logical.createImageView(view_info);
+		new_images.push_back(image);
+	}
+
+	auto new_frames_in_flight = new_images.size();
+	auto fence_info = vk::FenceCreateInfo()
+		.setFlags(vk::FenceCreateFlagBits::eSignaled);
+	auto semaphore_info = vk::SemaphoreCreateInfo();
+
+	auto new_image_rendered = std::vector <vk::Semaphore> (new_images.size());
+	for (auto &semaphore : new_image_rendered)
+		semaphore = logical.createSemaphore(semaphore_info);
+
+	auto new_frames = std::vector <Frame> (new_frames_in_flight);
+	for (auto &frame : new_frames) {
+		frame.swapchain = new_swapchain;
+		frame.fence = logical.createFence(fence_info);
+		frame.presented = logical.createSemaphore(semaphore_info);
+		frame.extent = new_extent;
+	}
+
+	for (auto &frame : window.frames) {
+		if (frame.fence)
+			logical.destroyFence(frame.fence);
+		if (frame.presented)
+			logical.destroySemaphore(frame.presented);
+	}
+	for (auto &semaphore : window.image_rendered) {
+		if (semaphore)
+			logical.destroySemaphore(semaphore);
+	}
+
+	for (auto &image : window.images)
+		image.destroy();
+
+	if (window.swapchain)
+		logical.destroySwapchainKHR(window.swapchain);
+
+	window.swapchain = new_swapchain;
+	window.images = std::move(new_images);
+	window.image_rendered = std::move(new_image_rendered);
+	window.frames = std::move(new_frames);
+	window.frames_in_flight = new_frames_in_flight;
+	window.frame_index = window.frames_in_flight > 0 ? (window.frames_in_flight - 1) : 0;
+	window.swapchain_extent = new_extent;
+	window.swapchain_rebuild_requested = false;
+	return true;
 }
 
 TimestampQueryPool Device::new_timestamp_pool(vk::QueryResultFlags flags, size_t count) const

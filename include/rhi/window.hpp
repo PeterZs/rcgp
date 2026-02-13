@@ -57,7 +57,6 @@ struct Frame {
 	vk::SwapchainKHR swapchain;
 	vk::Fence fence;
 	vk::Semaphore presented;
-	vk::Semaphore rendered;
 	vk::Extent2D extent;
 	uint32_t image_index;
 };
@@ -67,18 +66,22 @@ using CursorMoveHandler = std::function <void (double xpos, double ypos, double 
 using DragHandler = std::function <void (double xpos, double ypos, double dx, double dy)>;
 
 struct Window {
-	GLFWwindow *handle;
-	vk::SurfaceKHR surface;
+	GLFWwindow *handle = nullptr;
+	vk::SurfaceKHR surface = nullptr;
 
-	vk::Format format;
-	vk::SwapchainKHR swapchain;
+	vk::Format format = vk::Format::eUndefined;
+	vk::PresentModeKHR present_mode = vk::PresentModeKHR::eFifo;
+	vk::Extent2D swapchain_extent {};
+	vk::SwapchainKHR swapchain = nullptr;
 	std::vector <Image> images;
+	std::vector <vk::Semaphore> image_rendered;
 
 	std::vector <Frame> frames;
-	size_t frames_in_flight;
-	size_t frame_index;
+	size_t frames_in_flight = 0;
+	size_t frame_index = 0;
+	bool swapchain_rebuild_requested = false;
 	
-	std::intptr_t handler_index;
+	std::intptr_t handler_index = 0;
 
 	void poll() const;
 	void close() const;
@@ -88,12 +91,8 @@ struct Window {
 	void set_input_mode(InputMode mode, bool value) const;
 
 	vk::Extent2D extent() const;
-	// TODO: remove when we implement resizing callbacks
-	vk::Extent2D logical_extent() const;
-
-	float aspect_ratio() const {
-		return float(extent().width) / extent().height;
-	}
+	bool needs_swapchain_rebuild();
+	float aspect_ratio() const;
 
 	Frame next_frame();
 
