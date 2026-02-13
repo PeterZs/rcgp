@@ -148,10 +148,10 @@ std::string clean(const std::string &input)
 	return result;
 }
 
-void assert_assembly_match(const SharedBlockReference &block, const std::string &str)
+void assert_assembly_match(const SharedBlockReference &block, const std::string &str, bool verbose)
 {
 	auto expected = clean(str);
-	auto act = generate_assembly(block);
+	auto act = generate_assembly(block, false, verbose);
 	if (act != expected) {
 		show_diff(expected, act);
 		if (tests.show_ground_truth) {

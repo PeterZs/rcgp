@@ -49,7 +49,7 @@ inline auto operator*(std::nullptr_t, std::function <void ()> &&fn)
 
 #define record nullptr * [&]
 
-void assert_assembly_match(const SharedBlockReference &block, const std::string &str);
+void assert_assembly_match(const SharedBlockReference &block, const std::string &str, bool verbose = false);
 void assert_glsl_match(const SharedBlockReference &block, const std::string &str);
 
 void assert_glsl_match_file(const SharedBlockReference &block, const std::filesystem::path &path);

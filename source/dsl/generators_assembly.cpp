@@ -1,10 +1,5 @@
 #include <cstdlib>
-#include <filesystem>
-#include <iostream>
 #include <map>
-#include <print>
-#include <set>
-#include <source_location>
 #include <vector>
 #include <ranges>
 
@@ -12,6 +7,7 @@
 
 #include "dsl/generators.hpp"
 #include "dsl/block.hpp"
+#include "dsl/instruction_nodes.hpp"
 #include "dsl/instructions.hpp"
 #include "util/error.hpp"
 
@@ -23,6 +19,7 @@ struct AsmEmitter {
 	std::string result;
 	int32_t indentation;
 	bool debug;
+	bool verbose;
 
 	void emit_line(const std::string &line) {
 		std::string space(2 * indentation, ' ');
@@ -67,6 +64,8 @@ std::string strargs(AsmEmitter &em, const std::vector <Reference> &args)
 	return result;
 }
 
+std::string type_reference(AsmEmitter &em, const Reference &type);
+
 std::string emit_type(AsmEmitter &em, const Type &type)
 {
 	vswitch (type) {
@@ -75,9 +74,12 @@ std::string emit_type(AsmEmitter &em, const Type &type)
 	}
 	vcase(Struct): {
 		auto &st = type.as <Struct> ();
+		if (not em.verbose)
+			return st.name;
+
 		std::string result;
 		for (const auto &[i, f] : std::views::enumerate(st)) {
-			result += std::format("{}: {}", st.fields[i], em.ref(f));
+			result += std::format("{}: {}", st.fields[i], type_reference(em, f));
 			if (i + 1 < st.size())
 				result += ", ";
 		}
@@ -121,11 +123,11 @@ std::string emit_instr_value(AsmEmitter &em, const Reference &ref)
 	}
 	vcase(Argument): {
 		auto &arg = ref->as <Argument> ();
-		return std::format("Argument {}: {}", arg.argi, em.ref(arg.type));
+		return std::format("Argument {}: {}", arg.argi, type_reference(em, arg.type));
 	}
 	vcase(Construct): {
 		auto &ctor = ref->as <Construct> ();
-		return std::format("New {}({})", em.ref(ctor.type), strargs(em, ctor.args));
+		return std::format("New {}({})", type_reference(em, ctor.type), strargs(em, ctor.args));
 	}
 	vcase(Local): {
 		return em.ref(ref);
@@ -153,7 +155,7 @@ std::string emit_instr_value(AsmEmitter &em, const Reference &ref)
 			"StageOutput {}: {} {}",
 			sout.argi,
 			repr(sout.properties),
-			em.ref(sout.type)
+			type_reference(em, sout.type)
 		);
 	}
 	vcase(StageInput): {
@@ -162,7 +164,7 @@ std::string emit_instr_value(AsmEmitter &em, const Reference &ref)
 			"StageInput {}: {} {}",
 			sin.argi,
 			repr(sin.properties),
-			em.ref(sin.type)
+			type_reference(em, sin.type)
 		);
 	}
 	vcase(GlobalResource): {
@@ -173,7 +175,7 @@ std::string emit_instr_value(AsmEmitter &em, const Reference &ref)
 				repr(grsrc.kind),
 				grsrc.offset.value_or(-1),
 				repr(grsrc.layout),
-				em.ref(grsrc.type)
+				type_reference(em, grsrc.type)
 			);
 		}
 
@@ -191,7 +193,7 @@ std::string emit_instr_value(AsmEmitter &em, const Reference &ref)
 			repr(grsrc.kind),
 			binding,
 			repr(grsrc.layout),
-			em.ref(grsrc.type)
+			type_reference(em, grsrc.type)
 		);
 	}
 	default:
@@ -199,6 +201,13 @@ std::string emit_instr_value(AsmEmitter &em, const Reference &ref)
 	};
 	
 	fatal("unhandled instruction in emit_instr_value: {}", ref->repr());
+}
+
+std::string type_reference(AsmEmitter &em, const Reference &type)
+{
+	return em.verbose
+		? em.ref(type)
+		: emit_instr_value(em, type);
 }
 
 void emit_block(AsmEmitter &em, const SharedBlockReference &sbr);
@@ -216,14 +225,20 @@ void emit_instr(AsmEmitter &em, const Reference &ref)
 	vcase(Operation):
 	vcase(StageInput):
 	vcase(StageOutput):
-	vcase(Swizzle):
-	vcase(Type): {
+	vcase(Swizzle): {
 		auto value = emit_instr_value(em, ref);
 		return em.emit_assign(ref, value);
 	}
+	vcase(Type): {
+		if (em.verbose) {
+			auto value = emit_instr_value(em, ref);
+			em.emit_assign(ref, value);
+		}
+		return;
+	}
 	vcase(Local): {
 		auto &local = ref->as <Local> ();
-		return em.emit_fmt_assign(ref, "Local {}", em.ref(local.type));
+		return em.emit_fmt_assign(ref, "Local {}", type_reference(em, local.type));
 	}
 	vcase(Store): {
 		auto &store = ref->as <Store> ();
@@ -325,7 +340,11 @@ void emit_context(AsmEmitter &em, const SharedBlockReference &sbr)
 	if (sbr->stage_inputs.size()) {
 		std::string result;
 		for (const auto &[i, sin] : std::views::enumerate(sbr->stage_inputs)) {
-			result += std::format("{} {}", repr(sin.properties), em.ref(sin.type));
+			result += std::format("{} {}",
+				repr(sin.properties),
+				type_reference(em, sin.type)
+			);
+
 			if (i + 1 < sbr->stage_inputs.size())
 				result += ", ";
 		}
@@ -336,7 +355,11 @@ void emit_context(AsmEmitter &em, const SharedBlockReference &sbr)
 	if (sbr->stage_outputs.size()) {
 		std::string result;
 		for (const auto &[i, sout] : std::views::enumerate(sbr->stage_outputs)) {
-			result += std::format("{} {}", repr(sout.properties), em.ref(sout.type));
+			result += std::format("{} {}",
+				repr(sout.properties),
+				type_reference(em, sout.type)
+			);
+
 			if (i + 1 < sbr->stage_outputs.size())
 				result += ", ";
 		}
@@ -361,7 +384,7 @@ void emit_context(AsmEmitter &em, const SharedBlockReference &sbr)
 		// TODO: shorthand which takes a lambda...
 		std::string result;
 		for (const auto &[i, arg] : std::views::enumerate(sbr->arguments)) {
-			result += em.ref(arg.type);
+			result += type_reference(em, arg.type);
 			if (i + 1 < sbr->arguments.size())
 				result += ", ";
 		}
@@ -372,7 +395,7 @@ void emit_context(AsmEmitter &em, const SharedBlockReference &sbr)
 	if (sbr->returns.size()) {
 		std::string result;
 		for (const auto &[i, ret] : std::views::enumerate(sbr->returns)) {
-			result += em.ref(ret.type);
+			result += type_reference(em, ret.type);
 			if (i + 1 < sbr->returns.size())
 				result += ", ";
 		}
@@ -398,17 +421,15 @@ void emit_primary_block(AsmEmitter &em, const SharedBlockReference &sbr)
 	em.emit_line("}");
 }
 
-std::string generate_assembly(const SharedBlockReference &sbr, bool debug)
+std::string generate_assembly(const SharedBlockReference &sbr, bool debug, bool verbose)
 {
-	// TODO: option to show types directly (i.e. vec2, instead of $2)
-	// also inlining constants...
-	// bool verbose = false -> disregards types and such
 	auto em = AsmEmitter {
 		.main = sbr,
 		.ids = {},
 		.result = "",
 		.indentation = 0,
 		.debug = debug,
+		.verbose = verbose,
 	};
 
 	emit_primary_block(em, sbr);
