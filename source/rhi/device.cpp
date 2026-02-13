@@ -365,37 +365,10 @@ Device Device::from(
 		device.queues.emplace(key, Queue(nullptr, idx, 0));
 	}
 
-	auto features13 = vk::PhysicalDeviceVulkan13Features()
-		.setSynchronization2(true)
-		.setMaintenance4(options.maintenance4);
-
-	void *feature_chain = nullptr;
-
-	vk::PhysicalDeviceScalarBlockLayoutFeatures scalar_layout;
-	if (options.scalar_block_layout) {
-		scalar_layout.setScalarBlockLayout(true);
-		scalar_layout.setPNext(feature_chain);
-		feature_chain = &scalar_layout;
-	}
-
-	vk::PhysicalDeviceMeshShaderFeaturesEXT mesh_features;
-	if (options.mesh_shaders) {
-		mesh_features
-			.setTaskShader(true)
-			.setMeshShader(true);
-		mesh_features.setPNext(feature_chain);
-		feature_chain = &mesh_features;
-	}
-
-	if (options.dynamic_rendering)
-		features13.setDynamicRendering(true);
-
-	features13.setPNext(feature_chain);
-
 	auto device_info = vk::DeviceCreateInfo()
 		.setQueueCreateInfos(queue_create_infos)
 		.setPEnabledExtensionNames(options.extensions)
-		.setPNext(&features13);
+		.setPNext(options.pNext);
 
 	device.logical = device.physical.createDevice(device_info);
 

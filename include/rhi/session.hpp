@@ -2,8 +2,10 @@
 
 #include <memory>
 #include <functional>
+#include <optional>
 #include <string_view>
 #include <tuple>
+#include <vector>
 
 #include <vulkan/vulkan.hpp>
 

@@ -90,7 +90,7 @@ auto Session::from(const Options &options) -> std::tuple <
 		| vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
 
 	session->trap_on_error = options.trap_on_error;
-	session->validation_callback = options.validation_callback;
+	session->validation_callback = std::move(options.validation_callback);
 	auto debug_info = vk::DebugUtilsMessengerCreateInfoEXT()
 		.setMessageType(debug_type_flags)
 		.setMessageSeverity(debug_severity_flags)
