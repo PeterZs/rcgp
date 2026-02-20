@@ -6,13 +6,15 @@ namespace rcgp {
 
 const Type &get_type(const SharedBlockReference &sbr, const Reference &ref)
 {
+	// Structs are always guaranteed to exist somewhere in the block
 	vswitch (*ref) {
 	vcase(Local): {
 		auto &local = ref->as <Local> ();
 		return get_type(sbr, local.type);
 	}
 	vcase(Type): {
-		return ref->as <Type> ();
+		auto &type = ref->as <Type> ();
+		return type;
 	}
 	vcase(GlobalResource): {
 		auto &grsrc = ref->as <GlobalResource> ();
@@ -40,7 +42,6 @@ const Type &get_type(const SharedBlockReference &sbr, const Reference &ref)
 		default:
 			break;
 		}
-
 		break;
 	}
 	default:
@@ -52,8 +53,7 @@ const Type &get_type(const SharedBlockReference &sbr, const Reference &ref)
 
 const Struct &get_struct(const SharedBlockReference &sbr, const Reference &ref)
 {
-	auto &type = get_type(sbr, ref);
-	return type.as <Struct> ();
+	return get_type(sbr, ref).as <Struct> ();
 }
 
 } // namespace rcgp

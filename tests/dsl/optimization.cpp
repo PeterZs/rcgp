@@ -12,6 +12,11 @@ static auto flags =
 	OptimizationPhases::eDeadCodeElimination
 	| OptimizationPhases::eLocalElision;
 
+static auto readable_flags =
+	OptimizationPhases::eDeadCodeElimination
+	| OptimizationPhases::eLocalElision
+	| OptimizationPhases::eReadability;
+
 add_test(vs_empty)
 {
 	auto vs = $shader(vertex)() {};
@@ -158,7 +163,6 @@ add_test(vs_push_constant)
 	assert_glsl_match_file(vs, "optimization/vs_push_constant.glsl");
 };
 
-// TODO: readable version
 add_test(fr_diffuse_lighting)
 {
 	auto fs = $shader(fragment)(
@@ -197,7 +201,44 @@ add_test(fr_diffuse_lighting)
 	assert_glsl_match_file(fs, "optimization/fr_diffuse_lighting.glsl");
 };
 
-// TODO: readable version
+add_test(fr_diffuse_lighting_readable)
+{
+	auto fs = $shader(fragment)(
+		$contracts(
+			(lights, fwd::lights),
+			(material, fwd::material)
+		),
+		float3 position,
+		float3 normal,
+		float2 uv
+	) -> float3
+	{
+		vec3 base = material.albedo.sample(uv).xyz;
+
+		vec3 color = vec3(0.0f);
+		$for (i32 i = 0, i < lights.count, ++i) {
+			auto light = lights.lights[i];
+			auto L = light.position - position;
+			auto dist2 = max(dot(L, L), f32(1e-4f));
+			auto atten = light.intensity / dist2;
+
+			auto ldir = normalize(L);
+			auto n_dot_l = max(dot(normal, ldir), f32(0.0f));
+
+			// TODO: += and etc
+			color = color + (base * n_dot_l) * light.color * atten;
+		};
+
+		return color;
+	};
+	
+	optimize(fs, readable_flags);
+
+	// TODO: get rid of side-effect (i.e. value based)
+	// free intrinsics that are by themselves...
+	assert_glsl_match_file(fs, "optimization/fr_diffuse_lighting_readable.glsl");
+};
+
 add_test(ts_meshlets)
 {
 	auto ts = $shader(task)(
@@ -241,7 +282,49 @@ add_test(ts_meshlets)
 	assert_glsl_match_file(ts, "optimization/ts_meshlets.glsl");
 };
 
-// TODO: readable version
+add_test(ts_meshlets_readable)
+{
+	auto ts = $shader(task)(
+		$contracts(
+			(view, meshlets::view),
+			(meshlets, meshlets::meshlets)
+		),
+		TaskGroup <1> group
+	)
+	{
+		TaskPayload <meshlets::TaskPayloadData> payload;
+
+		uvec3 gid = group.workgroup_index;
+		u32 meshlet_index = gid.y * view.task_group_width + gid.x;
+		$if (meshlet_index < view.meshlet_count) {
+			auto meshlet = meshlets[meshlet_index];
+			vec3 center = vec3(meshlet.bounds);
+			f32 radius = meshlet.bounds.w;
+
+			boolean visible = true;
+			$for (u32 i = 0, i < 6u, i++) {
+				vec4 plane = view.frustum_planes[i];
+				vec3 plane_n = vec3(plane);
+				f32 dist = dot(plane_n, center) + plane.w;
+				$if (dist < -radius) {
+					visible = false;
+				};
+			};
+
+			$if (visible) {
+				payload.meshlet = meshlet_index;
+				group.dispatch_mesh_groups(1u, 1u, 1u);
+			};
+		};
+
+		return payload;
+	};
+
+	optimize(ts, readable_flags);
+	
+	assert_glsl_match_file(ts, "optimization/ts_meshlets_readable.glsl");
+};
+
 add_test(ms_meshlets)
 {
 	auto ms = $shader(mesh)(
@@ -287,6 +370,53 @@ add_test(ms_meshlets)
 	optimize(ms, flags);
 
 	assert_glsl_match_file(ms, "optimization/ms_meshlets.glsl");
+};
+
+add_test(ms_meshlets_readable)
+{
+	auto ms = $shader(mesh)(
+		$contracts(
+			(view, meshlets::view),
+			(positions, meshlets::positions),
+			(meshlets, meshlets::meshlets)
+		),
+		$contracts(
+			(verts, meshlets::buffers.vertices),
+			(tris, meshlets::buffers.triangles),
+			(colors, meshlets::buffers.colors)
+		),
+		TaskPayload <meshlets::TaskPayloadData> payload,
+		WorkGroup <1> group
+	)
+	{
+		MeshletPayload <
+			MeshPrimitive::eTriangles,
+			64, 126,
+			meshlets::MeshOutputs
+		> out;
+
+		u32 meshlet_index = payload.meshlet;
+		auto meshlet = meshlets[meshlet_index];
+
+		out.allocate(meshlet.vertex_count, meshlet.primitive_count);
+
+		$for (u32 v = 0, v < meshlet.vertex_count, v++) {
+			u32 global_index = verts[meshlet.vertex_offset + v];
+			vec4 pos = positions[global_index];
+			out.positions[v] = view.view_proj * pos;
+			out.color[v] = colors[meshlet_index];
+		};
+
+		$for (u32 p = 0, p < meshlet.primitive_count, p++) {
+			out.triangles[p] = tris[meshlet.primitive_offset + p];
+		};
+
+		return out;
+	};
+
+	optimize(ms, readable_flags);
+
+	assert_glsl_match_file(ms, "optimization/ms_meshlets_readable.glsl");
 };
 
 add_test(sr_return_primitives)

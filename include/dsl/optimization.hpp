@@ -6,10 +6,10 @@
 
 namespace rcgp {
 
-// TODO: pass for readability -- for GLSL generator
 enum class OptimizationPhases : uint8_t {
-        eDeadCodeElimination = 0b1,
-	eLocalElision = 0b10,
+	eReadability = 0b1,
+	eLocalElision = 0b100,
+        eDeadCodeElimination = 0b10,
 };
 
 inline auto operator|(OptimizationPhases a, OptimizationPhases b)

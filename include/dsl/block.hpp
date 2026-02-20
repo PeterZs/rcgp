@@ -44,6 +44,7 @@ struct Block : std::vector <Reference> {
 	void apply_push_constant_allocation_map(const push_constant_allocation_map &map);
 
 	Reference add(const Instruction &instr);
+	Reference add(size_t index, const Instruction &instr);
 
 	std::string repr() const;
 };

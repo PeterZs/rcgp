@@ -90,4 +90,11 @@ Reference Block::add(const Instruction &instr)
 	return ref;
 }
 
+Reference Block::add(size_t index, const Instruction &instr)
+{
+	auto ref = std::make_shared <Instruction> (instr);
+	insert(begin() + index, ref);
+	return ref;
+}
+
 } // namespace rcgp

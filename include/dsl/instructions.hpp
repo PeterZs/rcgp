@@ -34,6 +34,8 @@ struct Instruction : variant <
 	Return,
 	Type
 > {
+	using variant_self::variant;
+
 	DebugInfo debug_info;
 
 	Instruction(const variant_self &base, DebugInfo debug_info_ = {})
