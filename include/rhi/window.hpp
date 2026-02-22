@@ -64,6 +64,7 @@ struct Frame {
 using MouseButtonHandler = std::function <void (int button, int action, int mods)>;
 using CursorMoveHandler = std::function <void (double xpos, double ypos, double dx, double dy)>;
 using DragHandler = std::function <void (double xpos, double ypos, double dx, double dy)>;
+using ScrollHandler = std::function <void (double xoffset, double yoffset)>;
 
 struct Window {
 	GLFWwindow *handle = nullptr;
@@ -99,6 +100,7 @@ struct Window {
 	void on_mouse_button(MouseButtonHandler handler);
 	void on_cursor_move(CursorMoveHandler handler);
 	void on_drag(MouseButton button, DragHandler handler);
+	void on_scroll(ScrollHandler handler);
 
 	struct Options {
 		uint32_t width;

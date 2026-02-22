@@ -88,6 +88,9 @@ using enable_if = std::conditional_t <B, T, jems::null>;
 #define ICONTEXT_GENERATOR(ctx, ftn) , typename decltype(ftn)::icontext
 #define $inherits(...) jems::null MAP(ICONTEXT_GENERATOR, /* N/A */, __VA_ARGS__)
 
+#define $shader_t(S, R, ...) decltype($shader(S)(__VA_ARGS__) { return R(); })
+#define $subroutine_t(S, R, ...) decltype($subroutine(_tmp)(__VA_ARGS__) { return R(); })
+
 // TODO: move to separate header... contract_hell
 #define RCGP_CONTRACT_FROM_NAME(name) , contract <name> name
 #define RCGP_CONTRACT_FROM_TUPLE(name, ref) , contract <(ref)> name

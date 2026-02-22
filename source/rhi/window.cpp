@@ -17,6 +17,7 @@ struct HandlerTable {
 
 	std::vector <MouseButtonHandler> mouse_button;
 	std::vector <CursorMoveHandler> cursor_move;
+	std::vector <ScrollHandler> scroll;
 	std::unordered_map <int, std::vector <DragHandler>> drag;
 };
 
@@ -108,6 +109,16 @@ void dispatch_framebuffer_size(GLFWwindow *w, int, int)
 	handler_tables[handler_index].framebuffer_resized = true;
 }
 
+void dispatch_scroll(GLFWwindow *w, double xoffset, double yoffset)
+{
+	auto user = glfwGetWindowUserPointer(w);
+	auto handler_index = reinterpret_cast <std::intptr_t> (user);
+
+	auto &ht = handler_tables[handler_index];
+	for (auto &cb : ht.scroll)
+		cb(xoffset, yoffset);
+}
+
 void Window::poll() const
 {
 	glfwPollEvents();
@@ -181,6 +192,12 @@ void Window::on_drag(MouseButton button, DragHandler handler)
 	ht.drag[idx].push_back(std::move(handler));
 }
 
+void Window::on_scroll(ScrollHandler handler)
+{
+	auto &ht = handler_tables[handler_index];
+	ht.scroll.push_back(std::move(handler));
+}
+
 Window Window::from(const Session &session, const Device &device, const Options &options)
 {
 	Window result;
@@ -194,6 +211,7 @@ Window Window::from(const Session &session, const Device &device, const Options 
 	glfwSetMouseButtonCallback(result.handle, dispatch_mouse_button);
 	glfwSetCursorPosCallback(result.handle, dispatch_cursor_pos);
 	glfwSetFramebufferSizeCallback(result.handle, dispatch_framebuffer_size);
+	glfwSetScrollCallback(result.handle, dispatch_scroll);
 
 	VkSurfaceKHR surface;
 	glfwCreateWindowSurface(session.handle, result.handle, nullptr, &surface);
