@@ -161,6 +161,9 @@ auto bind_index_buffer(const IndexMirrorBuffer <Symbolic, layouts::scalar> &ibuf
 		if constexpr (std::is_same_v <Symbolic, array <vector <uint32_t, 3>>> ) {
 			static_assert(T == Topology::eTriangleList, "unexpected index topology");
 			cmd.bindIndexBuffer(ibuffer.handle, 0, vk::IndexType::eUint32);
+		} else if constexpr (std::is_same_v <Symbolic, array <vector <uint32_t, 2>>> ) {
+			static_assert(T == Topology::eLineList, "unexpected index topology");
+			cmd.bindIndexBuffer(ibuffer.handle, 0, vk::IndexType::eUint32);
 		} else if constexpr (std::is_same_v <Symbolic, array <scalar <uint32_t>>> ) {
 			static_assert(T == Topology::eTriangleFan, "unexpected index topology");
 			cmd.bindIndexBuffer(ibuffer.handle, 0, vk::IndexType::eUint32);

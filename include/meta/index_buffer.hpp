@@ -7,6 +7,7 @@ namespace rcgp {
 
 enum class Topology {
 	eTriangleList,
+	eLineList,
 	eTriangleFan,
 };
 
@@ -16,6 +17,7 @@ consteval vk::PrimitiveTopology translate_topology(Topology T)
 
 	switch (T) {
 	case Topology::eTriangleList: return eTriangleList;
+	case Topology::eLineList: return eLineList;
 	case Topology::eTriangleFan: return eTriangleFan;
 	}
 
@@ -26,7 +28,11 @@ template <Topology T, typename I>
 using topology_element_t = std::conditional_t <
 	T == Topology::eTriangleList,
 	vector <I, 3>,
-	scalar <I>
+	std::conditional_t <
+		T == Topology::eLineList,
+		vector <I, 2>,
+		scalar <I>
+	>
 >;
 
 template <Topology T, typename I>
