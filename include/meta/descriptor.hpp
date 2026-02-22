@@ -1,5 +1,7 @@
 #pragma once
 
+#include <variant>
+
 #include "../rhi/device.hpp"
 #include "../util/cti.hpp"
 #include "resources.hpp"
@@ -8,8 +10,14 @@
 
 namespace rcgp {
 
-template <auto &ref, bool resolved = true>
-struct DescriptorFor {
+template <auto &ref>
+struct UnboundDescriptor {
+	vk::DescriptorSet handle;
+	size_t set;
+};
+
+template <auto &ref>
+struct BoundDescriptor {
 	vk::DescriptorSet handle;
 	size_t set;
 };
@@ -62,15 +70,31 @@ void set_descriptor_write_and_union(
 }
 
 // Descriptor write handler with temporary storage
-template <auto &ref, bool resolved>
-struct DescriptorWritePair {
+template <auto &ref>
+struct DescriptorWrite {
 	using Reference = reference_base_of <ref>;
+	using Descriptor = std::variant <
+		UnboundDescriptor <ref>,
+		BoundDescriptor <ref>
+	>;
 
-	const DescriptorFor <ref, resolved> &descriptor;
+	Descriptor descriptor;
 	const ResourceTypeFor <ref> &resource;
 
 	static constexpr size_t bindings = number_of_bindings <Reference>;
 	std::array <DescriptorInfoUnion, bindings> info_unions;
+
+	[[nodiscard]] auto descriptor_handle() const -> vk::DescriptorSet {
+		return std::visit([](const auto &desc) {
+			return desc.handle;
+		}, descriptor);
+	}
+
+	[[nodiscard]] auto descriptor_set() const -> size_t {
+		return std::visit([](const auto &desc) {
+			return desc.set;
+		}, descriptor);
+	}
 	
 	void bind(const std::span <vk::WriteDescriptorSet, bindings> &writes)
 	requires is_resource_group_v <Reference> {
@@ -81,7 +105,7 @@ struct DescriptorWritePair {
 
 			set_descriptor_write_and_union <Resource, I> (
 				resource.template get <I> (),
-				descriptor.handle,
+				descriptor_handle(),
 				writes[I],
 				info_unions[I]
 			);
@@ -96,15 +120,23 @@ struct DescriptorWritePair {
 	requires (not is_resource_group_v <Reference>) {
 		set_descriptor_write_and_union <Reference, 0> (
 			resource,
-			descriptor.handle,
+			descriptor_handle(),
 			writes[0],
 			info_unions[0]
 		);
 	}
 };
 
-template <auto &...refs, bool ... rs>
-[[nodiscard]] auto Device::update_descriptors(DescriptorWritePair <refs, rs> &&... dwpairs)
+template <auto &ref>
+DescriptorWrite(UnboundDescriptor <ref>, const ResourceTypeFor <ref> &)
+	-> DescriptorWrite <ref>;
+
+template <auto &ref>
+DescriptorWrite(BoundDescriptor <ref>, const ResourceTypeFor <ref> &)
+	-> DescriptorWrite <ref>;
+
+template <auto &...refs>
+[[nodiscard]] auto Device::update_descriptors(DescriptorWrite <refs> &&... dwpairs)
 {
 	static_assert(sizeof...(dwpairs) > 0);
 
@@ -128,14 +160,14 @@ template <auto &...refs, bool ... rs>
 	logical.updateDescriptorSets(writes, nullptr);
 
 	if constexpr (sizeof...(dwpairs) == 1) {
-		return DescriptorFor <refs...[0], true> (
-			(dwpairs...[0]).descriptor.handle,
-			(dwpairs...[0]).descriptor.set
+		return BoundDescriptor <refs...[0]> (
+			(dwpairs...[0]).descriptor_handle(),
+			(dwpairs...[0]).descriptor_set()
 		);
 	} else {
-		return std::make_tuple(DescriptorFor <refs, true> (
-			dwpairs.descriptor.handle,
-			dwpairs.descriptor.set
+		return std::make_tuple(BoundDescriptor <refs> (
+			dwpairs.descriptor_handle(),
+			dwpairs.descriptor_set()
 		)...);
 	}
 }

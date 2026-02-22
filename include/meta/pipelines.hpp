@@ -56,7 +56,7 @@ struct GenericPipeline {
 				.setSetLayouts(dsls[set])
 		).front();
 
-		return DescriptorFor <ref, false> (dset, set);
+		return UnboundDescriptor <ref> (dset, set);
 	}
 };
 
@@ -64,9 +64,6 @@ template <Topology T, typename AS, typename GAMAP, typename GRCs>
 struct RasterizationPipeline : GenericPipeline <GAMAP, GRCs> {
 	using GenericPipeline <GAMAP, GRCs> ::GenericPipeline;
 };
-
-#define $rasterization_pipeline_t(T, vs, fs) \
-	decltype(std::declval <RasterizationCombinator <Topology::T>> ()(vs, fs));
 
 template <typename GAMAP, typename GRCs>
 struct ComputePipeline : GenericPipeline <GAMAP, GRCs> {
@@ -77,5 +74,16 @@ template <typename GAMAP, typename GRCs>
 struct MeshShadingPipeline : GenericPipeline <GAMAP, GRCs> {
 	using GenericPipeline <GAMAP, GRCs> ::GenericPipeline;
 };
+
+// Type trait for pipelines
+TYPE_TRAIT(is_pipeline);
+	template <Topology T, typename AS, typename GAMAP, typename GRCs>
+	TYPE_TRAIT_INCLUDES(is_pipeline, RasterizationPipeline <T, AS, GAMAP, GRCs>);
+
+	template <typename GA, typename GR>
+	TYPE_TRAIT_INCLUDES(is_pipeline, ComputePipeline <GA, GR>);
+
+	template <typename GA, typename GR>
+	TYPE_TRAIT_INCLUDES(is_pipeline, MeshShadingPipeline <GA, GR>);
 
 } // namespace rcgp

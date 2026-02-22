@@ -12,13 +12,13 @@ struct Image;
 struct CommandBuffer : vk::CommandBuffer {
 	using super = vk::CommandBuffer;
 
+	const vk::detail::DispatchLoaderDynamic *loader = nullptr;
+
 	CommandBuffer() = default;
 	CommandBuffer(
 		const vk::CommandBuffer &cmd,
 		const vk::detail::DispatchLoaderDynamic *loader = nullptr
 	);
-
-	const vk::detail::DispatchLoaderDynamic *loader = nullptr;
 
 	auto begin() const -> const CommandBuffer &;
 	auto begin(const vk::CommandBufferBeginInfo &info) const -> const CommandBuffer &;

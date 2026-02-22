@@ -2,6 +2,14 @@
 
 using namespace rcgp;
 
+template <typename V, typename I>
+struct DrawParameters {
+	// MirrorBuffer <
+};
+
+struct CommandStream : CommandBuffer {
+};
+
 // TODO: experimental command buffer recording change:
 // direct invocations for pipelines
 // and promises/futures for synchronization
@@ -18,15 +26,6 @@ using namespace rcgp;
 // where _context is a recording context used for caching items to avoid recording
 //
 // also holds a command buffer
-
-extern $shader_t(vertex, float3, ClipPosition cpos) vs;
-
-auto vs = $shader(vertex)(ClipPosition cpos) -> float3 {
-	return float3();
-};
-
-// TODO: split DescriptorFor into
-// UnboundDescriptor <ref> and BoundDescriptor <ref>
 
 // TODO: how much the topology really matter to the pipeline signature?
 

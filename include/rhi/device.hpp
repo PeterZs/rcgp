@@ -24,8 +24,8 @@ enum class FrameAcquireStatus {
 	OutOfDate,
 };
 
-template <auto &ref, bool resolved>
-struct DescriptorWritePair;
+template <auto &ref>
+struct DescriptorWrite;
 
 struct Device {
 	vk::Device logical;
@@ -73,8 +73,8 @@ struct Device {
 		std::span <const Subpass> subpasses
 	) const -> vk::RenderPass;
 
-	template <auto &...refs, bool ... rs>
-	[[nodiscard]] auto update_descriptors(DescriptorWritePair <refs, rs> &&... dwpairs);
+	template <auto &...refs>
+	[[nodiscard]] auto update_descriptors(DescriptorWrite <refs> &&... dwpairs);
 
 	void wait_for_frame(const Frame &frame, uint64_t timeout = UINT64_MAX) const;
 	void reset_frame_fence(const Frame &frame) const;

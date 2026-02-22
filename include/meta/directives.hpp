@@ -60,16 +60,6 @@ inline auto begin_rendering(
 	return Commands <> { binder };
 }
 
-TYPE_TRAIT(is_pipeline);
-	template <Topology T, typename AS, typename GAMAP, typename GRCs>
-	TYPE_TRAIT_INCLUDES(is_pipeline, RasterizationPipeline <T, AS, GAMAP, GRCs>);
-
-	template <typename GA, typename GR>
-	TYPE_TRAIT_INCLUDES(is_pipeline, ComputePipeline <GA, GR>);
-
-	template <typename GA, typename GR>
-	TYPE_TRAIT_INCLUDES(is_pipeline, MeshShadingPipeline <GA, GR>);
-
 template <typename Pipeline>
 requires is_pipeline_v <Pipeline>
 auto bind_pipeline(const Pipeline &pipeline)
@@ -98,7 +88,7 @@ auto bind_pipeline(const Pipeline &pipeline)
 
 // TODO: for assurance (compatibility) should also template with a pipeline int ID
 template <auto &... refs>
-auto bind_descriptors(const DescriptorFor <refs, true> &... descriptors)
+auto bind_descriptors(const BoundDescriptor <refs> &... descriptors)
 {
 	auto binder = [=](const CommandBuffer &cmd, SerializationContext &sctx) {
 		auto &cid = PipelineMappings::cache.at(sctx.pplid);
