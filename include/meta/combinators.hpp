@@ -3,6 +3,7 @@
 #include <ranges>
 
 #include "../dsl/generators.hpp"
+#include "../dsl/optimization.hpp"
 #include "../rhi/device.hpp"
 #include "../rhi/pipelines.hpp"
 #include "../rhi/shader_compiler.hpp"
@@ -14,7 +15,8 @@
 
 namespace rcgp {
 
-struct DebugOptions {
+struct CompilerOptions {
+	OptimizationPhases optimization_flags = OptimizationPhases::eNone;
 	bool dump_assembly = false;
 	bool dump_glsl = false;
 };
@@ -32,20 +34,22 @@ template <typename ... Stage>
 auto shaders_to_modules(
 	const Device &device,
 	const ShaderCompiler &compiler,
-	const DebugOptions &debug,
+	const CompilerOptions &compiler_options,
 	Stage &&... shaders
 )
 {
 	auto process = [&](auto shader) {
 		constexpr auto stage = decltype(shader)::stage;
 
-		if (debug.dump_assembly) {
+		optimize(shader, compiler_options.optimization_flags);
+
+		if (compiler_options.dump_assembly) {
 			auto sasm = generate_assembly(shader);
 			printf("assembly:\n%s\n", sasm.c_str());
 		}
 
 		auto glsl = generate_glsl(shader);
-		if (debug.dump_glsl)
+		if (compiler_options.dump_glsl)
 			printf("glsl:\n%s\n", glsl.c_str());
 		
 		auto spirv = compiler.glsl_to_spirv(glsl, stage);
@@ -62,7 +66,7 @@ struct RasterizationCombinator {
 	const ShaderCompiler &compiler;
 	const RenderState &render_state;
 	RasterizationOptions options;
-	DebugOptions debug;
+	CompilerOptions compiler_options;
 
 	template <typename VertexShader, typename FragmentShader>
 	requires is_vertex_shader_v <VertexShader>
@@ -94,7 +98,7 @@ struct RasterizationCombinator {
 		);
 
 		auto [vmod, fmod] = shaders_to_modules(
-			device, compiler, debug,
+			device, compiler, compiler_options,
 			vertex_shader, fragment_shader
 		);
 
@@ -122,7 +126,7 @@ struct RasterizationCombinator {
 struct ComputeCombinator {
 	const Device &device;
 	const ShaderCompiler &compiler;
-	DebugOptions debug;
+	CompilerOptions compiler_options;
 
 	template <typename ComputeShader>
 	requires is_compute_shader_v <ComputeShader>
@@ -130,7 +134,7 @@ struct ComputeCombinator {
 		auto gvrs = ComputeShader::gvrs;
 		auto [layout, dsls, gamap] = apply_gvrs(device, gvrs, compute_shader);
 		
-		auto [cmod] = shaders_to_modules(device, compiler, debug, compute_shader);
+		auto [cmod] = shaders_to_modules(device, compiler, compiler_options, compute_shader);
 
 		auto pipeline = compile_compute_pipeline(
 			device,
@@ -151,7 +155,7 @@ struct MeshShadingCombinator {
 	const ShaderCompiler &compiler;
 	const vk::RenderPass &render_pass;
 	RasterizationOptions options;
-	DebugOptions debug;
+	CompilerOptions compiler_options;
 
 	template <typename TaskShader, typename MeshShader, typename FragmentShader>
 	auto operator()(TaskShader &task, MeshShader &mesh, FragmentShader &fragment) const {
@@ -164,7 +168,7 @@ struct MeshShadingCombinator {
 		auto [layout, dsls, gamap] = apply_gvrs(device, gvrs, task, mesh, fragment);
 
 		auto [tmod, mmod, fmod] = shaders_to_modules(
-			device, compiler, debug,
+			device, compiler, compiler_options,
 			task, mesh, fragment
 		);
 

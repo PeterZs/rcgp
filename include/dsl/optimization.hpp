@@ -12,6 +12,9 @@ enum class OptimizationPhases : uint8_t {
 	eDeadCodeElimination = 0b10,
 	eLocalElision = 0b100,
 	eReuse = 0b1000,
+	eStable = eDeadCodeElimination
+		| eLocalElision
+		| eReuse,
 };
 
 inline auto operator|(OptimizationPhases a, OptimizationPhases b)

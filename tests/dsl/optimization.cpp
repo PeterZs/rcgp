@@ -8,13 +8,8 @@
 // Optimization:
 // Testing that the optimization pass yields the correct instructions.
 
-static auto flags =
-	OptimizationPhases::eDeadCodeElimination
-	| OptimizationPhases::eLocalElision
-	| OptimizationPhases::eReuse;
-
-static auto readable_flags =
-	flags | OptimizationPhases::eReadability;
+static auto flags = OptimizationPhases::eStable;
+static auto readable_flags = flags | OptimizationPhases::eReadability;
 
 add_test(vs_empty)
 {
