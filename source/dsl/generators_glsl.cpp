@@ -434,13 +434,7 @@ auto collect_extensions(const GLSLEmitter &em)
 {
 	std::vector <std::string> extensions;
 	
-	for (auto &[_, ref] : em.main->global_resources) {
-		auto &grsrc = ref->as <GlobalResource> ();
-		if (grsrc.layout == GlobalResourceLayout::eScalar) {
-			extensions.emplace_back("GL_EXT_scalar_block_layout");
-			break;
-		}
-	}
+	extensions.emplace_back("GL_EXT_scalar_block_layout");
 	
 	auto stage = em.main->stage;
 	if (stage == ShaderStage::eMesh or stage == ShaderStage::eTask)

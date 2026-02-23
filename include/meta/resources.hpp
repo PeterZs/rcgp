@@ -111,28 +111,27 @@ TYPE_TRAIT_INCLUDES(is_global_resource, ResourceGroup <T>);
 
 // Type traits for these resources
 TYPE_TRAIT(is_attribute_stream);
-
-template <typename T, template <typename> typename L, vk::VertexInputRate R>
-TYPE_TRAIT_INCLUDES(is_attribute_stream, AttributeStream <T, L, R>);
+	template <typename T, template <typename> typename L, vk::VertexInputRate R>
+	TYPE_TRAIT_INCLUDES(is_attribute_stream, AttributeStream <T, L, R>);
 
 TYPE_TRAIT(is_resource_group);
-
-template <typename T>
-TYPE_TRAIT_INCLUDES(is_resource_group, ResourceGroup <T>);
+	template <typename T>
+	TYPE_TRAIT_INCLUDES(is_resource_group, ResourceGroup <T>);
 
 TYPE_TRAIT(is_push_constant);
-
-template <typename T, template <typename> typename L>
-TYPE_TRAIT_INCLUDES(is_push_constant, PushConstant <T, L>);
+	template <typename T, template <typename> typename L>
+	TYPE_TRAIT_INCLUDES(is_push_constant, PushConstant <T, L>);
 
 TYPE_TRAIT(is_storage_buffer);
+	template <typename T, template <typename> typename L, GlobalResourceAccess A>
+	TYPE_TRAIT_INCLUDES(is_storage_buffer, StorageBuffer <T, L, A>);
 
-template <typename T, template <typename> typename L, GlobalResourceAccess A>
-TYPE_TRAIT_INCLUDES(is_storage_buffer, StorageBuffer <T, L, A>);
+TYPE_TRAIT(is_uniform_buffer);
+	template <typename T, template <typename> typename L>
+	TYPE_TRAIT_INCLUDES(is_uniform_buffer, UniformBuffer <T, L>);
 
 TYPE_TRAIT(is_sampler);
-
-template <typename T, size_t D>
-TYPE_TRAIT_INCLUDES(is_sampler, Sampler <T, D>);
+	template <typename T, size_t D>
+	TYPE_TRAIT_INCLUDES(is_sampler, Sampler <T, D>);
 
 } // namespace rcgp

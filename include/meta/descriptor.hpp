@@ -64,6 +64,10 @@ void set_descriptor_write_and_union(
 		write // ...
 			.setDescriptorType(eStorageBuffer)
 			.setBufferInfo(info.buffer = dinfo);
+	} else if constexpr (is_uniform_buffer_v <T>) {
+		write // ...
+			.setDescriptorType(eUniformBuffer)
+			.setBufferInfo(info.buffer = dinfo);
 	} else {
 		static_error("unsupported resource type "_ss + $ss_type(T));
 	}

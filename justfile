@@ -11,8 +11,9 @@ build_test: build_rcgp
 	cmake --build build -j -t test
 
 # Experimental program
-exp: build_rcgp
+experimental: build_rcgp
 	cmake --build build -j -t experimental
+	./build/experimental
 
 # Tests for scaffold generation
 scaffold:

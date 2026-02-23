@@ -70,19 +70,17 @@ CommandBuffer::CommandBuffer(
 ) : vk::CommandBuffer(cmd), loader(loader_)
 {}
 
-auto CommandBuffer::begin() const -> const CommandBuffer &
+void CommandBuffer::begin() const
 {
 	super::begin(vk::CommandBufferBeginInfo());
-	return *this;
 }
 
-auto CommandBuffer::begin(const vk::CommandBufferBeginInfo &info) const -> const CommandBuffer &
+void CommandBuffer::begin(const vk::CommandBufferBeginInfo &info) const
 {
 	super::begin(info);
-	return *this;
 }
 
-auto CommandBuffer::transition_image_layout(Image &image, vk::ImageLayout new_layout) const -> const CommandBuffer &
+void CommandBuffer::transition_image_layout(Image &image, vk::ImageLayout new_layout) const
 {
 	auto [
 		src_stage, src_access,
@@ -102,22 +100,18 @@ auto CommandBuffer::transition_image_layout(Image &image, vk::ImageLayout new_la
 	pipelineBarrier2(vk::DependencyInfo().setImageMemoryBarriers(barrier));
 
 	image.layout = new_layout;
-
-	return *this;
 }
 
-auto CommandBuffer::copy_buffer_to_image(const Buffer &staging, const Image &image) const -> const CommandBuffer &
+void CommandBuffer::copy_buffer_to_image(const Buffer &staging, const Image &image) const
 {
 	auto copy = vk::BufferImageCopy()
 		.setImageSubresource(image.layers())
 		.setImageExtent(image.extent());
 
 	super::copyBufferToImage(staging.handle, image.handle, image.layout, copy);
-
-	return *this;
 }
 
-auto CommandBuffer::copy_image(const Image &src, const Image &dst) const -> const CommandBuffer &
+void CommandBuffer::copy_image(const Image &src, const Image &dst) const
 {
 	auto copy = vk::ImageCopy()
 		.setSrcSubresource(src.layers())
@@ -131,24 +125,20 @@ auto CommandBuffer::copy_image(const Image &src, const Image &dst) const -> cons
 		dst.layout,
 		copy
 	);
-
-	return *this;
 }
 
-auto CommandBuffer::end() const -> const CommandBuffer &
+void CommandBuffer::end() const
 {
 	super::end();
-	return *this;
 }
 
-auto CommandBuffer::draw_mesh_tasks(uint32_t x, uint32_t y, uint32_t z) const -> const CommandBuffer &
+void CommandBuffer::draw_mesh_tasks(uint32_t x, uint32_t y, uint32_t z) const
 {
 	if (loader == nullptr) {
 		std::fputs("draw_mesh_tasks requires a dynamic loader\n", stderr);
 		std::abort();
 	}
 	loader->vkCmdDrawMeshTasksEXT(*this, x, y, z);
-	return *this;
 }
 
 } // namespace rcgp

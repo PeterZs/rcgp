@@ -103,10 +103,10 @@ struct Window {
 	void on_scroll(ScrollHandler handler);
 
 	struct Options {
-		uint32_t width;
-		uint32_t height;
-		const char *const title;
-		vk::PresentModeKHR present_mode;
+		uint32_t width = 1024;
+		uint32_t height = 1024;
+		const char *const title = "RCGP";
+		vk::PresentModeKHR present_mode = vk::PresentModeKHR::eFifo;
 	};
 
 	static Window from(const Session &session, const Device &device, const Options &options);

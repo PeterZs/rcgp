@@ -2,6 +2,9 @@
 
 #include <cstdlib>
 #include <type_traits>
+#include <utility>
+
+#include "cti.hpp"
 
 namespace rcgp {
 
@@ -14,10 +17,10 @@ struct Tlist {
 	using get = decltype([] {
 		// GCC doesn't like indexing empty packs :(
 		if constexpr (I < sizeof...(Args))
-			return (Args...[I]) {};
+			return std::type_identity <Args...[I]> ();
 		else
-			return int();
-	} ());
+			return std::type_identity <int> ();
+	} ()) ::type;
 
 	template <typename T>
 	using insert = Tlist <T, Args...>;
@@ -109,5 +112,21 @@ using tlist_transform_t = typename tlist_transform <List, Transform> ::type;
 
 template <typename ... Lists>
 using tlist_concat_t = decltype(tlist_concat(Lists {}...));
+
+// Subsequences
+template <size_t Start, size_t End>
+requires (End > Start)
+constexpr auto index_range()
+{
+	return constexpr_for(Is, End - Start,
+		return std::index_sequence <(Is + Start)...> ()
+	);
+}
+
+template <typename ... Ts, size_t ... Is>
+constexpr auto slice(Tlist <Ts...>, std::index_sequence <Is...>)
+{
+	return Tlist <Ts...[Is]...> ();
+}
 
 } // namespace rcgp

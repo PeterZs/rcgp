@@ -139,4 +139,9 @@ using UniformMirrorBuffer = MirrorBuffer <T, L, vk::BufferUsageFlagBits::eUnifor
 template <typename T, template <typename> typename L>
 using StorageMirrorBuffer = MirrorBuffer <T, L, vk::BufferUsageFlagBits::eStorageBuffer>;
 
+// Type traits
+TYPE_TRAIT(is_vertex_buffer);
+	template <typename T, template <typename> typename L>
+	TYPE_TRAIT_INCLUDES(is_vertex_buffer, VertexMirrorBuffer <T, L>);
+
 } // namespace rcgp

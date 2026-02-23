@@ -204,7 +204,7 @@ bool Device::rebuild_swapchain(Window &window) const
 		Image image;
 		image.device = logical;
 		image.handle = handle;
-		image.layout = vk::ImageLayout::ePresentSrcKHR;
+		image.layout = vk::ImageLayout::eUndefined;
 		image.description.extent = vk::Extent3D(new_extent, 1);
 		image.description.format = window.format;
 		image.description.aspect = vk::ImageAspectFlagBits::eColor;
