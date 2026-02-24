@@ -34,6 +34,10 @@ struct DrawIndexedParameters {
 struct DrawDispatchSize {
 	uint32_t vertices = 0;
 	uint32_t instances = 1;
+	uint32_t first_vertex = 0;
+	uint32_t first_instance = 0;
+	uint32_t first_index = 0;
+	int32_t vertex_offset = 0;
 };
 
 template <typename Wrapper>
@@ -120,7 +124,12 @@ struct CommandStream : CommandBuffer {
 		lambda_apply(descriptors, descs, _bind_descriptors(pipeline.layout, descs...));
 		lambda_apply(push_constants, constants, _bind_constants <GRCs> (pipeline.layout, constants...));
 		lambda_apply(parameters.vertex_buffers, buffers, _bind_vertex_buffers(buffers...));
-		super::draw(dispatch_size.vertices, dispatch_size.instances, 0, 0);
+		super::draw(
+			dispatch_size.vertices,
+			dispatch_size.instances,
+			dispatch_size.first_vertex,
+			dispatch_size.first_instance
+		);
 	}
 
 	template <Topology T, auto &... streams, typename GAMAP, typename GRCs, typename IndexBuffer>
@@ -137,7 +146,13 @@ struct CommandStream : CommandBuffer {
 		lambda_apply(push_constants, constants, _bind_constants <GRCs> (pipeline.layout, constants...));
 		lambda_apply(parameters.vertex_buffers, buffers, _bind_vertex_buffers(buffers...));
 		super::bindIndexBuffer(parameters.index_buffer.handle, 0, parameters.index_type);
-		super::drawIndexed(dispatch_size.vertices, dispatch_size.instances, 0, 0, 0);
+		super::drawIndexed(
+			dispatch_size.vertices,
+			dispatch_size.instances,
+			dispatch_size.first_index,
+			dispatch_size.vertex_offset,
+			dispatch_size.first_instance
+		);
 	}
 };
 

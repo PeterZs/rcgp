@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string_view>
 
 #include <vulkan/vulkan.hpp>
 
@@ -11,6 +12,21 @@ struct Image;
 
 struct CommandBuffer : vk::CommandBuffer {
 	using super = vk::CommandBuffer;
+
+	struct [[maybe_unused]] ScopedLabel {
+		const CommandBuffer *command = nullptr;
+
+		ScopedLabel() = default;
+		ScopedLabel(
+			const CommandBuffer &command_buffer,
+			std::string_view name
+		);
+		ScopedLabel(const ScopedLabel &) = delete;
+		ScopedLabel &operator=(const ScopedLabel &) = delete;
+		ScopedLabel(ScopedLabel &&other) noexcept;
+		ScopedLabel &operator=(ScopedLabel &&other) noexcept;
+		~ScopedLabel();
+	};
 
 	const vk::detail::DispatchLoaderDynamic *loader = nullptr;
 
@@ -27,6 +43,9 @@ struct CommandBuffer : vk::CommandBuffer {
 	void copy_image(const Image &src, const Image &dst) const;
 	void end() const;
 	void draw_mesh_tasks(uint32_t x, uint32_t y = 1, uint32_t z = 1) const;
+	void begin_label(std::string_view name) const;
+	void end_label() const;
+	[[nodiscard]] ScopedLabel scoped_label(std::string_view name) const;
 };
 
 } // namespace rcgp

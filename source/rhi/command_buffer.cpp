@@ -1,5 +1,10 @@
+#include <algorithm>
+#include <array>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <cstdint>
+#include <string>
 #include <tuple>
 #include <utility>
 
@@ -8,6 +13,73 @@
 #include "rhi/image.hpp"
 
 namespace rcgp {
+
+static uint64_t hash_label(std::string_view label)
+{
+	constexpr uint64_t kFnvOffsetBasis = 14695981039346656037ull;
+	constexpr uint64_t kFnvPrime = 1099511628211ull;
+
+	auto hash = kFnvOffsetBasis;
+	for (unsigned char c : label) {
+		hash ^= uint64_t(c);
+		hash *= kFnvPrime;
+	}
+	return hash;
+}
+
+static std::array <float, 4> hsl_to_rgba(float hue_degrees, float saturation, float lightness)
+{
+	float h = std::fmod(hue_degrees, 360.0f);
+	if (h < 0.0f)
+		h += 360.0f;
+
+	float chroma = (1.0f - std::abs(2.0f * lightness - 1.0f)) * saturation;
+	float segment = h / 60.0f;
+	float x = chroma * (1.0f - std::abs(std::fmod(segment, 2.0f) - 1.0f));
+
+	float r1 = 0.0f;
+	float g1 = 0.0f;
+	float b1 = 0.0f;
+
+	if (segment < 1.0f) {
+		r1 = chroma;
+		g1 = x;
+	} else if (segment < 2.0f) {
+		r1 = x;
+		g1 = chroma;
+	} else if (segment < 3.0f) {
+		g1 = chroma;
+		b1 = x;
+	} else if (segment < 4.0f) {
+		g1 = x;
+		b1 = chroma;
+	} else if (segment < 5.0f) {
+		r1 = x;
+		b1 = chroma;
+	} else {
+		r1 = chroma;
+		b1 = x;
+	}
+
+	float m = lightness - 0.5f * chroma;
+	return {
+		std::clamp(r1 + m, 0.0f, 1.0f),
+		std::clamp(g1 + m, 0.0f, 1.0f),
+		std::clamp(b1 + m, 0.0f, 1.0f),
+		1.0f
+	};
+}
+
+static std::array <float, 4> label_color(std::string_view label)
+{
+	// Stable, vivid palette via fixed S/L and hash-derived hue.
+	constexpr float kSaturation = 0.68f;
+	constexpr float kLightness = 0.57f;
+
+	auto hash = hash_label(label);
+	float hue = float(hash % 36000ull) * 0.01f;
+	return hsl_to_rgba(hue, kSaturation, kLightness);
+}
 
 static auto layout_to_stage_and_access(vk::ImageLayout layout)
 	-> std::pair <vk::PipelineStageFlags2, vk::AccessFlags2>
@@ -69,6 +141,34 @@ CommandBuffer::CommandBuffer(
 	const vk::detail::DispatchLoaderDynamic *loader_
 ) : vk::CommandBuffer(cmd), loader(loader_)
 {}
+
+CommandBuffer::ScopedLabel::ScopedLabel(
+	const CommandBuffer &command_buffer,
+	std::string_view name
+) : command(&command_buffer)
+{
+	command->begin_label(name);
+}
+
+CommandBuffer::ScopedLabel::ScopedLabel(ScopedLabel &&other) noexcept
+	: command(std::exchange(other.command, nullptr))
+{}
+
+CommandBuffer::ScopedLabel &CommandBuffer::ScopedLabel::operator=(ScopedLabel &&other) noexcept
+{
+	if (this == &other)
+		return *this;
+	if (command != nullptr)
+		command->end_label();
+	command = std::exchange(other.command, nullptr);
+	return *this;
+}
+
+CommandBuffer::ScopedLabel::~ScopedLabel()
+{
+	if (command != nullptr)
+		command->end_label();
+}
 
 void CommandBuffer::begin() const
 {
@@ -139,6 +239,31 @@ void CommandBuffer::draw_mesh_tasks(uint32_t x, uint32_t y, uint32_t z) const
 		std::abort();
 	}
 	loader->vkCmdDrawMeshTasksEXT(*this, x, y, z);
+}
+
+void CommandBuffer::begin_label(std::string_view name) const
+{
+	if (loader == nullptr || loader->vkCmdBeginDebugUtilsLabelEXT == nullptr)
+		return;
+
+	auto color = label_color(name);
+	auto name_storage = std::string(name);
+	auto info = vk::DebugUtilsLabelEXT()
+		.setPLabelName(name_storage.c_str())
+		.setColor(color);
+	super::beginDebugUtilsLabelEXT(info, *loader);
+}
+
+void CommandBuffer::end_label() const
+{
+	if (loader == nullptr || loader->vkCmdEndDebugUtilsLabelEXT == nullptr)
+		return;
+	super::endDebugUtilsLabelEXT(*loader);
+}
+
+CommandBuffer::ScopedLabel CommandBuffer::scoped_label(std::string_view name) const
+{
+	return ScopedLabel(*this, name);
 }
 
 } // namespace rcgp
