@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <utility>
 #include <vector>
 
 #include <vulkan/vulkan.hpp>
@@ -88,7 +89,16 @@ struct Window {
 	void close() const;
 	
 	bool alive() const;
+	bool is_down(Key key) const;
 	bool is_pressed(Key key) const;
+	bool was_pressed(Key key) const;
+	bool was_released(Key key) const;
+	bool is_down(MouseButton button) const;
+	bool was_pressed(MouseButton button) const;
+	bool was_released(MouseButton button) const;
+	std::pair <double, double> cursor_position() const;
+	std::pair <double, double> cursor_delta() const;
+	std::pair <double, double> scroll_delta() const;
 	void set_input_mode(InputMode mode, bool value) const;
 
 	vk::Extent2D extent() const;

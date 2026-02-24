@@ -16,13 +16,13 @@ namespace rcgp {
 
 static uint64_t hash_label(std::string_view label)
 {
-	constexpr uint64_t kFnvOffsetBasis = 14695981039346656037ull;
-	constexpr uint64_t kFnvPrime = 1099511628211ull;
+	constexpr uint64_t fnv_offset_basis = 14695981039346656037ull;
+	constexpr uint64_t fnv_prime = 1099511628211ull;
 
-	auto hash = kFnvOffsetBasis;
+	auto hash = fnv_offset_basis;
 	for (unsigned char c : label) {
 		hash ^= uint64_t(c);
-		hash *= kFnvPrime;
+		hash *= fnv_prime;
 	}
 	return hash;
 }
@@ -73,12 +73,12 @@ static std::array <float, 4> hsl_to_rgba(float hue_degrees, float saturation, fl
 static std::array <float, 4> label_color(std::string_view label)
 {
 	// Stable, vivid palette via fixed S/L and hash-derived hue.
-	constexpr float kSaturation = 0.68f;
-	constexpr float kLightness = 0.57f;
+	constexpr float saturation = 0.68f;
+	constexpr float lightness = 0.57f;
 
 	auto hash = hash_label(label);
 	float hue = float(hash % 36000ull) * 0.01f;
-	return hsl_to_rgba(hue, kSaturation, kLightness);
+	return hsl_to_rgba(hue, saturation, lightness);
 }
 
 static auto layout_to_stage_and_access(vk::ImageLayout layout)

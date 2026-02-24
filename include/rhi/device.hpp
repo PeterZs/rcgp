@@ -1,6 +1,8 @@
 #pragma once
 
+#include <map>
 #include <span>
+#include <string>
 #include <vector>
 
 #include "session.hpp"
@@ -33,7 +35,7 @@ struct Device {
 	vk::PhysicalDevice physical;
 	vk::PhysicalDeviceMemoryProperties properties;
 	vk::detail::DispatchLoaderDynamic loader;
-	std::map <const char *, Queue> queues;
+	std::map <std::string, Queue> queues;
 
 	auto find_memory_type(uint32_t filter, vk::MemoryPropertyFlags flags) const -> uint32_t;
 
@@ -88,7 +90,7 @@ struct Device {
 
 	struct Options {
 		std::vector <const char *> extensions;
-		std::map <const char *, vk::QueueFlags> queues;
+		std::map <std::string, vk::QueueFlags> queues;
 		void *pNext;
 	};
 

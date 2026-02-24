@@ -3,10 +3,14 @@
 
 #include <GLFW/glfw3.h>
 
+#include <array>
 #include <unordered_map>
 #include <utility>
 
 namespace rcgp {
+
+constexpr size_t key_count = GLFW_KEY_LAST + 1;
+constexpr size_t mouse_button_count = GLFW_MOUSE_BUTTON_LAST + 1;
 
 struct HandlerTable {
 	int dragging_button = -1;
@@ -14,6 +18,17 @@ struct HandlerTable {
 	bool framebuffer_resized = false;
 	double last_x = 0.0;
 	double last_y = 0.0;
+	double frame_cursor_dx = 0.0;
+	double frame_cursor_dy = 0.0;
+	double frame_scroll_dx = 0.0;
+	double frame_scroll_dy = 0.0;
+
+	std::array <bool, key_count> key_down {};
+	std::array <bool, key_count> key_pressed {};
+	std::array <bool, key_count> key_released {};
+	std::array <bool, mouse_button_count> mouse_down {};
+	std::array <bool, mouse_button_count> mouse_pressed {};
+	std::array <bool, mouse_button_count> mouse_released {};
 
 	std::vector <MouseButtonHandler> mouse_button;
 	std::vector <CursorMoveHandler> cursor_move;
@@ -23,12 +38,51 @@ struct HandlerTable {
 
 inline std::vector <HandlerTable> handler_tables;
 
+bool in_bounds(int value, size_t count)
+{
+	return value >= 0 && size_t(value) < count;
+}
+
+void begin_input_frame(HandlerTable &ht)
+{
+	ht.key_pressed.fill(false);
+	ht.key_released.fill(false);
+	ht.mouse_pressed.fill(false);
+	ht.mouse_released.fill(false);
+	ht.frame_cursor_dx = 0.0;
+	ht.frame_cursor_dy = 0.0;
+	ht.frame_scroll_dx = 0.0;
+	ht.frame_scroll_dy = 0.0;
+}
+
+void clear_down_state(HandlerTable &ht)
+{
+	ht.dragging_button = -1;
+	ht.key_down.fill(false);
+	ht.key_pressed.fill(false);
+	ht.key_released.fill(false);
+	ht.mouse_down.fill(false);
+	ht.mouse_pressed.fill(false);
+	ht.mouse_released.fill(false);
+}
+
 void dispatch_mouse_button(GLFWwindow *w, int button, int action, int mods)
 {
 	auto user = glfwGetWindowUserPointer(w);
 	auto handler_index = reinterpret_cast <std::intptr_t> (user);
 
 	auto &ht = handler_tables[handler_index];
+
+	if (in_bounds(button, mouse_button_count)) {
+		bool down = (action != GLFW_RELEASE);
+		bool was_down = ht.mouse_down[size_t(button)];
+		if (down && !was_down)
+			ht.mouse_pressed[size_t(button)] = true;
+		if (!down && was_down)
+			ht.mouse_released[size_t(button)] = true;
+		ht.mouse_down[size_t(button)] = down;
+	}
+
 	for (auto &cb : ht.mouse_button)
 		cb(button, action, mods);
 
@@ -53,6 +107,26 @@ void dispatch_mouse_button(GLFWwindow *w, int button, int action, int mods)
 		if (ht.dragging_button == button)
 			ht.dragging_button = -1;
 	}
+}
+
+void dispatch_key(GLFWwindow *w, int key, int, int action, int)
+{
+	auto user = glfwGetWindowUserPointer(w);
+	auto handler_index = reinterpret_cast <std::intptr_t> (user);
+
+	auto &ht = handler_tables[handler_index];
+	if (!in_bounds(key, key_count))
+		return;
+	if (action == GLFW_REPEAT)
+		return;
+
+	bool down = (action == GLFW_PRESS);
+	bool was_down = ht.key_down[size_t(key)];
+	if (down && !was_down)
+		ht.key_pressed[size_t(key)] = true;
+	if (!down && was_down)
+		ht.key_released[size_t(key)] = true;
+	ht.key_down[size_t(key)] = down;
 }
 
 void dispatch_cursor_pos(GLFWwindow *w, double xpos, double ypos)
@@ -90,6 +164,8 @@ void dispatch_cursor_pos(GLFWwindow *w, double xpos, double ypos)
 	ht.last_x = fx;
 	ht.last_y = fy;
 	ht.cursor_initialized = true;
+	ht.frame_cursor_dx += dx;
+	ht.frame_cursor_dy += dy;
 	for (auto &cb : ht.cursor_move)
 		cb(fx, fy, dx, dy);
 
@@ -115,12 +191,25 @@ void dispatch_scroll(GLFWwindow *w, double xoffset, double yoffset)
 	auto handler_index = reinterpret_cast <std::intptr_t> (user);
 
 	auto &ht = handler_tables[handler_index];
+	ht.frame_scroll_dx += xoffset;
+	ht.frame_scroll_dy += yoffset;
 	for (auto &cb : ht.scroll)
 		cb(xoffset, yoffset);
 }
 
+void dispatch_focus(GLFWwindow *w, int focused)
+{
+	auto user = glfwGetWindowUserPointer(w);
+	auto handler_index = reinterpret_cast <std::intptr_t> (user);
+	auto &ht = handler_tables[handler_index];
+	if (focused == 0)
+		clear_down_state(ht);
+}
+
 void Window::poll() const
 {
+	for (auto &table : handler_tables)
+		begin_input_frame(table);
 	glfwPollEvents();
 }
 
@@ -134,9 +223,75 @@ bool Window::alive() const
 	return not glfwWindowShouldClose(handle);
 }
 
+bool Window::is_down(Key key) const
+{
+	int idx = std::to_underlying(key);
+	if (!in_bounds(idx, key_count))
+		return false;
+	return handler_tables[handler_index].key_down[size_t(idx)];
+}
+
 bool Window::is_pressed(Key key) const
 {
-	return glfwGetKey(handle, std::to_underlying(key)) == GLFW_PRESS;
+	return is_down(key);
+}
+
+bool Window::was_pressed(Key key) const
+{
+	int idx = std::to_underlying(key);
+	if (!in_bounds(idx, key_count))
+		return false;
+	return handler_tables[handler_index].key_pressed[size_t(idx)];
+}
+
+bool Window::was_released(Key key) const
+{
+	int idx = std::to_underlying(key);
+	if (!in_bounds(idx, key_count))
+		return false;
+	return handler_tables[handler_index].key_released[size_t(idx)];
+}
+
+bool Window::is_down(MouseButton button) const
+{
+	int idx = std::to_underlying(button);
+	if (!in_bounds(idx, mouse_button_count))
+		return false;
+	return handler_tables[handler_index].mouse_down[size_t(idx)];
+}
+
+bool Window::was_pressed(MouseButton button) const
+{
+	int idx = std::to_underlying(button);
+	if (!in_bounds(idx, mouse_button_count))
+		return false;
+	return handler_tables[handler_index].mouse_pressed[size_t(idx)];
+}
+
+bool Window::was_released(MouseButton button) const
+{
+	int idx = std::to_underlying(button);
+	if (!in_bounds(idx, mouse_button_count))
+		return false;
+	return handler_tables[handler_index].mouse_released[size_t(idx)];
+}
+
+std::pair <double, double> Window::cursor_position() const
+{
+	const auto &ht = handler_tables[handler_index];
+	return { ht.last_x, ht.last_y };
+}
+
+std::pair <double, double> Window::cursor_delta() const
+{
+	const auto &ht = handler_tables[handler_index];
+	return { ht.frame_cursor_dx, ht.frame_cursor_dy };
+}
+
+std::pair <double, double> Window::scroll_delta() const
+{
+	const auto &ht = handler_tables[handler_index];
+	return { ht.frame_scroll_dx, ht.frame_scroll_dy };
 }
 
 void Window::set_input_mode(InputMode mode, bool value) const
@@ -209,9 +364,11 @@ Window Window::from(const Session &session, const Device &device, const Options 
 	auto user = reinterpret_cast <void *> (result.handler_index);
 	glfwSetWindowUserPointer(result.handle, user);
 	glfwSetMouseButtonCallback(result.handle, dispatch_mouse_button);
+	glfwSetKeyCallback(result.handle, dispatch_key);
 	glfwSetCursorPosCallback(result.handle, dispatch_cursor_pos);
 	glfwSetFramebufferSizeCallback(result.handle, dispatch_framebuffer_size);
 	glfwSetScrollCallback(result.handle, dispatch_scroll);
+	glfwSetWindowFocusCallback(result.handle, dispatch_focus);
 
 	VkSurfaceKHR surface;
 	glfwCreateWindowSurface(session.handle, result.handle, nullptr, &surface);
