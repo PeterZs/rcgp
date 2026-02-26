@@ -19,6 +19,14 @@
 
 namespace rcgp {
 
+vk::DebugUtilsObjectNameInfoEXT name_info(const vk::CommandBuffer &cmd)
+{
+	auto info = vk::DebugUtilsObjectNameInfoEXT();
+	info.setObjectHandle(*(reinterpret_cast <const uint64_t *> (&cmd)));
+	info.setObjectType(vk::ObjectType::eCommandBuffer);
+	return info;
+}
+
 static vk::Extent2D framebuffer_extent_of(GLFWwindow *window)
 {
 	int width = 0;

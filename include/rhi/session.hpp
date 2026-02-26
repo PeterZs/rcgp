@@ -16,12 +16,17 @@ using ValidationCallback = std::function <void (vk::DebugUtilsMessageSeverityFla
 struct Session {
 	vk::Instance handle;
 	vk::DebugUtilsMessengerEXT debugger;
-	bool trap_on_error = true;
-	std::optional <ValidationCallback> validation_callback;
 
-	Session() = default;
-	Session(const Session &) = delete;
-	Session &operator=(const Session &) = delete;
+	struct Debugging {
+		bool trap_on_error = true;
+		std::optional <ValidationCallback> callback;
+	};
+
+	std::unique_ptr <Debugging> debugging;
+
+	void destroy() {
+		handle.destroy();
+	}
 
 	struct Options {
 		const char *const application_name;
@@ -36,7 +41,7 @@ struct Session {
 	};
 
 	static auto from(const Options &info) -> std::tuple <
-		std::unique_ptr <Session>,
+		Session,
 		vk::detail::DispatchLoaderDynamic
 	>;
 };

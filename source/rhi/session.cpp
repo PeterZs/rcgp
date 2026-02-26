@@ -1,6 +1,5 @@
 #include <vector>
 
-#include <cstdlib>
 #include <iostream>
 #include <print>
 
@@ -31,38 +30,32 @@ vk::Bool32 general_validation_callback(
 	void *user_data
 )
 {
-	auto *context = reinterpret_cast <Session *> (user_data);
+	auto *debugging = reinterpret_cast <Session::Debugging *> (user_data);
 
-	if (context->validation_callback)
-		context->validation_callback.value()(severity, data->pMessage);
+	if (debugging->callback)
+		debugging->callback.value()(severity, data->pMessage);
 	else
 		std::println(std::cerr, "vulkan: {}", data->pMessage);
 
-	bool trap = context->trap_on_error && (severity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eError);
+	bool trap = debugging->trap_on_error && (severity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eError);
 	if (trap)
-		std::abort();
+		__builtin_trap();
 
 	return false;
 }
 
 auto Session::from(const Options &options) -> std::tuple <
-	std::unique_ptr <Session>,
+	Session,
 	vk::detail::DispatchLoaderDynamic
 >
 {
-	auto product = std::tuple {
-		std::make_unique <Session> (),
-		vk::detail::DispatchLoaderDynamic(),
-	};
-
-	auto &[session, dld] = product;
-
 	glfw_boot();
 
 	vk::detail::DynamicLoader dl;
 	auto vkGetInstanceProcAddr = dl.getProcAddress
 		<PFN_vkGetInstanceProcAddr> ("vkGetInstanceProcAddr");
 
+	vk::detail::DispatchLoaderDynamic dld;
 	dld.init(vkGetInstanceProcAddr);
 
 	auto layers = std::vector <const char *> {};
@@ -89,13 +82,16 @@ auto Session::from(const Options &options) -> std::tuple <
 		| vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation
 		| vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
 
-	session->trap_on_error = options.trap_on_error;
-	session->validation_callback = std::move(options.validation_callback);
+	auto debugging = std::make_unique <Debugging> (
+		options.trap_on_error,
+		std::move(options.validation_callback)
+	);
+
 	auto debug_info = vk::DebugUtilsMessengerCreateInfoEXT()
 		.setMessageType(debug_type_flags)
 		.setMessageSeverity(debug_severity_flags)
 		.setPfnUserCallback(general_validation_callback)
-		.setPUserData(session.get());
+		.setPUserData(debugging.get());
 
 	auto app_info = vk::ApplicationInfo()
 		.setApiVersion(VK_API_VERSION_1_4)
@@ -118,14 +114,14 @@ auto Session::from(const Options &options) -> std::tuple <
 			validation_features.setPNext(&debug_info);
 	}
 
-	session->handle = vk::createInstance(instance_info, nullptr, dld);
+	auto handle = vk::createInstance(instance_info, nullptr, dld);
+	dld.init(handle, vkGetInstanceProcAddr);
 
-	dld.init(session->handle, vkGetInstanceProcAddr);
-
+	vk::DebugUtilsMessengerEXT debugger;
 	if (options.validation)
-		session->debugger = session->handle.createDebugUtilsMessengerEXT(debug_info, nullptr, dld);
+		debugger = handle.createDebugUtilsMessengerEXT(debug_info, nullptr, dld);
 
-	return product;
+	return { Session(handle, debugger, std::move(debugging)), dld };
 }
 
 } // namespace rcgp

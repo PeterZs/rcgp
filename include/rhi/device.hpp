@@ -30,12 +30,24 @@ enum class FrameAcquireStatus {
 template <auto &ref>
 struct DescriptorWrite;
 
+vk::DebugUtilsObjectNameInfoEXT name_info(const vk::CommandBuffer &);
+
 struct Device {
 	vk::Device logical;
 	vk::PhysicalDevice physical;
 	vk::PhysicalDeviceMemoryProperties properties;
 	vk::detail::DispatchLoaderDynamic loader;
 	std::map <std::string, Queue> queues;
+
+	void destroy() {
+		logical.destroy();
+	}
+
+	void set_name(const auto &object, const std::string &name) {
+		auto info = name_info(object)
+			.setPObjectName(name.c_str());
+		logical.setDebugUtilsObjectNameEXT(info, loader);
+	}
 
 	auto find_memory_type(uint32_t filter, vk::MemoryPropertyFlags flags) const -> uint32_t;
 
