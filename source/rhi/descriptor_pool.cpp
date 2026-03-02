@@ -13,40 +13,24 @@ DescriptorPool DescriptorPool::from(const Device &device, const Options &info)
 
 	uint64_t total_sets = 0;
 
-	auto push = [&sizes](vk::DescriptorType type, uint32_t count) {
+	auto push = [&](vk::DescriptorType type, uint32_t count) {
 		if (count)
 			sizes.emplace_back(type, count);
-	};
-
-	auto add_sets = [&total_sets](uint32_t count) {
 		total_sets += uint64_t(count);
 	};
 
-	add_sets(info.samplers);
 	push(vk::DescriptorType::eSampler, info.samplers);
-	add_sets(info.combined_image_samplers);
 	push(vk::DescriptorType::eCombinedImageSampler, info.combined_image_samplers);
-	add_sets(info.sampled_images);
 	push(vk::DescriptorType::eSampledImage, info.sampled_images);
-	add_sets(info.storage_images);
 	push(vk::DescriptorType::eStorageImage, info.storage_images);
-	add_sets(info.uniform_texel_buffers);
 	push(vk::DescriptorType::eUniformTexelBuffer, info.uniform_texel_buffers);
-	add_sets(info.storage_texel_buffers);
 	push(vk::DescriptorType::eStorageTexelBuffer, info.storage_texel_buffers);
-	add_sets(info.uniform_buffers);
 	push(vk::DescriptorType::eUniformBuffer, info.uniform_buffers);
-	add_sets(info.storage_buffers);
 	push(vk::DescriptorType::eStorageBuffer, info.storage_buffers);
-	add_sets(info.uniform_buffers_dynamic);
 	push(vk::DescriptorType::eUniformBufferDynamic, info.uniform_buffers_dynamic);
-	add_sets(info.storage_buffers_dynamic);
 	push(vk::DescriptorType::eStorageBufferDynamic, info.storage_buffers_dynamic);
-	add_sets(info.input_attachments);
 	push(vk::DescriptorType::eInputAttachment, info.input_attachments);
-	add_sets(info.inline_uniform_blocks);
 	push(vk::DescriptorType::eInlineUniformBlockEXT, info.inline_uniform_blocks);
-	add_sets(info.acceleration_structures);
 	push(vk::DescriptorType::eAccelerationStructureKHR, info.acceleration_structures);
 
 	uint32_t max_sets = info.max_sets;
@@ -57,7 +41,8 @@ DescriptorPool DescriptorPool::from(const Device &device, const Options &info)
 
 	auto pool_info = vk::DescriptorPoolCreateInfo()
 		.setMaxSets(max_sets)
-		.setPoolSizes(sizes);
+		.setPoolSizes(sizes)
+		.setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
 
 	return DescriptorPool(device.logical.createDescriptorPool(pool_info));
 }
