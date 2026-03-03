@@ -11,6 +11,14 @@ void Block::apply_group_allocation_map(const group_allocation_map &map)
 			ref->as <GlobalResource> ().group = group;
 		}
 	}
+
+	// Apply recursively to invoked blocks
+	for (auto &instr : *this) {
+		if (instr->is <Invocation> ()) {
+			auto sbr = instr->as <Invocation> ().sbr;
+			sbr->apply_group_allocation_map(map);
+		}
+	}
 }
 
 void Block::apply_push_constant_allocation_map(const push_constant_allocation_map &map)

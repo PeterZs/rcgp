@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdlib>
+
 namespace rcgp {
 
 template <auto &ref, size_t I>

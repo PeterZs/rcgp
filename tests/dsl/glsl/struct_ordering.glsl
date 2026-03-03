@@ -2,13 +2,13 @@
 
 #extension GL_EXT_scalar_block_layout : require
 
-struct struct_sort_case_ZLeaf {
+struct struct_sorting_ZLeaf {
     vec3 value;
     int index;
 };
 
-struct struct_sort_case_AParent {
-    struct_sort_case_ZLeaf payload;
+struct struct_sorting_AParent {
+    struct_sorting_ZLeaf payload;
     float weight;
 };
 
@@ -17,7 +17,7 @@ layout (location = 0) smooth in vec2 lin0;
 layout (location = 0) out vec4 lout0;
 
 layout (std430, push_constant) uniform PC {
-    layout (offset = 0) struct_sort_case_AParent pc;
+    layout (offset = 0) struct_sorting_AParent pc;
 };
 
 void main()

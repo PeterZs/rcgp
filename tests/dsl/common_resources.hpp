@@ -57,7 +57,7 @@ static ResourceGroup <Material> material;
 
 } // namespace fwd
 
-namespace struct_sort_case {
+namespace struct_sorting {
 
 struct ZLeaf {
 	float3 value;
@@ -75,9 +75,9 @@ struct AParent {
 
 static PushConstant <AParent> pack;
 
-} // namespace struct_sort_case
+} // namespace struct_sorting
 
-namespace sanitize_case {
+namespace sanitization {
 
 template <typename T>
 struct value_or_index {
@@ -99,7 +99,7 @@ struct GenericMaterialInterface {
 
 static PushConstant <GenericMaterialInterface::Encoder> encoder;
 
-} // namespace sanitize_case
+} // namespace sanitization
 
 namespace meshlets {
 
@@ -155,3 +155,18 @@ static struct {
 } buffers;
 
 } // namespace meshlets
+
+namespace mapping {
+
+struct DirectionalLight {
+	float3 direction;
+	float3 color;
+	f32 intensity;
+
+	$reflection(direction, color, intensity);
+};
+
+static Sampler2D albedo;
+static ArrayBuffer <DirectionalLight> lights;
+
+} // namespace mapping
