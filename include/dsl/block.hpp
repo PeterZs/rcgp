@@ -24,7 +24,7 @@ struct Block : std::vector <Reference> {
 	std::vector <Return> returns;
 	std::vector <StageInput> stage_inputs;
 	std::vector <StageOutput> stage_outputs;
-	std::map <void *, Reference> global_resources;
+	std::map <void *, std::vector <Reference>> global_resources;
 	std::optional <std::array <uint32_t, 3>> workgroup_size;
 	std::optional <Reference> task_payload_type;
 	std::optional <uint32_t> mesh_max_vertices;

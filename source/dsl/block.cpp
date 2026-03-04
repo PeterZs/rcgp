@@ -7,8 +7,8 @@ void Block::apply_group_allocation_map(const group_allocation_map &map)
 {
 	for (auto &[addr, group] : map) {
 		if (global_resources.contains(addr)) {
-			auto &ref = global_resources.at(addr);
-			ref->as <GlobalResource> ().group = group;
+			for (auto &ref : global_resources.at(addr))
+				ref->as <GlobalResource> ().group = group;
 		}
 	}
 
@@ -25,8 +25,8 @@ void Block::apply_push_constant_allocation_map(const push_constant_allocation_ma
 {
 	for (auto &[addr, offset] : map) {
 		if (global_resources.contains(addr)) {
-			auto &ref = global_resources.at(addr);
-			ref->as <GlobalResource> ().offset = offset;
+			for (auto &ref : global_resources.at(addr))
+				ref->as <GlobalResource> ().offset = offset;
 		}
 	}
 }
@@ -79,7 +79,7 @@ void Block::add_stage_output(const StageOutput &sout)
 
 void Block::add_global_resource(void *addr, const Reference &resource)
 {
-	global_resources.emplace(addr, resource);
+	global_resources[addr].push_back(resource);
 }
 
 void Block::set_workgroup_size(uint32_t x, uint32_t y, uint32_t z)

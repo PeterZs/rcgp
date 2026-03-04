@@ -740,9 +740,11 @@ void emit_whole(GLSLEmitter &em)
 
 	// Global shader resources
 	// NOTE: Top-level is sufficient because of context inheritence
-	for (auto &[_, ref] : em.main->global_resources) {
-		auto &grsrc = ref->as <GlobalResource> ();
-		emit_resource(em, grsrc);
+	for (auto &[_, refs] : em.main->global_resources) {
+		for (auto &ref : refs) {
+			auto &grsrc = ref->as <GlobalResource> ();
+			emit_resource(em, grsrc);
+		}
 	}
 
 	// Subroutines

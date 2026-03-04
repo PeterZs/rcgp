@@ -375,14 +375,20 @@ void emit_context(AsmEmitter &em, const SharedBlockReference &sbr)
 		em.emit_fmt_line("stage outputs: {{ {} }}", result);
 	}
 
-	if (sbr->global_resources.size()) {
+	size_t total_resources = 0;
+	for (auto &[_, refs] : sbr->global_resources)
+		total_resources += refs.size();
+
+	if (total_resources) {
 		std::string result;
 
 		size_t i = 0;
-		for (const auto &[_, grsrc] : sbr->global_resources) {
-			result += em.ref(grsrc);
-			if (++i < sbr->global_resources.size())
-				result += ", ";
+		for (const auto &[_, refs] : sbr->global_resources) {
+			for (const auto &grsrc : refs) {
+				result += em.ref(grsrc);
+				if (++i < total_resources)
+					result += ", ";
+			}
 		}
 
 		em.emit_fmt_line("resources: {{ {} }},", result);
