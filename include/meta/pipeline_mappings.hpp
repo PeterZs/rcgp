@@ -10,6 +10,7 @@ namespace rcgp {
 struct PipelineMappings {
 	vk::PipelineLayout layout;
 	vk::PipelineBindPoint bind_point;
+	group_allocation_map gamap;
 	std::map <void *, size_t> pc_offsets;
 	std::map <void *, vk::ShaderStageFlags> pc_stages;
 	std::map <void *, size_t> vb_offsets;
@@ -73,6 +74,7 @@ auto pipeline_mappings(const RasterizationPipeline <T, AS, GAMAP, GRCs> &pipelin
 	result.bind_point = vk::PipelineBindPoint::eGraphics;
 	write_vb_offsets(result, AS());
 	write_pb_infos(result, GRCs());
+	result.gamap = pipeline.gamap;
 	return result;
 }
 
@@ -83,6 +85,7 @@ auto pipeline_mappings(const ComputePipeline <GAMAP, GRCs> &pipeline)
 	result.layout = pipeline.layout;
 	result.bind_point = vk::PipelineBindPoint::eCompute;
 	write_pb_infos(result, GRCs());
+	result.gamap = pipeline.gamap;
 	return result;
 }
 
@@ -93,6 +96,7 @@ auto pipeline_mappings(const MeshShadingPipeline <GAMAP, GRCs> &pipeline)
 	result.layout = pipeline.layout;
 	result.bind_point = vk::PipelineBindPoint::eGraphics;
 	write_pb_infos(result, GRCs());
+	result.gamap = pipeline.gamap;
 	return result;
 }
 

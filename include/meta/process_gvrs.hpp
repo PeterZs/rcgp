@@ -27,7 +27,7 @@ auto apply_gvrs(const Device &device, const GVRs &, Blocks &... blocks)
 	using descriptor_gvrs = descriptable_resources_t <GVRs>;
 	using push_constant_gvrs = push_constant_resources_t <GVRs>;
 
-	auto [alloc, gamap] = wrappers_to_gamap(descriptor_gvrs());
+	auto [grcs, gamap] = wrappers_to_gamap(descriptor_gvrs());
 	(blocks->apply_group_allocation_map(gamap), ...);
 
 	auto [pcrs, pcmap] = wrappers_to_pcs(push_constant_gvrs());
@@ -44,7 +44,8 @@ auto apply_gvrs(const Device &device, const GVRs &, Blocks &... blocks)
 	return std::tuple {
 		layout,
 		dsls,
-		alloc,
+		grcs,
+		gamap,
 	};
 }
 

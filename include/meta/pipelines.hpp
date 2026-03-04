@@ -1,10 +1,11 @@
 #pragma once
 
+#include "../dsl/block.hpp"
 #include "../rhi/descriptor_pool.hpp"
+#include "contract.hpp"
 #include "descriptor.hpp"
 #include "group_allocation.hpp"
 #include "index_buffer.hpp"
-#include "contract.hpp"
 
 namespace rcgp {
 
@@ -36,15 +37,16 @@ struct GenericPipeline {
 	vk::Pipeline handle;
 	vk::PipelineLayout layout;
 	std::array <vk::DescriptorSetLayout, set_count> dsls;
+	group_allocation_map gamap;
 
 	GenericPipeline() = default;
-
 	GenericPipeline(
 		const vk::Device &device_,
 		const vk::Pipeline &handle_,
 		const vk::PipelineLayout &layout_,
-		const std::array <vk::DescriptorSetLayout, set_count> &dsls_
-	) : device(device_), handle(handle_), layout(layout_), dsls(dsls_) {}
+		const std::array <vk::DescriptorSetLayout, set_count> &dsls_,
+		const group_allocation_map &gamap_
+	) : device(device_), handle(handle_), layout(layout_), dsls(dsls_), gamap(gamap_) {}
 
 	template <auto &ref>
 	auto new_descriptor(const DescriptorPool &pool) const {
@@ -56,7 +58,7 @@ struct GenericPipeline {
 				.setSetLayouts(dsls[set])
 		).front();
 
-		return UnboundDescriptor <ref> (dset, set);
+		return UnboundDescriptor <ref> { dset };
 	}
 };
 

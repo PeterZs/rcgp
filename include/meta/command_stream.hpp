@@ -71,12 +71,13 @@ struct CommandStream : CommandBuffer {
 	template <auto &... refs>
 	void _bind_descriptors(
 		const vk::PipelineLayout &layout,
+		const group_allocation_map &gamap,
 		const BoundDescriptor <refs> &... descriptors
 	) const
 	{
 		(super::bindDescriptorSets(
 			vk::PipelineBindPoint::eGraphics, layout,
-			descriptors.set, { descriptors.handle }, {}
+			gamap.at(&refs), { vk::DescriptorSet(descriptors) }, {}
 		), ...);
 	}
 	
@@ -121,7 +122,7 @@ struct CommandStream : CommandBuffer {
 	) const {
 		// TODO: check with caches
 		super::bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.handle);
-		lambda_apply(descriptors, descs, _bind_descriptors(pipeline.layout, descs...));
+		lambda_apply(descriptors, descs, _bind_descriptors(pipeline.layout, pipeline.gamap, descs...));
 		lambda_apply(push_constants, constants, _bind_constants <GRCs> (pipeline.layout, constants...));
 		lambda_apply(parameters.vertex_buffers, buffers, _bind_vertex_buffers(buffers...));
 		super::draw(
@@ -142,7 +143,7 @@ struct CommandStream : CommandBuffer {
 		const DrawDispatchSize &dispatch_size
 	) const {
 		super::bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.handle);
-		lambda_apply(descriptors, descs, _bind_descriptors(pipeline.layout, descs...));
+		lambda_apply(descriptors, descs, _bind_descriptors(pipeline.layout, pipeline.gamap, descs...));
 		lambda_apply(push_constants, constants, _bind_constants <GRCs> (pipeline.layout, constants...));
 		lambda_apply(parameters.vertex_buffers, buffers, _bind_vertex_buffers(buffers...));
 		super::bindIndexBuffer(parameters.index_buffer.handle, 0, parameters.index_type);

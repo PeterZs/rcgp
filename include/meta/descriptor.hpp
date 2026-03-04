@@ -11,15 +11,13 @@
 namespace rcgp {
 
 template <auto &ref>
-struct UnboundDescriptor {
-	vk::DescriptorSet handle;
-	size_t set;
+struct UnboundDescriptor : vk::DescriptorSet {
+	using vk::DescriptorSet::DescriptorSet;
 };
 
 template <auto &ref>
-struct BoundDescriptor {
-	vk::DescriptorSet handle;
-	size_t set;
+struct BoundDescriptor : vk::DescriptorSet {
+	using vk::DescriptorSet::DescriptorSet;
 };
 
 // Counting the number of bindings needed by a resource
@@ -89,14 +87,8 @@ struct DescriptorWrite {
 	std::array <DescriptorInfoUnion, bindings> info_unions;
 
 	[[nodiscard]] auto descriptor_handle() const -> vk::DescriptorSet {
-		return std::visit([](const auto &desc) {
-			return desc.handle;
-		}, descriptor);
-	}
-
-	[[nodiscard]] auto descriptor_set() const -> size_t {
-		return std::visit([](const auto &desc) {
-			return desc.set;
+		return std::visit([](const auto &desc) -> vk::DescriptorSet {
+			return desc;
 		}, descriptor);
 	}
 	
@@ -164,15 +156,13 @@ template <auto &...refs>
 	logical.updateDescriptorSets(writes, nullptr);
 
 	if constexpr (sizeof...(dwpairs) == 1) {
-		return BoundDescriptor <refs...[0]> (
-			(dwpairs...[0]).descriptor_handle(),
-			(dwpairs...[0]).descriptor_set()
-		);
+		return BoundDescriptor <refs...[0]> {
+			(dwpairs...[0]).descriptor_handle()
+		};
 	} else {
-		return std::make_tuple(BoundDescriptor <refs> (
-			dwpairs.descriptor_handle(),
-			dwpairs.descriptor_set()
-		)...);
+		return std::make_tuple(BoundDescriptor <refs> {
+			dwpairs.descriptor_handle()
+		}...);
 	}
 }
 

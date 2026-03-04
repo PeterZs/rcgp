@@ -92,7 +92,7 @@ struct RasterizationCombinator {
 			FragmentShader::gvrs
 		));
 
-		auto [layout, dsls, gamap] = apply_gvrs(
+		auto [layout, dsls, grcs, gamap] = apply_gvrs(
 			device, gvrs,
 			vertex_shader, fragment_shader
 		);
@@ -117,9 +117,9 @@ struct RasterizationCombinator {
 		return RasterizationPipeline <
 			T,
 			decltype(streams),
-			decltype(gamap),
+			decltype(grcs),
 			decltype(gvrs)
-		> (device.logical, pipeline, layout, dsls);
+		> (device.logical, pipeline, layout, dsls, gamap);
 	}
 };
 
@@ -132,7 +132,7 @@ struct ComputeCombinator {
 	requires is_compute_shader_v <ComputeShader>
 	auto operator()(ComputeShader &compute_shader) const {
 		auto gvrs = ComputeShader::gvrs;
-		auto [layout, dsls, gamap] = apply_gvrs(device, gvrs, compute_shader);
+		auto [layout, dsls, grcs, gamap] = apply_gvrs(device, gvrs, compute_shader);
 		
 		auto [cmod] = shaders_to_modules(device, compiler, compiler_options, compute_shader);
 
@@ -144,9 +144,9 @@ struct ComputeCombinator {
 		);
 
 		return ComputePipeline <
-			decltype(gamap),
+			decltype(grcs),
 			decltype(gvrs)
-		> (device.logical, pipeline, layout, dsls);
+		> (device.logical, pipeline, layout, dsls, gamap);
 	}
 };
 
@@ -165,7 +165,7 @@ struct MeshShadingCombinator {
 			FragmentShader::gvrs
 		));
 
-		auto [layout, dsls, gamap] = apply_gvrs(device, gvrs, task, mesh, fragment);
+		auto [layout, dsls, grcs, gamap] = apply_gvrs(device, gvrs, task, mesh, fragment);
 
 		auto [tmod, mmod, fmod] = shaders_to_modules(
 			device, compiler, compiler_options,
@@ -182,9 +182,9 @@ struct MeshShadingCombinator {
 		);
 
 		return MeshShadingPipeline <
-			decltype(gamap),
+			decltype(grcs),
 			decltype(gvrs)
-		> (device.logical, pipeline, layout, dsls);
+		> (device.logical, pipeline, layout, dsls, gamap);
 	}
 };
 

@@ -95,7 +95,7 @@ auto bind_descriptors(const BoundDescriptor <refs> &... descriptors)
 		(cmd.bindDescriptorSets(
 			cid.bind_point,
 			cid.layout,
-			descriptors.set, { descriptors.handle }, {}
+			cid.gamap.at(&refs), { vk::DescriptorSet(descriptors) }, {}
 		), ...);
 	};
 
