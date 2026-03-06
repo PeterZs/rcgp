@@ -9,6 +9,8 @@
 #include <GLFW/glfw3.h>
 
 #include "meta/command_stream.hpp"
+#include "rhi/buffer.hpp"
+#include "rhi/xlas.hpp"
 #include "rhi/command_buffer.hpp"
 #include "rhi/command_pool.hpp"
 #include "rhi/descriptor_pool.hpp"
@@ -77,6 +79,20 @@ auto Device::find_memory_type(uint32_t filter, vk::MemoryPropertyFlags flags) co
 
 	std::println(std::cerr, "no compatible memory type for buffer");
 	std::abort();
+}
+
+auto Device::get_address(const Buffer &buffer) const
+	-> vk::DeviceAddress
+{
+	auto info = vk::BufferDeviceAddressInfo()
+		.setBuffer(buffer.handle);
+	return logical.getBufferAddress(info);
+}
+
+auto Device::get_address(const AccelerationStructure &as) const
+	-> vk::DeviceAddress
+{
+	return logical.getAccelerationStructureAddressKHR(as.handle, loader);
 }
 
 auto Device::new_command_buffers(const CommandPool &cpool, size_t count) const

@@ -20,18 +20,20 @@ struct Frame;
 struct TimestampQueryPool;
 struct TimestampQueryResult;
 struct Window;
-
-enum class FrameAcquireStatus {
-	Ok,
-	Suboptimal,
-	OutOfDate,
-};
+struct AccelerationStructure;
+struct Buffer;
 
 template <auto &ref>
 struct UnboundDescriptor;
 
 template <auto &ref>
 struct DescriptorWrite;
+
+enum class FrameAcquireStatus {
+	Ok,
+	Suboptimal,
+	OutOfDate,
+};
 
 vk::DebugUtilsObjectNameInfoEXT name_info(const vk::CommandBuffer &);
 
@@ -54,6 +56,10 @@ struct Device {
 
 	auto find_memory_type(uint32_t filter, vk::MemoryPropertyFlags flags) const -> uint32_t;
 
+	auto get_address(const Buffer &buffer) const -> vk::DeviceAddress;
+	auto get_address(const AccelerationStructure &as) const -> vk::DeviceAddress;
+
+	// TODO: untemplate
 	template <typename Extent>
 	auto new_framebuffer(
 		const vk::RenderPass &render_pass,

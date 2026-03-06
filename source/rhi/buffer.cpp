@@ -56,32 +56,33 @@ void Buffer::destroy()
 	size = 0;
 }
 
-auto Buffer::from(
-	const Device &device,
-	vk::DeviceSize size,
-	vk::BufferUsageFlags usage,
-	vk::MemoryPropertyFlags properties
-) -> Buffer
+auto Buffer::from(const Device &device, const Description &desc) -> Buffer
 {
 	Buffer result;
 	result.device = device.logical;
 	result.offset = 0;
-	result.size = size;
-	result.usage = usage;
-	result.properties = properties;
+	result.size = desc.size;
+	result.usage = desc.usage;
+	result.properties = desc.properties;
 
 	auto buffer_info = vk::BufferCreateInfo()
 		.setSharingMode(vk::SharingMode::eExclusive)
-		.setSize(size)
-		.setUsage(usage);
+		.setSize(desc.size)
+		.setUsage(desc.usage);
 
 	result.handle = device.logical.createBuffer(buffer_info);
 
+	auto device_address_flags = vk::MemoryAllocateFlagsInfo()
+		.setFlags(vk::MemoryAllocateFlagBits::eDeviceAddress);
+
 	auto requirements = device.logical.getBufferMemoryRequirements(result.handle);
-	auto memory_index = device.find_memory_type(requirements.memoryTypeBits, properties);
+	auto memory_index = device.find_memory_type(requirements.memoryTypeBits, desc.properties);
 	auto memory_info = vk::MemoryAllocateInfo()
 		.setAllocationSize(requirements.size)
 		.setMemoryTypeIndex(memory_index);
+
+	if (desc.device_address)
+		memory_info.setPNext(&device_address_flags);
 
 	result.backing = device.logical.allocateMemory(memory_info);
 	device.logical.bindBufferMemory(result.handle, result.backing, 0);

@@ -8,6 +8,13 @@
 namespace rcgp {
 
 struct Buffer {
+	struct Description {
+		vk::DeviceSize size = 0;
+		vk::BufferUsageFlags usage = {};
+		vk::MemoryPropertyFlags properties = {};
+		bool device_address = false;
+	};
+
 	vk::Device device;
 	vk::Buffer handle;
 	vk::DeviceMemory backing;
@@ -29,6 +36,11 @@ struct Buffer {
 	) const -> const Buffer &;
 	
 	template <typename U>
+	auto &write(std::span <U> memory, vk::DeviceSize offset = 0) const {
+		return write(memory.data(), memory.size_bytes(), offset);
+	}
+	
+	template <typename U>
 	auto &write(std::span <const U> memory, vk::DeviceSize offset = 0) const {
 		return write(memory.data(), memory.size_bytes(), offset);
 	}
@@ -47,12 +59,7 @@ struct Buffer {
 	
 	void destroy();
 
-	static auto from(
-		const Device &device,
-		vk::DeviceSize size,
-		vk::BufferUsageFlags usage,
-		vk::MemoryPropertyFlags properties
-	) -> Buffer;
+	static auto from(const Device &device, const Description &desc) -> Buffer;
 };
 
 // TODO: arena allocator for buffers

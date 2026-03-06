@@ -335,8 +335,8 @@ int main()
 		stream.begin();
 
 		auto &target = window.images[frame.image_index];
-		stream.transition_image_layout(target, vk::ImageLayout::eColorAttachmentOptimal);
-		stream.transition_image_layout(depth, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+		stream.transition(target, vk::ImageLayout::eColorAttachmentOptimal);
+		stream.transition(depth, vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
 		auto color_attachment = vk::RenderingAttachmentInfo()
 			.setImageView(target.view)
@@ -400,7 +400,7 @@ int main()
 		);
 
 		stream.endRendering();
-		stream.transition_image_layout(target, vk::ImageLayout::ePresentSrcKHR);
+		stream.transition(target, vk::ImageLayout::ePresentSrcKHR);
 		stream.end();
 
 		queue.submit(

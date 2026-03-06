@@ -27,6 +27,7 @@ static uint64_t hash_label(std::string_view label)
 	return hash;
 }
 
+// TODO: separate file
 static std::array <float, 4> hsl_to_rgba(float hue_degrees, float saturation, float lightness)
 {
 	float h = std::fmod(hue_degrees, 360.0f);
@@ -180,20 +181,26 @@ void CommandBuffer::begin(const vk::CommandBufferBeginInfo &info) const
 	super::begin(info);
 }
 
-void CommandBuffer::transition_image_layout(Image &image, vk::ImageLayout new_layout) const
+void CommandBuffer::transition(Image &image, vk::ImageLayout new_layout, const BarrierDesc &desc) const
 {
-	auto [
-		src_stage, src_access,
-		dst_stage, dst_access
-	] = decompose_layout_transition(image.layout, new_layout);
+	vk::PipelineStageFlags2 src_stage  = desc.src_stage;
+	vk::AccessFlags2        src_access = desc.src_access;
+	vk::PipelineStageFlags2 dst_stage  = desc.dst_stage;
+	vk::AccessFlags2        dst_access = desc.dst_access;
+
+	if (!src_stage && !dst_stage) {
+		auto [ss, sa, ds, da] = decompose_layout_transition(image.layout, new_layout);
+		src_stage = ss; src_access = sa;
+		dst_stage = ds; dst_access = da;
+	}
 
 	auto barrier = vk::ImageMemoryBarrier2()
 		.setImage(image.handle)
 		.setOldLayout(image.layout)
 		.setNewLayout(new_layout)
 		.setSrcStageMask(src_stage)
-		.setDstStageMask(dst_stage)
 		.setSrcAccessMask(src_access)
+		.setDstStageMask(dst_stage)
 		.setDstAccessMask(dst_access)
 		.setSubresourceRange(image.range());
 

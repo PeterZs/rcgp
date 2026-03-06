@@ -53,4 +53,17 @@ vk::Pipeline compile_compute_pipeline(
 	const vk::PipelineLayout &layout
 );
 
+struct RaytracingOptions {
+	uint32_t max_recursion_depth = 1;
+	bool dynamic_stack_size = false;
+};
+
+vk::Pipeline compile_raytracing_pipeline(
+	const Device &device,
+	const vk::ArrayProxy <vk::PipelineShaderStageCreateInfo> &stages,
+	const vk::ArrayProxy <vk::RayTracingShaderGroupCreateInfoKHR> &groups,
+	const vk::PipelineLayout &layout,
+	const RaytracingOptions &options = {}
+);
+
 } // namespace rcgp

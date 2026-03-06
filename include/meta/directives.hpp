@@ -277,10 +277,10 @@ inline auto write_timestamp(
 	return Commands <> { binder };
 }
 
-inline auto transition_image_layout(Image *image, vk::ImageLayout new_layout)
+inline auto transition(Image *image, vk::ImageLayout new_layout)
 {
 	auto binder = [=](const CommandBuffer &cmd, SerializationContext &) {
-		cmd.transition_image_layout(*image, new_layout);
+		cmd.transition(*image, new_layout);
 	};
 
 	return Commands <> { binder };

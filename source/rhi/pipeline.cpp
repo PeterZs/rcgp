@@ -298,4 +298,35 @@ vk::Pipeline compile_mesh_shading_pipeline(
 	return pipeline;
 }
 
+vk::Pipeline compile_raytracing_pipeline(
+	const Device &device,
+	const vk::ArrayProxy <vk::PipelineShaderStageCreateInfo> &stages,
+	const vk::ArrayProxy <vk::RayTracingShaderGroupCreateInfoKHR> &groups,
+	const vk::PipelineLayout &layout,
+	const RaytracingOptions &options
+)
+{
+	auto dynamic_states = std::array { vk::DynamicState::eRayTracingPipelineStackSizeKHR };
+	auto dynamic_state  = vk::PipelineDynamicStateCreateInfo()
+		.setDynamicStates(dynamic_states);
+
+	auto pipeline_info = vk::RayTracingPipelineCreateInfoKHR()
+		.setStages(stages)
+		.setGroups(groups)
+		.setMaxPipelineRayRecursionDepth(options.max_recursion_depth)
+		.setLayout(layout);
+
+	if (options.dynamic_stack_size)
+		pipeline_info.setPDynamicState(&dynamic_state);
+
+	auto [result, pipeline] = device.logical.createRayTracingPipelineKHR(
+		nullptr, nullptr, pipeline_info, nullptr, device.loader);
+	if (result != vk::Result::eSuccess) {
+		std::println(std::cerr, "failed to compile raytracing pipeline");
+		std::abort();
+	}
+
+	return pipeline;
+}
+
 } // namespace rcgp

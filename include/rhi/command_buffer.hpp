@@ -10,6 +10,13 @@ namespace rcgp {
 struct Buffer;
 struct Image;
 
+struct BarrierDesc {
+	vk::PipelineStageFlags2 src_stage  = {};
+	vk::AccessFlags2        src_access = {};
+	vk::PipelineStageFlags2 dst_stage  = {};
+	vk::AccessFlags2        dst_access = {};
+};
+
 struct CommandBuffer : vk::CommandBuffer {
 	using super = vk::CommandBuffer;
 
@@ -38,7 +45,7 @@ struct CommandBuffer : vk::CommandBuffer {
 
 	void begin() const;
 	void begin(const vk::CommandBufferBeginInfo &info) const;
-	void transition_image_layout(Image &image, vk::ImageLayout new_layout) const;
+	void transition(Image &image, vk::ImageLayout new_layout, const BarrierDesc &desc = {}) const;
 	void copy_buffer_to_image(const Buffer &staging, const Image &image) const;
 	void copy_image(const Image &src, const Image &dst) const;
 	void end() const;
