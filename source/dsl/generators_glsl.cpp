@@ -151,12 +151,19 @@ std::string lval_repr(const GLSLEmitter &em, const Reference &ref)
 	}
 	vcase(GlobalResource): {
 		auto &grsrc = ref->as <GlobalResource> ();
-		if (grsrc.kind == GlobalResourceKind::ePushConstant)
-			return "pc";
-
+		
 		auto base = grsrc_name(grsrc);
-		if (grsrc.kind == GlobalResourceKind::eSampler)
+		switch (grsrc.kind) {
+		case GlobalResourceKind::ePushConstant:
+			return "pc";
+		case GlobalResourceKind::eSampler:
+		case GlobalResourceKind::eAccelerationStructure:
+		case GlobalResourceKind::eRayDispatcherPayload:
+		case GlobalResourceKind::eRayReceiverPayload:
 			return base;
+		default:
+			break;
+		}
 
 		auto &type = grsrc.type->as <Type> ();
 		return type.is <Struct> ()
@@ -383,6 +390,7 @@ bool has_side_effects(const BuiltinIntrinsicCode &code)
 		BuiltinIntrinsicCode::eDiscard,
 		BuiltinIntrinsicCode::eEmitMeshTasksEXT,
 		BuiltinIntrinsicCode::eSetMeshOutputsEXT,
+		BuiltinIntrinsicCode::eTraceRays,
 	};
 
 	return side_effects.contains(code);
@@ -631,6 +639,8 @@ std::string buffer_access(const GlobalResource &grsrc)
 void emit_resource(GLSLEmitter &em, const GlobalResource &grsrc)
 {
 	auto layout = repr_glsl(grsrc.layout);
+
+	// Push constants
 	if (grsrc.kind == GlobalResourceKind::ePushConstant) {
 		auto offset = grsrc.offset.value_or(0);
 		auto repr = type_repr(em, grsrc.type);
@@ -646,11 +656,41 @@ void emit_resource(GLSLEmitter &em, const GlobalResource &grsrc)
 	auto group = grsrc.group.value_or(0);
 	auto index = grsrc.index.value_or(0);
 	auto name = grsrc_name(grsrc);
+
+	// Combined image samplers
 	if (grsrc.kind == GlobalResourceKind::eSampler) {
 		em.emit_fmt_line(
 			"layout (set = {}, binding = {}) "
 			"uniform sampler2D {};",
 			group, index, name
+		);
+		return em.emit_newline();
+	}
+
+	// Acceleration structures
+	if (grsrc.kind == GlobalResourceKind::eAccelerationStructure) {
+		em.emit_fmt_line(
+			"layout (set = {}, binding = {}) "
+			"accelerationStructureEXT {};",
+			group, index, name
+		);
+		return em.emit_newline();
+	}
+
+	// Ray payloads
+	auto repr = type_repr(em, grsrc.type);
+	if (grsrc.kind == GlobalResourceKind::eRayDispatcherPayload) {
+		em.emit_fmt_line(
+			"layout (location = {}) "
+			"rayPayloadEXT {} {}{};",
+			index, repr.base, name, repr.suffix
+		);
+		return em.emit_newline();
+	} else if (grsrc.kind == GlobalResourceKind::eRayReceiverPayload) {
+		em.emit_fmt_line(
+			"layout (location = {}) "
+			"rayPayloadInEXT {} {}{};",
+			index, repr.base, name, repr.suffix
 		);
 		return em.emit_newline();
 	}
@@ -675,7 +715,6 @@ void emit_resource(GLSLEmitter &em, const GlobalResource &grsrc)
 			em.emit_fmt_line("{} {}{};", repr.base, st.fields[i], repr.suffix);
 		}
 	} else {
-		auto repr = type_repr(em, grsrc.type);
 		em.emit_fmt_line("{} value{};", repr.base, repr.suffix);
 	}
 	em.indentation--;

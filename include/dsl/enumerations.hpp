@@ -76,10 +76,14 @@ const char *repr(Primitive value);
 const char *repr_glsl(Primitive value);
 
 enum class GlobalResourceKind {
+	eAccelerationStructure,
 	ePushConstant,
-	eUniformBuffer,
-	eStorageBuffer,
+	eRayDispatcherPayload,
+	eRayReceiverPayload,
 	eSampler,
+	eStorageBuffer,
+	eStorageImage,
+	eUniformBuffer,
 };
 
 const char *repr(GlobalResourceKind value);
@@ -111,6 +115,8 @@ enum class SystemValue {
 	eTaskPayload,               // @glsl:task_payload
 	eVertexIndex,               // @glsl:gl_VertexIndex
 	eWorkGroupID,               // @glsl:gl_WorkGroupID
+	eLaunchID,                  // @glsl:gl_LaunchIDEXT
+	eLaunchSize,                // @glsl:gl_LaunchSizeEXT
 };
 
 const char *repr(SystemValue value);
@@ -132,35 +138,36 @@ enum class MeshPrimitive {
 const char *repr(MeshPrimitive value);
 
 enum class BuiltinIntrinsicCode {
-	eAbs,               // @glsl:abs
+	eAbs,                // @glsl:abs
 	eBreak,
 	eContinue,
-	eCos,               // @glsl:cos
-	eCross,             // @glsl:cross
-	eDFdx,              // @glsl:dFdx
-	eDFdxFine,          // @glsl:dFdxFine
-	eDFdy,              // @glsl:dFdy
-	eDFdyFine,          // @glsl:dFdyFine
+	eCos,                // @glsl:cos
+	eCross,              // @glsl:cross
+	eDFdx,               // @glsl:dFdx
+	eDFdxFine,           // @glsl:dFdxFine
+	eDFdy,               // @glsl:dFdy
+	eDFdyFine,           // @glsl:dFdyFine
 	eDiscard,
-	eDot,               // @glsl:dot
-	eEmitMeshTasksEXT,  // @glsl:EmitMeshTasksEXT
-	eInverse,           // @glsl:inverse
-	eLength,            // @glsl:length
-	eMax,               // @glsl:max
-	eMin,               // @glsl:min
-	eMix,               // @glsl:mix
-	eNormalize,         // @glsl:normalize
-	ePow,               // @glsl:pow
-	eSample,            // @glsl:texture
+	eDot,                // @glsl:dot
+	eEmitMeshTasksEXT,   // @glsl:EmitMeshTasksEXT
+	eInverse,            // @glsl:inverse
+	eLength,             // @glsl:length
+	eMax,                // @glsl:max
+	eMin,                // @glsl:min
+	eMix,                // @glsl:mix
+	eNormalize,          // @glsl:normalize
+	ePow,                // @glsl:pow
+	eSample,             // @glsl:texture
 	eSelect,
-	eSetMeshOutputsEXT, // @glsl:SetMeshOutputsEXT
-	eSin,               // @glsl:sin
-	eSmoothstep,        // @glsl:smoothstep
-	eSqrt,              // @glsl:sqrt
-	eTan,               // @glsl:tan
+	eSetMeshOutputsEXT,  // @glsl:SetMeshOutputsEXT
+	eSin,                // @glsl:sin
+	eSmoothstep,         // @glsl:smoothstep
+	eSqrt,               // @glsl:sqrt
+	eTan,                // @glsl:tan
 	eToFloat,
-	eTranspose,         // @glsl:transpose
+	eTranspose,          // @glsl:transpose
 	eUnsizedArrayLength,
+	eTraceRays,          // @glsl:traceRaysEXT
 };
 
 const char *repr(BuiltinIntrinsicCode value);
@@ -206,6 +213,9 @@ enum class ShaderStage {
 	eCompute,
 	eTask,
 	eMesh,
+	eRayGeneration,
+	eClosestHit,
+	eMiss,
 };
 
 const char *repr(ShaderStage value);

@@ -187,6 +187,8 @@ std::string emit_instr_value(AsmEmitter &em, const Reference &ref)
 
 		if (grsrc.kind == GlobalResourceKind::eSampler)
 			return std::format("{} @{}", repr(grsrc.kind), binding);
+		if (grsrc.kind == GlobalResourceKind::eAccelerationStructure)
+			return std::format("{} @{}", repr(grsrc.kind), binding);
 
 		return std::format(
 			"{} @{}: {} {}",

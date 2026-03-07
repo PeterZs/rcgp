@@ -63,18 +63,17 @@ struct Sampler : resource_handle {
 // TODO: something similar for descriptor heaps with strided access
 
 TYPE_TRAIT(is_global_resource);
+	template <typename T, template <typename> typename L>
+	TYPE_TRAIT_INCLUDES(is_global_resource, PushConstant <T, L>);
 
-template <typename T, template <typename> typename L>
-TYPE_TRAIT_INCLUDES(is_global_resource, PushConstant <T, L>);
+	template <typename T, template <typename> typename L>
+	TYPE_TRAIT_INCLUDES(is_global_resource, UniformBuffer  <T, L>);
 
-template <typename T, template <typename> typename L>
-TYPE_TRAIT_INCLUDES(is_global_resource, UniformBuffer  <T, L>);
+	template <typename T, template <typename> typename L, GlobalResourceAccess A>
+	TYPE_TRAIT_INCLUDES(is_global_resource, StorageBuffer  <T, L, A>);
 
-template <typename T, template <typename> typename L, GlobalResourceAccess A>
-TYPE_TRAIT_INCLUDES(is_global_resource, StorageBuffer  <T, L, A>);
-
-template <typename T, size_t D>
-TYPE_TRAIT_INCLUDES(is_global_resource, Sampler <T, D>);
+	template <typename T, size_t D>
+	TYPE_TRAIT_INCLUDES(is_global_resource, Sampler <T, D>);
 
 namespace detail {
 

@@ -2,14 +2,19 @@
 
 #include <type_traits>
 
-#include "../util/cti.hpp"
-#include "../dsl/array.hpp"
 #include "../dsl/aliases.hpp"
+#include "../dsl/array.hpp"
 #include "../dsl/block.hpp"
 #include "../dsl/projection.hpp"
+#include "../util/cti.hpp"
+#include "contract.hpp"
 #include "reconstruct_type.hpp"
+#include "reflection.hpp"
+#include "resources.hpp"
 
 namespace rcgp {
+
+// TODO: split into general, mesh shaders, and raytracing shaders
 
 // TODO: move intrinsics definition to a dedicated header
 // TODO: should also mark the stage so that we check at shader module definion...
@@ -25,7 +30,7 @@ template <SystemValue G, ShaderStage S, builtin T>
 struct write_only_intrinsic {
 	auto &operator=(const T &value) {
 		auto self = jems::system_value(G);
-		jems::store(self, value);
+		auto _ = jems::store(self, value);
 		return value;
 	}
 };
@@ -217,7 +222,7 @@ template <typename T>
 using unwrap_output_type_t = typename unwrap_output_type <T> ::type;
 
 template <MeshPrimitive P, uint32_t MaxVertices, uint32_t MaxPrimitives, typename T = void>
-struct MeshletPayload;
+struct MeshletPayload {};
 
 template <MeshPrimitive P, uint32_t MaxVertices, uint32_t MaxPrimitives>
 struct MeshletPayload <P, MaxVertices, MaxPrimitives, void> {
@@ -237,30 +242,22 @@ struct MeshletPayload <P, MaxVertices, MaxPrimitives, void> {
 	}
 };
 
-template <MeshPrimitive P, uint32_t MaxVertices, uint32_t MaxPrimitives, typename T>
-struct MeshletPayload : T {
+template <MeshPrimitive P, uint32_t MaxVertices, uint32_t MaxPrimitives, user_defined T>
+struct MeshletPayload <P, MaxVertices, MaxPrimitives, T> : T {
 	static_assert(MaxVertices > 0, "MeshletPayload MaxVertices must be > 0");
 	static_assert(MaxPrimitives > 0, "MeshletPayload MaxPrimitives must be > 0");
 
 	mesh_vertex_positions <vec4> positions;
 	mesh_primitive_triangles <uvec3> triangles;
 
-	MeshletPayload()
-	{
-		if (Tracer::singleton.records.empty())
-			return;
-
-		static_assert(user_defined <T>,
-			"MeshletPayload extra outputs must be an aggregate");
-
+	MeshletPayload() {
 		constexpr_for(Is, T::field_count,
 			([&] {
 				using Field = T::fields::template get <Is>;
 				using Unwrapped = unwrap_output_type_t <Field>;
 				constexpr bool perprimitive = is_perprimitive_output_v <Field>;
 				constexpr bool pervertex = is_pervertex_output_v <Field>;
-				static_assert(perprimitive || pervertex,
-					"MeshletPayload extra outputs must be PerVertex<> or PerPrimitive<>");
+				static_assert(perprimitive || pervertex, "MeshletPayload extra outputs must be PerVertex<> or PerPrimitive<>");
 
 				constexpr auto count = perprimitive ? MaxPrimitives : MaxVertices;
 				auto type = reconstruct_type <array <Unwrapped, count>> ();
@@ -276,14 +273,163 @@ struct MeshletPayload : T {
 		);
 	}
 
-	void allocate(u32 vertices, u32 primitives, $location)
-	{
+	void allocate(u32 vertices, u32 primitives, $location) {
 		jems::builtin_intrinsic(
 			BuiltinIntrinsicCode::eSetMeshOutputsEXT,
-			std::vector <Reference> { vertices, primitives },
-			loc
+			{ vertices, primitives }, loc
 		);
 	}
 };
+
+// Raytracing intrinsics
+struct RaytracingAccelerationStructure : jems::handle {
+	using handle_type = RaytracingAccelerationStructure;
+};
+
+// Populate ray flags to exactly match the EXT specification:
+// https://github.com/KhronosGroup/GLSL/blob/main/extensions/ext/GLSL_EXT_ray_tracing.txt
+enum RayFlags {
+	eNone = 0U,
+	eOpaque = 1U,
+	eNoOpaque = 2U,
+	eTerminateOnFirstHit = 4U,
+	eSkipClosestHitShader = 8U,
+	eCullBackFacingTriangles = 16U,
+	eCullFrontFacingTriangles = 32U,
+	eCullOpaque = 64U,
+	eCullNoOpaque = 128U,
+};
+
+template <traced T, RayFlags F = eNone>
+struct TraceGroup {
+	static constexpr auto flags = F;
+
+	using value_type = T;
+};
+
+struct Ray {
+	float3 origin;
+	float3 direction;
+
+	$reflection(origin, direction);
+};
+
+template <auto &ref>
+struct Dispatcher {
+	using R = reference_base_of <ref>;
+	using T = R::value_type;
+
+	struct handle_type : jems::handle {
+		handle_type &operator=(const T &value) {
+			auto payload = resource_intrinsic(Dispatcher <ref> (), 0);
+			jems::store(payload, value);
+			return *this;
+		}
+
+		// TODO: operator=
+		void trace(
+			RaytracingAccelerationStructure as,
+			Ray ray,
+			f32 tmin,
+			f32 tmax,
+			u32 mask = 0xff,
+			$location
+		) {
+			jems::builtin_intrinsic(
+				BuiltinIntrinsicCode::eTraceRays,
+				{
+					as, i32(std::to_underlying(R::flags)), mask,
+					// TODO: these 3 and hte last payload
+					// argument need a new
+					// deferred/unresolved handle type or
+					// somethign...
+					i32(0), i32(1), i32(0),
+					ray.origin, tmin,
+					ray.direction, tmax,
+					i32(0)
+					// TODO: the unresolved handle should have
+					// a hash value (can just be &ref for now)
+					// so that we can deterministically resolve...
+				}, loc
+			);
+		}
+	};
+};
+
+template <auto &ref>
+struct Receiver {
+	using R = reference_base_of <ref>;
+	using T = R::value_type;
+
+	struct handle_type : jems::handle {
+		handle_type &operator=(const T &value) {
+			auto payload = resource_intrinsic(Receiver <ref> (), 0);
+			jems::store(payload, value);
+			return *this;
+		}
+	};
+};
+
+template <auto &ref>
+inline auto dispatcher = Dispatcher <ref> ();
+
+template <auto &ref>
+inline auto receiver = Receiver <ref> ();
+
+using LaunchID = read_only_intrinsic <SystemValue::eLaunchID, ShaderStage::eRayGeneration, uvec3>;
+using LaunchSize = read_only_intrinsic <SystemValue::eLaunchSize, ShaderStage::eRayGeneration, uvec3>;
+
+template <>
+TYPE_TRAIT_INCLUDES(is_global_resource, RaytracingAccelerationStructure);
+
+inline jems::handle resource_intrinsic(const RaytracingAccelerationStructure &, uint32_t binding)
+{
+	return jems::global_resource(
+		nullptr,
+		GlobalResourceKind::eAccelerationStructure,
+		GlobalResourceLayout::eNone,
+		GlobalResourceAccess::eRead,
+		std::nullopt,
+		binding
+	);
+}
+
+template <auto &ref>
+TYPE_TRAIT_INCLUDES(is_global_resource, Dispatcher <ref>);
+
+template <auto &ref>
+jems::handle resource_intrinsic(const Dispatcher <ref> &, uint32_t _)
+{
+	using R = reference_base_of <ref>;
+	using T = R::value_type;
+
+	return jems::global_resource(
+		reconstruct_type <T> (),
+		GlobalResourceKind::eRayDispatcherPayload,
+		GlobalResourceLayout::eNone,
+		GlobalResourceAccess::eRead,
+		std::nullopt,
+		std::nullopt
+	);
+}
+
+template <auto &ref>
+TYPE_TRAIT_INCLUDES(is_global_resource, Receiver <ref>);
+
+template <auto &ref>
+jems::handle resource_intrinsic(const Receiver <ref> &, uint32_t _)
+{
+	using R = reference_base_of <ref>;
+	using T = R::value_type;
+
+	return jems::global_resource(
+		reconstruct_type <T> (),
+		GlobalResourceKind::eRayReceiverPayload,
+		GlobalResourceLayout::eNone,
+		GlobalResourceAccess::eRead,
+		std::nullopt,
+		std::nullopt
+	);
+}
 
 } // namespace rcgp

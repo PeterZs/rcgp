@@ -65,6 +65,14 @@ public:
 			jems::type(primitive_of <T, 2> (), loc),
 			{ x, y }
 		)) {}
+	
+	template <typename U>
+	requires std::is_convertible_v <U, T>
+	vector_base(const vector_base <U, 2> v, $location)
+		: handle(wrap_in_local(loc,
+			jems::type(primitive_of <T, 2> (), loc),
+			{ v }
+		)) {}
 };
 
 template <native_scalar T>

@@ -5,6 +5,7 @@
 #include <type_traits>
 
 #include "../dsl/jems.hpp"
+#include "contract_hell.hpp"
 #include "inject_arguments.hpp"
 #include "macro_hell.hpp"
 #include "return_handler.hpp"
@@ -74,6 +75,9 @@ using enable_if = std::conditional_t <B, T, jems::null>;
 #define rcgp_compute	(_fn_tag <ShaderStage::eCompute> ("main"))
 #define rcgp_mesh	(_fn_tag <ShaderStage::eMesh> ("main"))
 #define rcgp_task	(_fn_tag <ShaderStage::eTask> ("main"))
+#define rcgp_raygen	(_fn_tag <ShaderStage::eRayGeneration> ("main"))
+#define rcgp_chit	(_fn_tag <ShaderStage::eClosestHit> ("main"))
+#define rcgp_miss	(_fn_tag <ShaderStage::eMiss> ("main"))
 
 #define rcgp_context(...)	_ctx = icontext_from_vptr((void (*)(__VA_ARGS__)) nullptr)] (__VA_ARGS__)
 
@@ -90,47 +94,6 @@ using enable_if = std::conditional_t <B, T, jems::null>;
 
 #define $shader_t(S, R, ...) decltype($shader(S)(__VA_ARGS__) { return R(); })
 #define $subroutine_t(S, R, ...) decltype($subroutine(_tmp)(__VA_ARGS__) { return R(); })
-
-// TODO: move to separate header... contract_hell
-#define RCGP_CONTRACT_FROM_NAME(name) , contract <name> name
-#define RCGP_CONTRACT_FROM_TUPLE(name, ref) , contract <(ref)> name
-
-#define RCGP_CONTRACT_IS_ENABLE_IF(tag, ...) \
-	MACRO_CHECK(MACRO_CAT(RCGP_CONTRACT_IS_ENABLE_IF_PROBE_, tag))
-#define RCGP_CONTRACT_IS_ENABLE_IF_PROBE_ENABLE_IF MACRO_PROBE()
-
-#define RCGP_CONTRACT_ENABLE_IF_TUPLE(cond, name, ref) \
-	, std::conditional_t <cond, contract <(ref)>, jems::null> name
-#define RCGP_CONTRACT_ENABLE_IF_NAME(cond, name) \
-	, std::conditional_t <cond, contract <name>, jems::null> name
-
-#define RCGP_CONTRACT_FROM_ENABLE_IF(tag, cond, arg) \
-	RCGP_CONTRACT_FROM_ENABLE_IF_ARG(cond, arg)
-#define RCGP_CONTRACT_ENABLE_IF_TUPLE_WRAPPER(cond, arg) \
-	MACRO_APPLY(RCGP_CONTRACT_ENABLE_IF_TUPLE, (cond, MACRO_UNPACK arg))
-#define RCGP_CONTRACT_ENABLE_IF_NAME_WRAPPER(cond, arg) \
-	RCGP_CONTRACT_ENABLE_IF_NAME(cond, arg)
-#define RCGP_CONTRACT_FROM_ENABLE_IF_ARG(cond, arg) \
-	MACRO_IF(MACRO_IS_PAREN(arg))	\
-	(	\
-		RCGP_CONTRACT_ENABLE_IF_TUPLE_WRAPPER,	\
-		RCGP_CONTRACT_ENABLE_IF_NAME_WRAPPER	\
-	)(cond, arg)
-
-#define RCGP_CONTRACT_FROM_ENABLE_IF_WRAPPER(...) \
-	RCGP_CONTRACT_FROM_ENABLE_IF(__VA_ARGS__)
-#define RCGP_CONTRACT_FROM_TUPLE_WRAPPER(...) \
-	RCGP_CONTRACT_FROM_TUPLE(__VA_ARGS__)
-#define RCGP_CONTRACT_FROM_PAREN(...) \
-	MACRO_IF(RCGP_CONTRACT_IS_ENABLE_IF(__VA_ARGS__)) \
-	(	\
-		RCGP_CONTRACT_FROM_ENABLE_IF_WRAPPER, \
-		RCGP_CONTRACT_FROM_TUPLE_WRAPPER \
-	)(__VA_ARGS__)
-
-#define RCGP_CONTRACT_FROM_ARG(arg) \
-	MACRO_IF(MACRO_IS_PAREN(arg))(RCGP_CONTRACT_FROM_PAREN arg, RCGP_CONTRACT_FROM_NAME(arg))
-#define CONTRACT_GENERATOR(ctx, arg) RCGP_CONTRACT_FROM_ARG(arg)
 
 #define $contracts(...) jems::null MAP(CONTRACT_GENERATOR, /* N/A */, __VA_ARGS__)
 
