@@ -121,6 +121,40 @@ struct RasterizationCombinator {
 			decltype(gvrs)
 		> (pipeline, layout, dsls, gamap);
 	}
+
+	template <typename VertexShader>
+	requires is_vertex_shader_v <VertexShader>
+	auto operator()(VertexShader &vertex_shader) const {
+		auto streams = collect_streams(typename VertexShader::icontext());
+
+		auto vertex_bindings = sequence_to_vertex_bindings(streams);
+		auto vertex_attributes = sequence_to_vertex_attributes(streams);
+
+		auto gvrs = merge_stage_wrappers(VertexShader::gvrs);
+
+		auto [layout, dsls, grcs, gamap] = apply_gvrs(device, gvrs, vertex_shader);
+
+		auto [vmod] = shaders_to_modules(device, compiler, compiler_options, vertex_shader);
+
+		auto pipeline = compile_rasterization_pipeline(
+			device,
+			render_state,
+			translate_topology(T),
+			vmod, std::nullopt,
+			"main", nullptr,
+			layout,
+			vertex_bindings,
+			vertex_attributes,
+			options
+		);
+
+		return RasterizationPipeline <
+			T,
+			decltype(streams),
+			decltype(grcs),
+			decltype(gvrs)
+		> (pipeline, layout, dsls, gamap);
+	}
 };
 
 struct ComputeCombinator {

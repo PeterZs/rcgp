@@ -24,7 +24,7 @@ vk::Pipeline compile_rasterization_pipeline(
 	const RenderState &render_state,
 	const vk::PrimitiveTopology topology,
 	const vk::ShaderModule &vertex_shader_module,
-	const vk::ShaderModule &fragment_shader_module,
+	const std::optional <vk::ShaderModule> &fragment_shader_module,
 	const char *vertex_entry,
 	const char *fragment_entry,
 	const vk::PipelineLayout &layout,

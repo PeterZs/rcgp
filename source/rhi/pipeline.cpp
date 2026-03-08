@@ -11,7 +11,7 @@ vk::Pipeline compile_rasterization_pipeline(
 	const RenderState &render_state,
 	const vk::PrimitiveTopology topology,
 	const vk::ShaderModule &vertex_shader_module,
-	const vk::ShaderModule &fragment_shader_module,
+	const std::optional <vk::ShaderModule> &fragment_shader_module,
 	const char *vertex_entry,
 	const char *fragment_entry,
 	const vk::PipelineLayout &layout,
@@ -23,16 +23,21 @@ vk::Pipeline compile_rasterization_pipeline(
 	bool dynamic_viewport_scissor = !options.extent.has_value();
 
 	// Building the pipeline
-	auto shader_stages = std::array {
+	std::vector <vk::PipelineShaderStageCreateInfo> shader_stages;
+	shader_stages.push_back(
 		vk::PipelineShaderStageCreateInfo()
 			.setStage(vk::ShaderStageFlagBits::eVertex)
 			.setModule(vertex_shader_module)
-			.setPName(vertex_entry),
-		vk::PipelineShaderStageCreateInfo()
-			.setStage(vk::ShaderStageFlagBits::eFragment)
-			.setModule(fragment_shader_module)
-			.setPName(fragment_entry),
-	};
+			.setPName(vertex_entry)
+	);
+	if (fragment_shader_module.has_value()) {
+		shader_stages.push_back(
+			vk::PipelineShaderStageCreateInfo()
+				.setStage(vk::ShaderStageFlagBits::eFragment)
+				.setModule(*fragment_shader_module)
+				.setPName(fragment_entry)
+		);
+	}
 
 	auto vertex_input = vk::PipelineVertexInputStateCreateInfo()
 		.setVertexBindingDescriptions(vertex_bindings)
@@ -89,6 +94,11 @@ vk::Pipeline compile_rasterization_pipeline(
 		.setSampleShadingEnable(false)
 		.setMinSampleShading(1.0f);
 
+	// Determine number of color attachments from the render state
+	uint32_t color_att_count = 1;
+	if (render_state.is <vk::PipelineRenderingCreateInfo> ())
+		color_att_count = render_state.as <vk::PipelineRenderingCreateInfo> ().colorAttachmentCount;
+
 	auto color_blend_attachment = vk::PipelineColorBlendAttachmentState()
 		.setBlendEnable(options.alpha_blend)
 		.setColorWriteMask(
@@ -108,8 +118,12 @@ vk::Pipeline compile_rasterization_pipeline(
 			.setAlphaBlendOp(vk::BlendOp::eAdd);
 	}
 
+	std::vector <vk::PipelineColorBlendAttachmentState> color_blend_attachments;
+	if (fragment_shader_module.has_value())
+		color_blend_attachments.resize(color_att_count, color_blend_attachment);
+
 	auto color_blend = vk::PipelineColorBlendStateCreateInfo()
-		.setAttachments(color_blend_attachment);
+		.setAttachments(color_blend_attachments);
 
 	auto depth_stencil = vk::PipelineDepthStencilStateCreateInfo()
 		.setDepthTestEnable(options.depth_test)

@@ -177,6 +177,15 @@ inline auto draw_indexed(uint32_t count)
 	> { binder };
 }
 
+inline auto draw(uint32_t count, uint32_t instances = 1)
+{
+	auto binder = [=](const CommandBuffer &cmd, SerializationContext &) {
+		cmd.draw(count, instances, 0, 0);
+	};
+
+	return Commands <DependencySentinel> { binder };
+}
+
 inline auto draw_mesh_tasks(uint32_t x, uint32_t y = 1, uint32_t z = 1)
 {
 	auto binder = [=](const CommandBuffer &cmd, SerializationContext &) {
@@ -281,6 +290,15 @@ inline auto transition(Image *image, vk::ImageLayout new_layout)
 {
 	auto binder = [=](const CommandBuffer &cmd, SerializationContext &) {
 		cmd.transition(*image, new_layout);
+	};
+
+	return Commands <> { binder };
+}
+
+inline auto transition(Image *image, vk::ImageLayout new_layout, const BarrierDesc &desc)
+{
+	auto binder = [=](const CommandBuffer &cmd, SerializationContext &) {
+		cmd.transition(*image, new_layout, desc);
 	};
 
 	return Commands <> { binder };
