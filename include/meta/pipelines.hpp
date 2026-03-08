@@ -38,6 +38,11 @@ struct MeshShadingPipeline : GenericPipeline <GAMAP, GRCs> {
 	using GenericPipeline <GAMAP, GRCs> ::GenericPipeline;
 };
 
+template <typename GAMAP, typename GRCs>
+struct RayTracingPipeline : GenericPipeline <GAMAP, GRCs> {
+	using GenericPipeline <GAMAP, GRCs> ::GenericPipeline;
+};
+
 // Type trait for pipelines
 TYPE_TRAIT(is_pipeline);
 	template <Topology T, typename AS, typename GAMAP, typename GRCs>
@@ -48,5 +53,8 @@ TYPE_TRAIT(is_pipeline);
 
 	template <typename GA, typename GR>
 	TYPE_TRAIT_INCLUDES(is_pipeline, MeshShadingPipeline <GA, GR>);
+	
+	template <typename GA, typename GR>
+	TYPE_TRAIT_INCLUDES(is_pipeline, RayTracingPipeline <GA, GR>);
 
 } // namespace rcgp

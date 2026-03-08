@@ -64,9 +64,9 @@ template <Topology T>
 struct RasterizationCombinator {
 	const Device &device;
 	const ShaderCompiler &compiler;
+	CompilerOptions compiler_options;
 	const RenderState &render_state;
 	RasterizationOptions options;
-	CompilerOptions compiler_options;
 
 	template <typename VertexShader, typename FragmentShader>
 	requires is_vertex_shader_v <VertexShader>
@@ -153,9 +153,10 @@ struct ComputeCombinator {
 struct MeshShadingCombinator {
 	const Device &device;
 	const ShaderCompiler &compiler;
+	CompilerOptions compiler_options;
+	// TODO: or dynamic rendering...
 	const vk::RenderPass &render_pass;
 	RasterizationOptions options;
-	CompilerOptions compiler_options;
 
 	template <typename TaskShader, typename MeshShader, typename FragmentShader>
 	auto operator()(TaskShader &task, MeshShader &mesh, FragmentShader &fragment) const {
@@ -182,6 +183,120 @@ struct MeshShadingCombinator {
 		);
 
 		return MeshShadingPipeline <
+			decltype(grcs),
+			decltype(gvrs)
+		> (pipeline, layout, dsls, gamap);
+	}
+};
+
+struct RayTracingCombinator {
+	const Device &device;
+	const ShaderCompiler &compiler;
+	CompilerOptions compiler_options;
+	// TODO: automate the handling SBT buffers
+	RaytracingOptions options;
+
+	template <
+		typename RayGenerationShader,
+		typename ... MissShaders,
+		typename ... ClosestHitShaders
+	>
+	auto operator()(
+		const RayGenerationShader &rgen,
+		const std::tuple <MissShaders...> &misses,
+		const std::tuple <ClosestHitShaders...> &chits
+	) const {
+		auto gvrs = [&] <size_t... CI, size_t... MI> (
+			std::index_sequence <CI...>,
+			std::index_sequence <MI...>
+		) {
+			return merge_stage_wrappers(tlist_concat(
+				RayGenerationShader::gvrs,
+				std::tuple_element_t <MI, std::tuple <MissShaders...>> ::gvrs...,
+				std::tuple_element_t <CI, std::tuple <ClosestHitShaders...>> ::gvrs...
+			));
+		}(std::index_sequence_for <ClosestHitShaders...> {}, std::index_sequence_for <MissShaders...> {});
+
+		auto [layout, dsls, grcs, gamap] = std::apply(
+			[&](const auto &... chit_shaders) {
+				return std::apply(
+					[&](const auto &... miss_shaders) {
+						return apply_gvrs(device, gvrs,
+							rgen, miss_shaders..., chit_shaders...
+						);
+					}, misses
+				);
+			}, chits
+		);
+
+		// TODO: resolve trace SBT offsets and strides
+
+		auto modules = std::apply(
+			[&](const auto &... chit_shaders) {
+				return std::apply(
+					[&](const auto &... miss_shaders) {
+						return shaders_to_modules(device, compiler, compiler_options,
+							rgen, miss_shaders..., chit_shaders...);
+					},
+					misses
+				);
+			},
+			chits
+		);
+
+		std::vector <vk::PipelineShaderStageCreateInfo> stages;
+
+		stages.push_back(vk::PipelineShaderStageCreateInfo()
+			.setStage(vk::ShaderStageFlagBits::eRaygenKHR)
+			.setModule(std::get <0> (modules))
+			.setPName("main"));
+
+		constexpr_for(MI, sizeof...(MissShaders),
+			(stages.push_back(vk::PipelineShaderStageCreateInfo()
+				.setStage(vk::ShaderStageFlagBits::eMissKHR)
+				.setModule(std::get <1 + MI> (modules))
+				.setPName("main")), ...)
+		);
+
+		constexpr_for(CI, sizeof...(ClosestHitShaders),
+			(stages.push_back(vk::PipelineShaderStageCreateInfo()
+				.setStage(vk::ShaderStageFlagBits::eClosestHitKHR)
+				.setModule(std::get <1 + sizeof...(MissShaders) + CI> (modules))
+				.setPName("main")), ...)
+		);
+
+		// 5. Build shader groups (same ordering)
+		std::vector <vk::RayTracingShaderGroupCreateInfoKHR> groups;
+
+		groups.push_back(vk::RayTracingShaderGroupCreateInfoKHR()
+			.setType(vk::RayTracingShaderGroupTypeKHR::eGeneral)
+			.setGeneralShader(0)
+			.setClosestHitShader(VK_SHADER_UNUSED_KHR)
+			.setAnyHitShader(VK_SHADER_UNUSED_KHR)
+			.setIntersectionShader(VK_SHADER_UNUSED_KHR));
+
+		constexpr_for(MI, sizeof...(MissShaders),
+			(groups.push_back(vk::RayTracingShaderGroupCreateInfoKHR()
+				.setType(vk::RayTracingShaderGroupTypeKHR::eGeneral)
+				.setGeneralShader(uint32_t(1 + MI))
+				.setClosestHitShader(VK_SHADER_UNUSED_KHR)
+				.setAnyHitShader(VK_SHADER_UNUSED_KHR)
+				.setIntersectionShader(VK_SHADER_UNUSED_KHR)), ...)
+		);
+
+		constexpr_for(CI, sizeof...(ClosestHitShaders),
+			(groups.push_back(vk::RayTracingShaderGroupCreateInfoKHR()
+				.setType(vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup)
+				.setGeneralShader(VK_SHADER_UNUSED_KHR)
+				.setClosestHitShader(uint32_t(1 + sizeof...(MissShaders) + CI))
+				.setAnyHitShader(VK_SHADER_UNUSED_KHR)
+				.setIntersectionShader(VK_SHADER_UNUSED_KHR)), ...)
+		);
+
+		// 6. Compile pipeline and return
+		auto pipeline = compile_raytracing_pipeline(device, stages, groups, layout, options);
+
+		return RayTracingPipeline <
 			decltype(grcs),
 			decltype(gvrs)
 		> (pipeline, layout, dsls, gamap);
