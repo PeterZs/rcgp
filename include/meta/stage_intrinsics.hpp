@@ -380,8 +380,16 @@ struct Receiver {
 template <auto &ref>
 inline auto dispatcher = Dispatcher <ref> ();
 
+TYPE_TRAIT(is_ray_dispatcher);
+	template <auto &ref>
+	TYPE_TRAIT_INCLUDES(is_ray_dispatcher, Dispatcher <ref>);
+
 template <auto &ref>
 inline auto receiver = Receiver <ref> ();
+
+TYPE_TRAIT(is_ray_receiver);
+	template <auto &ref>
+	TYPE_TRAIT_INCLUDES(is_ray_receiver, Receiver <ref>);
 
 using LaunchID = read_only_intrinsic <SystemValue::eLaunchID, ShaderStage::eRayGeneration, uvec3>;
 using LaunchSize = read_only_intrinsic <SystemValue::eLaunchSize, ShaderStage::eRayGeneration, uvec3>;

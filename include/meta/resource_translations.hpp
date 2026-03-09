@@ -2,13 +2,21 @@
 
 #include "resources.hpp"
 
+namespace vk {
+
+struct AccelerationStructureHKR;
+
+} // namespace vk
+
 namespace rcgp {
 
 // Forward declarations
 template <typename T, template <typename> typename L, vk::BufferUsageFlagBits F>
 struct MirrorBuffer;
 
+struct Image;
 struct MirrorSampler;
+struct RaytracingAccelerationStructure;
 
 // Resource translation mappings
 template <typename T>
@@ -45,6 +53,19 @@ struct resource_translation <StorageBuffer <T, L, A>> {
 template <typename T, size_t D>
 struct resource_translation <Sampler <T, D>> {
 	using handle_type = MirrorSampler;
+	using host_type = std::nullptr_t;
+};
+
+template <typename T, size_t D, GlobalResourceAccess A>
+struct resource_translation <StorageImage <T, D, A>> {
+	// TODO: need dimension
+	using handle_type = Image;
+	using host_type = std::nullptr_t;
+};
+
+template <>
+struct resource_translation <RaytracingAccelerationStructure> {
+	using handle_type = vk::AccelerationStructureKHR;
 	using host_type = std::nullptr_t;
 };
 

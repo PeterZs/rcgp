@@ -3,6 +3,7 @@
 #include "../util/cti.hpp"
 #include "../util/tlist.hpp"
 #include "contract.hpp"
+#include "stage_intrinsics.hpp"
 
 namespace rcgp {
 
@@ -27,12 +28,21 @@ consteval auto icontext_concat(implicit_context <refs1...>, implicit_context <re
 
 template <typename T>
 using atomic_icontext = decltype([] {
-	if constexpr (is_implicit_context_v <T>)
+	if constexpr (is_implicit_context_v <T>) {
 		return T();
-	else if constexpr (is_contract_v <T>)
-		return implicit_context <T::handle> ();
-	else
+	} else if constexpr (is_contract_v <T>) {
+		using U = T::reference_base;
+
+		// Filter out ray payload contracts
+		if constexpr (is_ray_dispatcher_v <U>)
+			return implicit_context <> ();
+		else if constexpr (is_ray_receiver_v <U>)
+			return implicit_context <> ();
+		else
+			return implicit_context <T::handle> ();
+	} else {
 		return implicit_context <> ();
+	}
 } ());
 
 template <typename ... Ts>

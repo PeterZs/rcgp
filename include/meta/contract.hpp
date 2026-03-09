@@ -14,6 +14,7 @@ using contract_base_of = std::decay_t <decltype(ref)> ::handle_type;
 
 template <auto &ref>
 struct contract : contract_base_of <ref> {
+	using reference_base = reference_base_of <ref>;
 	using contract_base_of <ref> ::operator=;
 
 	static inline auto address = &ref;

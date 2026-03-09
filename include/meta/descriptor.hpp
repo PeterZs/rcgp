@@ -39,6 +39,7 @@ constexpr size_t number_of_bindings = [] constexpr {
 union DescriptorInfoUnion {
 	vk::DescriptorImageInfo image;
 	vk::DescriptorBufferInfo buffer;
+	vk::WriteDescriptorSetAccelerationStructureKHR tlas;
 };
 
 template <typename T, size_t I>
@@ -53,24 +54,30 @@ void set_descriptor_write_and_union(
 
 	write // ...
 		.setDstSet(set)
+		.setDescriptorType(resource_descriptor_type <T>)
 		.setDstBinding(I);
 
-	auto dinfo = resource.descriptor_info();
-	if constexpr (is_sampler_v <T>) {
-		write // ...
-			.setDescriptorType(eCombinedImageSampler)
-			.setImageInfo(info.image = dinfo);
-	} else if constexpr (is_storage_buffer_v <T>) {
-		write // ...
-			.setDescriptorType(eStorageBuffer)
-			.setBufferInfo(info.buffer = dinfo);
-	} else if constexpr (is_uniform_buffer_v <T>) {
-		write // ...
-			.setDescriptorType(eUniformBuffer)
-			.setBufferInfo(info.buffer = dinfo);
-	} else {
+	auto dinfo = [&] {
+		if constexpr (std::is_same_v <T, RaytracingAccelerationStructure>) {
+			return vk::WriteDescriptorSetAccelerationStructureKHR()
+				.setAccelerationStructures(resource);
+		} else {
+			return resource.descriptor_info();
+		}
+	} ();
+
+	if constexpr (is_sampler_v <T>)
+		write.setImageInfo(info.image = dinfo);
+	else if constexpr (is_storage_image_v <T>)
+		write.setImageInfo(info.image = dinfo);
+	else if constexpr (is_storage_buffer_v <T>)
+		write.setBufferInfo(info.buffer = dinfo);
+	else if constexpr (is_uniform_buffer_v <T>)
+		write.setBufferInfo(info.buffer = dinfo);
+	else if constexpr (std::is_same_v <T, RaytracingAccelerationStructure>)
+		write.setDescriptorCount(1).setPNext(&(info.tlas = dinfo));
+	else
 		static_error("unsupported resource type "_ss + $ss_type(T));
-	}
 }
 
 // Descriptor write handler with temporary storage

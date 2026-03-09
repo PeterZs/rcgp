@@ -148,4 +148,8 @@ TYPE_TRAIT(is_sampler);
 	template <typename T, size_t D>
 	TYPE_TRAIT_INCLUDES(is_sampler, Sampler <T, D>);
 
+TYPE_TRAIT(is_storage_image);
+	template <typename T, size_t D, GlobalResourceAccess A>
+	TYPE_TRAIT_INCLUDES(is_storage_image, StorageImage <T, D, A>);
+
 } // namespace rcgp

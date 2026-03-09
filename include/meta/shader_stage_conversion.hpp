@@ -14,6 +14,9 @@ consteval vk::ShaderStageFlagBits stage_to_flag(ShaderStage S)
 	case ShaderStage::eCompute: return vk::ShaderStageFlagBits::eCompute;
 	case ShaderStage::eTask: return vk::ShaderStageFlagBits::eTaskEXT;
 	case ShaderStage::eMesh: return vk::ShaderStageFlagBits::eMeshEXT;
+	case ShaderStage::eRayGeneration: return vk::ShaderStageFlagBits::eRaygenKHR;
+	case ShaderStage::eClosestHit: return vk::ShaderStageFlagBits::eClosestHitKHR;
+	case ShaderStage::eMiss: return vk::ShaderStageFlagBits::eMissKHR;
 	default:
 		return vk::ShaderStageFlagBits::eAll;
 	}

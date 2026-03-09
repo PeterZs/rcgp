@@ -1,11 +1,27 @@
 #pragma once
 
-#include "resources.hpp"
 #include "../rhi/device.hpp"
+#include "resources.hpp"
 #include "resources_collect.hpp"
 #include "shader_stage_conversion.hpp"
+#include "stage_intrinsics.hpp"
 
 namespace rcgp {
+
+template <typename R>
+constexpr auto resource_descriptor_type = []
+{
+	if constexpr (is_sampler_v <R>)
+		return vk::DescriptorType::eCombinedImageSampler;
+	else if constexpr (is_storage_buffer_v <R>)
+		return vk::DescriptorType::eStorageBuffer;
+	else if constexpr (is_storage_image_v <R>)
+		return vk::DescriptorType::eStorageImage;
+	else if constexpr (std::is_same_v <R, RaytracingAccelerationStructure>)
+		return vk::DescriptorType::eAccelerationStructureKHR;
+	// else
+	// 	return vk::DescriptorType::eUniformBuffer;
+} ();
 
 template <auto &ref, ShaderStage ... Ss>
 auto dslbs_for_resource_group(const stage_wrapper <ref, Ss...> &)
@@ -18,17 +34,10 @@ auto dslbs_for_resource_group(const stage_wrapper <ref, Ss...> &)
 	auto fill_one = [&] <size_t I> () {
 		using Resource = T::fields::template get <I>;
 
-		vk::DescriptorType dtype = vk::DescriptorType::eUniformBuffer;
-		if constexpr (is_sampler_v <Resource>) {
-			dtype = vk::DescriptorType::eCombinedImageSampler;
-		} else if constexpr (is_storage_buffer_v <Resource>) {
-			dtype = vk::DescriptorType::eStorageBuffer;
-		}
-
 		return vk::DescriptorSetLayoutBinding()
 			.setBinding(I)
 			.setDescriptorCount(1)
-			.setDescriptorType(dtype)
+			.setDescriptorType(resource_descriptor_type <Resource>)
 			.setStageFlags(stage_flags);
 	};
 
@@ -44,18 +53,12 @@ auto dslbs_for_singlet_group(const stage_wrapper <ref, Ss...> &)
 {
 	using R = reference_base_of <ref>;
 
-	vk::DescriptorType dtype = vk::DescriptorType::eUniformBuffer;
-	if constexpr (is_sampler_v <R>)
-		dtype = vk::DescriptorType::eCombinedImageSampler;
-	else if constexpr (is_storage_buffer_v <R>)
-		dtype = vk::DescriptorType::eStorageBuffer;
-
 	constexpr auto stage_flags = (stage_to_flag(Ss) | ...);
 	return std::array {
 		vk::DescriptorSetLayoutBinding()
 			.setBinding(0)
 			.setDescriptorCount(1)
-			.setDescriptorType(dtype)
+			.setDescriptorType(resource_descriptor_type <R>)
 			.setStageFlags(stage_flags)
 	};
 }
