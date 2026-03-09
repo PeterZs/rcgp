@@ -15,13 +15,12 @@ AccelerationStructure AccelerationStructure::from(
 
 	AccelerationStructure result;
 	result.scratch_size = sizes.buildScratchSize;
-	result.buffer = Buffer::from(device, {
-		.size = sizes.accelerationStructureSize,
-		.usage = vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR
+	result.buffer = Buffer::from(device,
+		sizes.accelerationStructureSize,
+		vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR
 		       | vk::BufferUsageFlagBits::eShaderDeviceAddress,
-		.properties = vk::MemoryPropertyFlagBits::eDeviceLocal,
-		.device_address = true,
-	});
+		vk::MemoryPropertyFlagBits::eDeviceLocal
+	);
 	result.handle = device.logical.createAccelerationStructureKHR(
 		vk::AccelerationStructureCreateInfoKHR()
 			.setBuffer(result.buffer.handle)
@@ -38,6 +37,7 @@ void AccelerationStructure::destroy(const Device &device)
 		device.logical.destroyAccelerationStructureKHR(handle, nullptr, device.loader);
 		handle = nullptr;
 	}
+
 	buffer.destroy();
 }
 

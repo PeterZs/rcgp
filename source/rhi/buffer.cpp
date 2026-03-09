@@ -56,19 +56,24 @@ void Buffer::destroy()
 	size = 0;
 }
 
-auto Buffer::from(const Device &device, const Description &desc) -> Buffer
+auto Buffer::from(
+	const Device &device,
+	vk::DeviceSize size,
+	vk::BufferUsageFlags usage,
+	vk::MemoryPropertyFlags properties
+) -> Buffer
 {
 	Buffer result;
 	result.device = device.logical;
 	result.offset = 0;
-	result.size = desc.size;
-	result.usage = desc.usage;
-	result.properties = desc.properties;
+	result.size = size;
+	result.usage = usage;
+	result.properties = properties;
 
 	auto buffer_info = vk::BufferCreateInfo()
 		.setSharingMode(vk::SharingMode::eExclusive)
-		.setSize(desc.size)
-		.setUsage(desc.usage);
+		.setSize(size)
+		.setUsage(usage);
 
 	result.handle = device.logical.createBuffer(buffer_info);
 
@@ -76,12 +81,12 @@ auto Buffer::from(const Device &device, const Description &desc) -> Buffer
 		.setFlags(vk::MemoryAllocateFlagBits::eDeviceAddress);
 
 	auto requirements = device.logical.getBufferMemoryRequirements(result.handle);
-	auto memory_index = device.find_memory_type(requirements.memoryTypeBits, desc.properties);
+	auto memory_index = device.find_memory_type(requirements.memoryTypeBits, properties);
 	auto memory_info = vk::MemoryAllocateInfo()
 		.setAllocationSize(requirements.size)
 		.setMemoryTypeIndex(memory_index);
 
-	if (desc.device_address)
+	if (usage & vk::BufferUsageFlagBits::eShaderDeviceAddress)
 		memory_info.setPNext(&device_address_flags);
 
 	result.backing = device.logical.allocateMemory(memory_info);

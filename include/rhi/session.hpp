@@ -22,7 +22,7 @@ struct Session {
 		std::optional <ValidationCallback> callback;
 	};
 
-	std::unique_ptr <Debugging> debugging;
+	std::shared_ptr <Debugging> debugging;
 
 	void destroy() {
 		handle.destroy();

@@ -50,6 +50,7 @@ struct MirrorBuffer <T, L, F> : Buffer {
 		return *this;
 	}
 
+	// TODO: do we need this method here again?
 	vk::DescriptorBufferInfo descriptor_info() const {
 		return vk::DescriptorBufferInfo()
 			.setBuffer(handle)
@@ -62,11 +63,11 @@ struct MirrorBuffer <T, L, F> : Buffer {
 		vk::MemoryPropertyFlags properties,
 		vk::BufferUsageFlags extra_usage = vk::BufferUsageFlagBits(0)
 	) {
-		auto base = Buffer::from(device, {
-			.size       = sizeof(value_type),
-			.usage      = F | extra_usage,
-			.properties = properties,
-		});
+		auto base = Buffer::from(device,
+			sizeof(value_type),
+			F | extra_usage,
+			properties
+		);
 
 		MirrorBuffer result;
 		Tas <Buffer &> (result) = base;
@@ -127,11 +128,11 @@ struct MirrorBuffer <T, L, F> : Buffer {
 		// TODO: dynamic_offset() static constexpr method
 		value_type data;
 		auto [dyn, offset] = dynamic_part <T> (data);
-		auto base = Buffer::from(device, {
-			.size       = offset + max_elements * sizeof(element_type),
-			.usage      = F | extra_usage,
-			.properties = properties,
-		});
+		auto base = Buffer::from(device,
+			offset + max_elements * sizeof(element_type),
+			F | extra_usage,
+			properties
+		);
 
 		MirrorBuffer result;
 		Tas <Buffer &> (result) = base;

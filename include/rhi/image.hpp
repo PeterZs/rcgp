@@ -28,6 +28,12 @@ struct Image {
 	auto range() const -> vk::ImageSubresourceRange;
 	vk::DescriptorImageInfo descriptor_info(const vk::Sampler &sampler) const;
 	void destroy();
+	
+	vk::DescriptorImageInfo descriptor_info() const {
+		return vk::DescriptorImageInfo()
+			.setImageView(view)
+			.setImageLayout(layout);
+	}
 
 	static Image from(const Device &device, const Description &info);
 };

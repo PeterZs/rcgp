@@ -32,7 +32,7 @@ vk::Bool32 general_validation_callback(
 {
 	auto *debugging = reinterpret_cast <Session::Debugging *> (user_data);
 
-	if (debugging->callback)
+	if (debugging->callback.has_value())
 		debugging->callback.value()(severity, data->pMessage);
 	else
 		std::println(std::cerr, "vulkan: {}", data->pMessage);
@@ -82,9 +82,9 @@ auto Session::from(const Options &options) -> std::tuple <
 		| vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation
 		| vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
 
-	auto debugging = std::make_unique <Debugging> (
+	auto debugging = std::make_shared <Debugging> (
 		options.trap_on_error,
-		std::move(options.validation_callback)
+		options.validation_callback
 	);
 
 	auto debug_info = vk::DebugUtilsMessengerCreateInfoEXT()
@@ -121,7 +121,7 @@ auto Session::from(const Options &options) -> std::tuple <
 	if (options.validation)
 		debugger = handle.createDebugUtilsMessengerEXT(debug_info, nullptr, dld);
 
-	return { Session(handle, debugger, std::move(debugging)), dld };
+	return { Session(handle, debugger, debugging), dld };
 }
 
 } // namespace rcgp

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
 #include "buffer.hpp"
 
 namespace rcgp {
@@ -8,9 +7,9 @@ namespace rcgp {
 struct Device;
 
 struct AccelerationStructure {
-	Buffer buffer;
 	vk::AccelerationStructureKHR handle;
 	vk::DeviceSize scratch_size = 0;
+	Buffer buffer;
 
 	void destroy(const Device &device);
 
