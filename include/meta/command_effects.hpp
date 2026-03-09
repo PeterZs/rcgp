@@ -1,5 +1,6 @@
 #pragma once
 
+#include "contract.hpp"
 #include "pipelines.hpp"
 
 namespace rcgp {

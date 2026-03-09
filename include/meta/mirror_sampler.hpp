@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../rhi/device.hpp"
 #include "../rhi/image.hpp"
 
 namespace rcgp {
