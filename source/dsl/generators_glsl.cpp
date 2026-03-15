@@ -177,6 +177,10 @@ std::string lval_repr(const GLSLEmitter &em, const Reference &ref)
 		auto &st = get_struct(em.main, facc.value);
 		return std::format("{}.{}", expr_repr(em, facc.value), st.fields[facc.fidx]);
 	}
+	vcase(Swizzle): {
+		auto &swz = ref->as <Swizzle> ();
+		return std::format("{}.{}", expr_repr(em, swz.value), repr(swz.code));
+	}
 	vcase(ArrayAccess): {
 		auto &aacc = ref->as <ArrayAccess> ();
 		if (aacc.value->is <SystemValue> ()) {
@@ -277,13 +281,10 @@ std::string expr_repr(const GLSLEmitter &em, const Reference &ref)
 		auto ftn = repr_glsl(bintr.code);
 		return std::format("{}({})", ftn, args(bintr.args));
 	}
-	vcase(Swizzle): {
-		auto &swz = ref->as <Swizzle> ();
-		return std::format("{}.{}", expr_repr(em, swz.value), repr(swz.code));
-	}
 	vcase(ArrayAccess):
 	vcase(FieldAccess):
 	vcase(GlobalResource):
+	vcase(Swizzle):
 	vcase(SystemValue): {
 		return lval_repr(em, ref);
 	}

@@ -3,9 +3,6 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
 includes = root / "include" / "dsl"
-output = root / "source" / "generated"
-
-output.mkdir(exist_ok=True)
 
 def main():
     lines = ["#pragma once"]
@@ -14,7 +11,6 @@ def main():
 
         lines.append("")
         lines.append(f"#define SWIZZLE_D{dim} " + "\\")
-        lines.append(f"\tusing self = vector_base <T, {dim}>; " + "\\")
         for l in range(1, 5):
             r = "scalar <T>" if l == 1 else f"vector <T, {l}>"
             lines.append(f"\tusing C{l} = {r};" + "\\")
@@ -22,14 +18,14 @@ def main():
                 var = "".join(var)
                 code = "e" + var.upper()
                 lines.append(
-                    f"\t[[no_unique_address]] swizzle_component <SwizzleCode::{code}, self, C{l}> {var}; "
+                    f"\t[[no_unique_address]] swizzle_component <C{l}, SwizzleCode::{code}> {var}; "
                     + "\\"
                 )
 
         lines.append("")
         lines.append("")
 
-    file = output / "pygen_macro_swizzle.hpp"
+    file = includes / "pygen_macro_swizzle.hpp"
     file.write_text("\n".join(lines))
 
 

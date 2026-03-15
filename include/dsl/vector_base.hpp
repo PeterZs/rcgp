@@ -20,21 +20,21 @@ inline jems::local wrap_in_local(
 	return l;
 }
 
-template <SwizzleCode S, typename T, typename R>
+template <typename R, SwizzleCode S>
 struct swizzle_component {
-	// TODO: need to think about swizzles later...
+	swizzle_component() = default;
+	swizzle_component(const swizzle_component &other) = delete;
+	swizzle_component &operator=(const swizzle_component &other) = delete;
 
-	// swizzle_component &operator=(const swizzle_component &other) = delete;
-
-	// auto &operator=(const swizzle_component &other) {
-	// 	info("copy assigning swizzle!");
-	// 	return *this;
-	// }
+	auto &operator=(const R &value) const {
+		auto self = reinterpret_cast <const jems::handle *> (this);
+		jems::store(jems::swizzle(S, *self), value);
+		return *this;
+	}
 
 	operator R() const {
-		static_assert(std::is_base_of_v <jems::handle, T>);
-		auto &self = *reinterpret_cast <const T *> (this);
-		return R::reinterpret(jems::swizzle(S, self));
+		auto self = reinterpret_cast <const jems::handle *> (this);
+		return R::reinterpret(jems::swizzle(S, *self));
 	}
 };
 
@@ -53,6 +53,9 @@ public:
 	SWIZZLE_D2;
 
 	vector_base() = default;
+	
+	vector_base(const vector_base &other)
+		: handle(other) {}
 	
 	vector_base(const scalar <T> &x, $location)
 		: handle(wrap_in_local(loc,
@@ -83,6 +86,9 @@ public:
 	SWIZZLE_D3;
 
 	vector_base() = default;
+	
+	vector_base(const vector_base &other)
+		: handle(other) {}
 
 	vector_base(const scalar <T> x, $location)
 		: handle(wrap_in_local(loc,
@@ -117,6 +123,9 @@ public:
 	SWIZZLE_D4;
 
 	vector_base() = default;
+	
+	vector_base(const vector_base &other)
+		: handle(other) {}
 	
 	vector_base(const scalar <T> &x, $location)
 		: handle(wrap_in_local(loc,
