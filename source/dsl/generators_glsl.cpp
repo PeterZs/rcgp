@@ -666,6 +666,10 @@ void emit_resource(GLSLEmitter &em, const GlobalResource &grsrc)
 	auto index = grsrc.index.value_or(0);
 	auto name = grsrc_name(grsrc);
 
+	std::string array = "";
+	if (grsrc.count)
+		array = std::format("[{}]", *grsrc.count);
+
 	// Storage images
 	if (grsrc.kind == GlobalResourceKind::eStorageImage) {
 		// TODO: method
@@ -677,8 +681,8 @@ void emit_resource(GLSLEmitter &em, const GlobalResource &grsrc)
 
 		em.emit_fmt_line(
 			"layout (set = {}, binding = {}) "
-			"uniform {}image2D {};",
-			group, index, access, name
+			"uniform {}image2D {}{};",
+			group, index, access, name, array
 		);
 		return em.emit_newline();
 	}
@@ -688,8 +692,8 @@ void emit_resource(GLSLEmitter &em, const GlobalResource &grsrc)
 		// TODO: get dimension and prefix
 		em.emit_fmt_line(
 			"layout (set = {}, binding = {}) "
-			"uniform sampler2D {};",
-			group, index, name
+			"uniform sampler2D {}{};",
+			group, index, name, array
 		);
 		return em.emit_newline();
 	}
@@ -698,8 +702,8 @@ void emit_resource(GLSLEmitter &em, const GlobalResource &grsrc)
 	if (grsrc.kind == GlobalResourceKind::eAccelerationStructure) {
 		em.emit_fmt_line(
 			"layout (set = {}, binding = {}) "
-			"uniform accelerationStructureEXT {};",
-			group, index, name
+			"uniform accelerationStructureEXT {}{};",
+			group, index, name, array
 		);
 		return em.emit_newline();
 	}
@@ -746,7 +750,7 @@ void emit_resource(GLSLEmitter &em, const GlobalResource &grsrc)
 	}
 	em.indentation--;
 
-	em.emit_fmt_line("}} {};", name);
+	em.emit_fmt_line("}} {}{};", name, array);
 	return em.emit_newline();
 }
 

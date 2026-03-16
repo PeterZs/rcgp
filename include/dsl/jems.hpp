@@ -32,6 +32,7 @@ public:
 };
 
 // TODO: just make these all functions...
+// and then stick them in instruction_nodes.hpp
 struct operation : handle {
 	operation(
 		OperationCode code,
@@ -105,6 +106,7 @@ struct global_resource : handle {
 		std::optional <uint32_t> group = std::nullopt,
 		std::optional <uint32_t> index = std::nullopt,
 		std::optional <uint32_t> offset = std::nullopt,
+		std::optional <uint32_t> count = std::nullopt,
 		$location
 	);
 };
@@ -167,6 +169,7 @@ struct type : handle {
 
 } // namespace rcgp::jems
 
+// TODO: put somewhere else, like builtins?
 #define $break ::rcgp::jems::builtin_intrinsic { ::rcgp::BuiltinIntrinsicCode::eBreak }
 #define $continue ::rcgp::jems::builtin_intrinsic { ::rcgp::BuiltinIntrinsicCode::eContinue }
 #define $discard ::rcgp::jems::builtin_intrinsic { ::rcgp::BuiltinIntrinsicCode::eDiscard }

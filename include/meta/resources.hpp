@@ -64,8 +64,7 @@ struct Sampler : resource_handle {
 		auto sample(const vector <T, D> &x, $location) const {
 			auto result = jems::builtin_intrinsic(
 				BuiltinIntrinsicCode::eSample,
-				std::vector <Reference> { *this, x },
-				loc
+				{ *this, x }, loc
 			);
 
 			return vector <T, 4> ::reinterpret(result);
@@ -102,7 +101,14 @@ struct array <R, D> : resource_handle {
 	using base = R;
 	static constexpr int64_t elements = D;
 
-	struct handle_type : jems::handle {};
+	struct handle_type : jems::handle {
+		auto operator[](const int32_t &index, $location) const {
+			auto result = typename R::handle_type();
+			auto access = jems::array_access(*this, scalar <int32_t> (index), loc);
+			result.override_reference(access);
+			return result;
+		}
+	};
 };
 
 namespace detail {

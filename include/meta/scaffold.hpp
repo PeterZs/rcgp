@@ -114,6 +114,20 @@ struct scaffold_lookup <
         using type = std::array <element, N1>;
 };
 
+template <typename Element, size_t N1, typename ElementView, int64_t N2, bool AlignTopLevel>
+struct scaffold_lookup <
+	scaffold_natural <std::array <Element, N1>>,
+	array <ElementView, N2>,
+	AlignTopLevel
+>
+{
+	// Shortcut for natural alignment
+	// TODO: use a more generalized specialization that handles
+	// Align == 0 or Mapped already being aligned to Align
+	static_assert(N1 == N2, "sizes are different");
+        using type = std::array <Element, N1>;
+};
+
 // Dynamically sized array types
 template <typename Element, size_t Align, typename ElementView, bool AlignTopLevel>
 struct scaffold_lookup <

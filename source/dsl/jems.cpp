@@ -95,9 +95,10 @@ global_resource::global_resource(
 	std::optional <uint32_t> group,
 	std::optional <uint32_t> index,
 	std::optional <uint32_t> offset,
+	std::optional <uint32_t> count,
 	const std::source_location &loc
 ) : handle($tsb.add(Instruction(
-	GlobalResource { type, kind, layout, access, group, index, offset },
+	GlobalResource { type, kind, layout, access, group, index, offset, count },
 	DebugInfo(loc)
 ))) {}
 

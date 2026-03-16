@@ -3,6 +3,7 @@
 #include <type_traits>
 
 #include "../dsl/jems.hpp"
+#include "../dsl/instructions.hpp"
 #include "../util/cti.hpp"
 #include "layouts.hpp"
 #include "reconstruct_type.hpp"
@@ -93,15 +94,10 @@ template <typename R, int64_t D>
 requires is_global_resource_v <R>
 jems::handle resource_intrinsic(const array <R, D> &, uint32_t binding)
 {
-	// TODO: aggregate (Desc) initialization
-	return jems::global_resource(
-		nullptr,
-		GlobalResourceKind::eSampler,
-		GlobalResourceLayout::eNone,
-		GlobalResourceAccess::eRead,
-		std::nullopt,
-		binding
-	);
+	auto proxy = R();
+	auto handle = resource_intrinsic(proxy, binding);
+	static_cast <Reference> (handle)->as <GlobalResource> ().count = D;
+	return handle;
 }
 
 } // namespace rcgp

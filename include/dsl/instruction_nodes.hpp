@@ -141,6 +141,7 @@ struct GlobalResource {
 	std::optional <uint32_t> group;
 	std::optional <uint32_t> index;
 	std::optional <uint32_t> offset;
+	std::optional <uint32_t> count;
 
 	std::string repr() const;
 };
