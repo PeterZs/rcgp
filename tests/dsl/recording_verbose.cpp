@@ -305,8 +305,8 @@ add_test(while_loop)
 		f32 sum = 0;
 		i32 i = 0;
 		$while (i < arg0) {
-			sum = sum + i;
-			i = i + arg1;
+			sum += i;
+			i += arg1;
 		};
 
 		auto ret = jems::returns(typef32, 0);
@@ -343,18 +343,20 @@ add_test(while_loop)
 	      Break
 	    }
 	    Branch $13: $14
-	    $15 = Add $4 $6
-	    $16 = Local $1
-	    Store $16 $15
-	    Store $4 $16
-	    $17 = Add $6 $3
-	    $18 = Local $0
-	    Store $18 $17
-	    Store $6 $18
+	    $15 = Local $1
+	    Store $15 $6
+	    $16 = Add $4 $15
+	    $17 = Local $1
+	    Store $17 $16
+	    Store $4 $17
+	    $18 = Add $6 $3
+	    $19 = Local $0
+	    Store $19 $18
+	    Store $6 $19
 	  }
 	  Loop $8
-	  $19 = Return 0: $1
-	  Store $19 $4
+	  $20 = Return 0: $1
+	  Store $20 $4
 	}
 	)", true);
 };
@@ -371,8 +373,8 @@ add_test(for_loop)
 		arg1.override_reference(jems::argument(typei32, 1));
 
 		f32 sum = 0;
-		$for (i32 i = 0, i < arg0, i = i + arg1) {
-			sum = sum + i;
+		$for (i32 i = 0, i < arg0, i += arg1) {
+			sum += i;
 		};
 
 		auto ret = jems::returns(typef32, 0);
@@ -409,18 +411,20 @@ add_test(for_loop)
 	      Break
 	    }
 	    Branch $13: $14
-	    $15 = Add $4 $6
-	    $16 = Local $1
-	    Store $16 $15
-	    Store $4 $16
-	    $17 = Add $6 $3
-	    $18 = Local $0
-	    Store $18 $17
-	    Store $6 $18
+	    $15 = Local $1
+	    Store $15 $6
+	    $16 = Add $4 $15
+	    $17 = Local $1
+	    Store $17 $16
+	    Store $4 $17
+	    $18 = Add $6 $3
+	    $19 = Local $0
+	    Store $19 $18
+	    Store $6 $19
 	  }
 	  Loop $8
-	  $19 = Return 0: $1
-	  Store $19 $4
+	  $20 = Return 0: $1
+	  Store $20 $4
 	}
 	)", true);
 };
@@ -430,12 +434,11 @@ add_test(branching)
 	auto sbr = record {
 		i32 c = 12;
 		$if (c > 11) {
-			// TODO: support for c + 1 plainly
-			c = c + i32(1);
+			c += 1;
 		} $elif (c < 11 and c > 5) {
-			c = c + i32(2);
+			c += 2;
 		} $else {
-			c = c + i32(3);
+			c += 3;
 		};
 	};
 	

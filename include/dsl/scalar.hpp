@@ -22,6 +22,13 @@ public:
 		jems::store(_ref, jems::constant(value, loc));
 	}
 
+	template <native_scalar U>
+	requires std::is_convertible_v <U, T>
+	scalar(const scalar <U> &value, $location) {
+		_ref = jems::local(jems::type(primitive_of <T> (), loc));
+		jems::store(_ref, value);
+	}
+
 	scalar &operator=(const scalar &rhs) {
 		if (not _ref)
 			_ref = jems::local(jems::type(primitive_of <T> ()));
@@ -45,6 +52,36 @@ public:
 		return reinterpret(jems::operation(OperationCode::eDivide, a, b));
 	}
 
+	friend scalar operator-(const scalar &v) {
+		return reinterpret(jems::operation(OperationCode::eMultiply, scalar <T> (-1), v));
+	}
+	
+	friend scalar operator!(const scalar &v)
+	requires std::is_same_v <T, bool> {
+		return reinterpret(jems::operation(OperationCode::eLogicalNot, v));
+	}
+
+	// TODO: shouldnt apply for boolean
+	scalar &operator+=(const scalar &other) {
+		*this = *this + other;
+		return *this;
+	}
+	
+	scalar &operator-=(const scalar &other) {
+		*this = *this - other;
+		return *this;
+	}
+
+	scalar &operator*=(const scalar &other) {
+		*this = *this * other;
+		return *this;
+	}
+	
+	scalar &operator/=(const scalar &other) {
+		*this = *this / other;
+		return *this;
+	}
+
 	scalar &operator++() {
 		*this = *this + scalar <T> (1);
 		return *this;
@@ -65,15 +102,6 @@ public:
 		auto prev = *this;
 		--(*this);
 		return prev;
-	}
-
-	friend scalar operator-(const scalar &v) {
-		return reinterpret(jems::operation(OperationCode::eMultiply, scalar <T> (-1), v));
-	}
-	
-	friend scalar operator!(const scalar &v)
-	requires std::is_same_v <T, bool> {
-		return reinterpret(jems::operation(OperationCode::eLogicalNot, v));
 	}
 
 	static scalar reinterpret(const jems::handle &h) {

@@ -192,8 +192,7 @@ add_test(fr_diffuse_lighting)
 			auto ldir = normalize(L);
 			auto n_dot_l = max(dot(normal, ldir), f32(0.0f));
 
-			// TODO: += and etc
-			color = color + (base * n_dot_l) * light.color * atten;
+			color += (base * n_dot_l) * light.color * atten;
 		};
 
 		return color;
@@ -230,8 +229,7 @@ add_test(fr_diffuse_lighting_readable)
 			auto ldir = normalize(L);
 			auto n_dot_l = max(dot(normal, ldir), f32(0.0f));
 
-			// TODO: += and etc
-			color = color + (base * n_dot_l) * light.color * atten;
+			color += (base * n_dot_l) * light.color * atten;
 		};
 
 		return color;
@@ -564,11 +562,11 @@ add_test(branching)
 	auto sr = $subroutine(sr)() {
 		i32 c = 12;
 		$if (c > 11) {
-			c = c + i32(1);
+			c += 1;
 		} $elif (c < 11 and c > 5) {
-			c = c + i32(2);
+			c += 2;
 		} $else {
-			c = c + i32(3);
+			c += 3;
 		};
 	};
 	

@@ -7,7 +7,6 @@
 // Testing that user-authored shader modules and subroutines are correctly
 // trascribed into instructions. This primarily tests for argument injection,
 // return handling, and subroutine invocation.
-// TODO: verbose_tracing and normal tracing
 
 add_test(vs_empty)
 {

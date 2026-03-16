@@ -13,7 +13,7 @@ include_directories(include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/source)
 
 set(RCGP_GENERATED_SWIZZLE
-	${CMAKE_CURRENT_SOURCE_DIR}/source/generated/pygen_macro_swizzle.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/include/dsl/pygen_macro_swizzle.hpp
 )
 add_custom_command(
 	OUTPUT ${RCGP_GENERATED_SWIZZLE}

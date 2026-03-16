@@ -95,6 +95,26 @@ struct vector : public vector_base <T, N> {
 	friend vector operator/(const U &s, const vector &v) {
 		return reinterpret(jems::operation(OperationCode::eDivide, scalar <T> (s), v));
 	}
+	
+	vector &operator+=(const vector &other) {
+		*this = *this + other;
+		return *this;
+	}
+	
+	vector &operator-=(const vector &other) {
+		*this = *this - other;
+		return *this;
+	}
+
+	vector &operator*=(const vector &other) {
+		*this = *this * other;
+		return *this;
+	}
+	
+	vector &operator/=(const vector &other) {
+		*this = *this / other;
+		return *this;
+	}
 };
 
 } // namespace rcgp

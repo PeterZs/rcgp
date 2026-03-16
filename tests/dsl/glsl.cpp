@@ -184,7 +184,7 @@ add_test(fr_diffuse_lighting)
 		vec3 base = material.albedo.sample(uv).xyz;
 
 		vec3 color = vec3(0.0f);
-		$for (i32 i = 0, i < lights.count, ++i) {
+		$for (i32 i = 0, i < lights.count, i++) {
 			auto light = lights.lights[i];
 			auto L = light.position - position;
 			auto dist2 = max(dot(L, L), f32(1e-4f));
@@ -193,8 +193,7 @@ add_test(fr_diffuse_lighting)
 			auto ldir = normalize(L);
 			auto n_dot_l = max(dot(normal, ldir), f32(0.0f));
 
-			// TODO: += and etc
-			color = color + (base * n_dot_l) * light.color * atten;
+			color += (base * n_dot_l) * light.color * atten;
 		};
 
 		return color;
@@ -402,8 +401,8 @@ add_test(for_loop)
 {
 	auto sr = $subroutine(sr)(i32 limit, i32 step) {
 		f32 sum = 0;
-		$for (i32 i = 0, i < limit, i = i + step) {
-			sum = sum + i;
+		$for (i32 i = 0, i < limit, i += step) {
+			sum += i;
 		};
 
 		return sum;
@@ -425,11 +424,13 @@ add_test(for_loop)
 	            break;
 	        }
 	        float lvar4;
-	        lvar4 = (lvar0 + lvar1);
-	        lvar0 = lvar4;
-	        int lvar5;
-	        lvar5 = (lvar1 + arg1);
-	        lvar1 = lvar5;
+	        lvar4 = lvar1;
+	        float lvar5;
+	        lvar5 = (lvar0 + lvar4);
+	        lvar0 = lvar5;
+	        int lvar6;
+	        lvar6 = (lvar1 + arg1);
+	        lvar1 = lvar6;
 	    }
 	    ret0 = lvar0;
 	}
@@ -441,11 +442,11 @@ add_test(branching)
 	auto sr = $subroutine(sr)() {
 		i32 c = 12;
 		$if (c > 11) {
-			c = c + i32(1);
+			c += 1;
 		} $elif (c < 11 and c > 5) {
-			c = c + i32(2);
+			c += 2;
 		} $else {
-			c = c + i32(3);
+			c += 3;
 		};
 	};
 	

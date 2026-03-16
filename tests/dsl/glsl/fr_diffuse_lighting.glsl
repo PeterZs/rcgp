@@ -22,6 +22,10 @@ layout (std430, set = 0, binding = 0) readonly buffer Buffer0x0 {
 
 layout (set = 0, binding = 0) uniform sampler2D r0b0;
 
+layout (set = 0, binding = 1) uniform sampler2D r0b1;
+
+layout (set = 0, binding = 2) uniform sampler2D r0b2;
+
 void main()
 {
     vec4 lvar0;
