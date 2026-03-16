@@ -1,6 +1,7 @@
 #include "dsl/branching.hpp"
 #include "dsl/block.hpp"
 #include "dsl/instructions.hpp"
+#include "dsl/tracer.hpp"
 
 namespace rcgp {
 

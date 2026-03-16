@@ -27,66 +27,66 @@ consteval GlobalResourceLayout layout_of()
 template <typename T, template <typename> typename L>
 jems::handle resource_intrinsic(const PushConstant <T, L> &, uint32_t binding)
 {
-	return jems::global_resource(
+	return jems::global_resource(GlobalResource {
 		reconstruct_type <T> (),
 		GlobalResourceKind::ePushConstant,
 		layout_of <L> (),
 		GlobalResourceAccess::eReadWrite,
 		std::nullopt,
 		binding
-	);
+	});
 }
 
 template <typename T, template <typename> typename L>
 jems::handle resource_intrinsic(const UniformBuffer <T, L> &, uint32_t binding)
 {
-	return jems::global_resource(
+	return jems::global_resource(GlobalResource {
 		reconstruct_type <T> (),
 		GlobalResourceKind::eUniformBuffer,
 		layout_of <L> (),
 		GlobalResourceAccess::eRead,
 		std::nullopt,
 		binding
-	);
+	});
 }
 
 template <typename T, template <typename> typename L, GlobalResourceAccess A>
 jems::handle resource_intrinsic(const StorageBuffer <T, L, A> &, uint32_t binding)
 {
-	return jems::global_resource(
+	return jems::global_resource(GlobalResource {
 		reconstruct_type <T> (),
 		GlobalResourceKind::eStorageBuffer,
 		layout_of <L> (),
 		A,
 		std::nullopt,
 		binding
-	);
+	});
 }
 
 template <typename T, size_t D, GlobalResourceAccess A>
 jems::handle resource_intrinsic(const StorageImage <T, D, A> &, uint32_t binding)
 {
-	return jems::global_resource(
+	return jems::global_resource(GlobalResource {
 		jems::type(primitive_of <T, D> ()),
 		GlobalResourceKind::eStorageImage,
 		GlobalResourceLayout::eNone,
 		A,
 		std::nullopt,
 		binding
-	);
+	});
 }
 
 template <typename T, size_t D>
 jems::handle resource_intrinsic(const Sampler <T, D> &, uint32_t binding)
 {
-	return jems::global_resource(
+	return jems::global_resource(GlobalResource {
 		jems::type(primitive_of <T, D> ()),
 		GlobalResourceKind::eSampler,
 		GlobalResourceLayout::eNone,
 		GlobalResourceAccess::eRead,
 		std::nullopt,
 		binding
-	);
+	});
 }
 
 // TODO: array slot for global resources

@@ -6,6 +6,7 @@
 #include "../dsl/array.hpp"
 #include "../dsl/block.hpp"
 #include "../dsl/projection.hpp"
+#include "../dsl/tracer.hpp"
 #include "../util/cti.hpp"
 #include "contract.hpp"
 #include "reconstruct_type.hpp"
@@ -30,7 +31,7 @@ template <SystemValue G, ShaderStage S, builtin T>
 struct write_only_intrinsic {
 	auto &operator=(const T &value) {
 		auto self = jems::system_value(G);
-		auto _ = jems::store(self, value);
+		jems::store(self, value);
 		return value;
 	}
 };
@@ -400,14 +401,14 @@ TYPE_TRAIT_INCLUDES(is_global_resource, RaytracingAccelerationStructure);
 
 inline jems::handle resource_intrinsic(const RaytracingAccelerationStructure &, uint32_t binding)
 {
-	return jems::global_resource(
+	return jems::global_resource(GlobalResource {
 		nullptr,
 		GlobalResourceKind::eAccelerationStructure,
 		GlobalResourceLayout::eNone,
 		GlobalResourceAccess::eRead,
 		std::nullopt,
 		binding
-	);
+	});
 }
 
 template <auto &ref>
@@ -419,14 +420,14 @@ jems::handle resource_intrinsic(const Dispatcher <ref> &, uint32_t _)
 	using R = reference_base_of <ref>;
 	using T = R::value_type;
 
-	return jems::global_resource(
+	return jems::global_resource(GlobalResource {
 		reconstruct_type <T> (),
 		GlobalResourceKind::eRayDispatcherPayload,
 		GlobalResourceLayout::eNone,
 		GlobalResourceAccess::eRead,
 		std::nullopt,
 		std::nullopt
-	);
+	});
 }
 
 template <auto &ref>
@@ -438,14 +439,14 @@ jems::handle resource_intrinsic(const Receiver <ref> &, uint32_t _)
 	using R = reference_base_of <ref>;
 	using T = R::value_type;
 
-	return jems::global_resource(
+	return jems::global_resource(GlobalResource {
 		reconstruct_type <T> (),
 		GlobalResourceKind::eRayReceiverPayload,
 		GlobalResourceLayout::eNone,
 		GlobalResourceAccess::eRead,
 		std::nullopt,
 		std::nullopt
-	);
+	});
 }
 
 } // namespace rcgp

@@ -9,9 +9,9 @@
 
 namespace rcgp {
 
-inline jems::local wrap_in_local(
+inline jems::handle wrap_in_local(
 	const std::source_location &loc,
-	jems::type type,
+	jems::handle type,
 	const std::vector <Reference> &cargs)
 {
 	auto c = jems::construct(type, cargs, loc);
