@@ -667,8 +667,12 @@ void emit_resource(GLSLEmitter &em, const GlobalResource &grsrc)
 	auto name = grsrc_name(grsrc);
 
 	std::string array = "";
-	if (grsrc.count)
-		array = std::format("[{}]", *grsrc.count);
+	if (grsrc.count) {
+		if (*grsrc.count > 0)
+			array = std::format("[{}]", *grsrc.count);
+		else
+			array = "[]";
+	}
 
 	// Storage images
 	if (grsrc.kind == GlobalResourceKind::eStorageImage) {

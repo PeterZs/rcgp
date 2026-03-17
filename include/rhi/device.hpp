@@ -81,6 +81,12 @@ struct Device {
 
 	template <auto &ref>
 	auto new_descriptor(const DescriptorPool &dpool) const -> UnboundDescriptor <ref>;
+	
+	template <auto &ref>
+	auto new_descriptor(const DescriptorPool &dpool, uint32_t max_count) const -> UnboundDescriptor <ref>;
+
+	template <auto &...refs>
+	[[nodiscard]] auto update_descriptors(DescriptorWrite <refs> &&... dwpairs) const;
 
 	auto new_shader_module(std::span <const uint32_t> spirv) const -> vk::ShaderModule {
 		auto info = vk::ShaderModuleCreateInfo()
@@ -94,9 +100,6 @@ struct Device {
 		const Attachments &attachments,
 		std::span <const Subpass> subpasses
 	) const -> vk::RenderPass;
-
-	template <auto &...refs>
-	[[nodiscard]] auto update_descriptors(DescriptorWrite <refs> &&... dwpairs);
 
 	std::optional <uint32_t> acquire_next_frame(
 		Window &window,

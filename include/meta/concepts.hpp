@@ -28,9 +28,10 @@ TYPE_TRAIT(is_dynamic);
 template <user_defined T>
 struct is_dynamic <T> {
 	static constexpr bool value = [] {
-		return constexpr_for(Is, T::field_count,
+		using Fields = T::fields;
+		return constexpr_for(Is, Fields::size,
 			return (is_dynamic <
-				typename T::fields::template get <Is>
+				typename Fields::template get <Is>
 			> ::value || ...)
 		);
 	} ();

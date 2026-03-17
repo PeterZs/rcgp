@@ -32,10 +32,20 @@ vk::Bool32 general_validation_callback(
 {
 	auto *debugging = reinterpret_cast <Session::Debugging *> (user_data);
 
-	if (debugging->callback.has_value())
-		debugging->callback.value()(severity, data->pMessage);
-	else
-		std::println(std::cerr, "vulkan: {}", data->pMessage);
+	if (debugging->callback) {
+		(*debugging->callback)(severity, data->pMessage);
+	} else {
+		std::string status = [&] {
+			using enum vk::DebugUtilsMessageSeverityFlagBitsEXT;
+			switch (severity) {
+			case eError: return "error";
+			case eWarning: return "warning";
+			case eVerbose: return "verbose";
+			default: return "info";
+			}
+		} ();
+		std::println(std::cerr, "vulkan [{}]: {}", status, data->pMessage);
+	}
 
 	bool trap = debugging->trap_on_error && (severity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eError);
 	if (trap)

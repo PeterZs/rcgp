@@ -73,11 +73,22 @@ auto get_descriptor_info(const auto &resource)
 			.setAccelerationStructures(resource);
 	} else if constexpr (is_resource_array_v <T>) {
 		using R = T::base;
-		return constexpr_for(Is, T::elements,
-			return std::vector {
-				get_descriptor_info <R> (resource[Is])...
-			}
-		);
+		if constexpr (T::elements >= 0) {
+			return constexpr_for(Is, T::elements,
+				return std::vector {
+					get_descriptor_info <R> (resource[Is])...
+				}
+			);
+		} else {
+			using D = decltype(get_descriptor_info <R> (resource[0]));
+			std::vector <D> result;
+
+			result.reserve(resource.size());
+			for (auto &r : resource)
+				result.push_back(get_descriptor_info <R> (r));
+
+			return result;
+		}
 	} else {
 		return resource.descriptor_info();
 	}
@@ -95,7 +106,7 @@ void set_descriptor_write(
 
 	write // ...
 		.setDstSet(set)
-		.setDescriptorType(resource_packet <T> ().type)
+		.setDescriptorType(resource_descriptor_type_v <T>)
 		.setDstBinding(I);
 
 	auto dinfo = get_descriptor_info <T> (resource);
@@ -110,11 +121,10 @@ void set_descriptor_write(
 	} else if constexpr (is_resource_array_v <T>) {
 		using R = T::base;
 
-		if constexpr (is_sampler_v <R> or is_storage_image_v <R>) {
+		if constexpr (is_sampler_v <R> or is_storage_image_v <R>)
 			write.setImageInfo(info.set_image_list(dinfo));
-		} else {
+		else
 			static_assert(false, "unsupported resource array element "_ss + $ss_type(R));
-		}
 	} else {
 		static_assert(false, "unsupported resource type "_ss + $ss_type(T));
 	}
@@ -184,6 +194,9 @@ template <auto &ref>
 auto Device::new_descriptor(const DescriptorPool &dpool) const
 	-> UnboundDescriptor <ref>
 {
+	using R = reference_base_of <ref>;
+	static_assert(not is_dynamic_v <R>, $ss_type(R) + " has variable size; use the max_count overload instead"_ss);
+
 	auto key = _dsl_cache::Key(logical, &ref);
 	auto dsl = _dsl_cache::map.at(key);
 	auto dset = logical.allocateDescriptorSets(
@@ -194,8 +207,30 @@ auto Device::new_descriptor(const DescriptorPool &dpool) const
 	return { dset };
 }
 
+template <auto &ref>
+auto Device::new_descriptor(const DescriptorPool &dpool, uint32_t max_count) const
+	-> UnboundDescriptor <ref>
+{
+	using R = reference_base_of <ref>;
+	static_assert(is_dynamic_v <R>, $ss_type(R) + " does not have variable size"_ss);
+
+	auto key = _dsl_cache::Key(logical, &ref);
+	auto dsl = _dsl_cache::map.at(key);
+	auto alloc_info = vk::DescriptorSetAllocateInfo()
+		.setDescriptorPool(dpool)
+		.setSetLayouts(dsl);
+
+	auto counts = vk::DescriptorSetVariableDescriptorCountAllocateInfo()
+		.setDescriptorCounts(max_count);
+
+	alloc_info.setPNext(&counts);
+
+	auto dset = logical.allocateDescriptorSets(alloc_info).front();
+	return { dset };
+}
+
 template <auto &...refs>
-[[nodiscard]] auto Device::update_descriptors(DescriptorWrite <refs> &&... dwpairs)
+[[nodiscard]] auto Device::update_descriptors(DescriptorWrite <refs> &&... dwpairs) const
 {
 	static_assert(sizeof...(dwpairs) > 0);
 
