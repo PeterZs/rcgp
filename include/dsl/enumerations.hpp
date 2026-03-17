@@ -119,6 +119,10 @@ enum class SystemValue {
 	eLaunchID,                  // @glsl:gl_LaunchIDEXT
 	eLaunchSize,                // @glsl:gl_LaunchSizeEXT
 	ePrimitiveID,               // @glsl:gl_PrimitiveID
+	eWorldRayOrigin,            // @glsl:gl_WorldRayOriginEXT
+	eWorldRayDirection,         // @glsl:gl_WorldRayDirectionEXT
+	eHitT,                      // @glsl:gl_HitTEXT
+	eInstanceCustomIndex,       // @glsl:gl_InstanceCustomIndexEXT
 };
 
 const char *repr(SystemValue value);

@@ -3,18 +3,18 @@
 
 namespace rcgp {
 
-AccelerationStructure AccelerationStructure::from(
+auto AccelerationStructure::from(
 	const Device &device,
 	const vk::AccelerationStructureBuildGeometryInfoKHR &build_info,
 	uint32_t max_primitive_count
-) {
+) -> std::tuple <AccelerationStructure, uint32_t>
+{
 	auto sizes = device.logical.getAccelerationStructureBuildSizesKHR(
 		vk::AccelerationStructureBuildTypeKHR::eDevice,
 		build_info, max_primitive_count, device.loader
 	);
 
 	AccelerationStructure result;
-	result.scratch_size = sizes.buildScratchSize;
 	result.buffer = Buffer::from(device,
 		sizes.accelerationStructureSize,
 		vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR
@@ -28,7 +28,8 @@ AccelerationStructure AccelerationStructure::from(
 			.setType(build_info.type),
 		nullptr, device.loader
 	);
-	return result;
+
+	return std::tuple { result, sizes.buildScratchSize };
 }
 
 void AccelerationStructure::destroy(const Device &device)

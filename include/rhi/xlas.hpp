@@ -8,16 +8,15 @@ struct Device;
 
 struct AccelerationStructure {
 	vk::AccelerationStructureKHR handle;
-	vk::DeviceSize scratch_size = 0;
 	Buffer buffer;
 
 	void destroy(const Device &device);
 
-	static AccelerationStructure from(
+	static auto from(
 		const Device &device,
 		const vk::AccelerationStructureBuildGeometryInfoKHR &build_info,
 		uint32_t max_primitive_count
-	);
+	) -> std::tuple <AccelerationStructure, uint32_t>;
 };
 
 } // namespace rcgp

@@ -152,6 +152,9 @@ struct _dsl_cache {
 template <auto &ref, ShaderStage ... Ss>
 auto one_wrapper_to_dsl(const Device &device, const stage_wrapper <ref, Ss...> &wrapper)
 {
+	// TODO: should cache all stage flags of the contract at init time?
+	// as is, we are unable to call this from the new_descritpor
+	// functions, and so cannot do anything before compiling the first pipeline...
 	auto key = _dsl_cache::Key(device.logical, &ref);
 	if (_dsl_cache::map.contains(key))
 		return _dsl_cache::map.at(key);
@@ -162,18 +165,16 @@ auto one_wrapper_to_dsl(const Device &device, const stage_wrapper <ref, Ss...> &
 		// .setFlags(vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool)
 		.setBindings(dslbs);
 
+	auto binding_flags = vk::DescriptorSetLayoutBindingFlagsCreateInfo()
+		.setBindingFlags(flags);
 	auto variable_count = [&] {
 		for (auto &flag : flags)
 			if (flag != vk::DescriptorBindingFlags(0)) return true;
 		return false;
 	} ();
 
-	if (variable_count) {
-		auto binding_flags = vk::DescriptorSetLayoutBindingFlagsCreateInfo()
-			.setBindingFlags(flags);
-
+	if (variable_count)
 		dsl_info.setPNext(&binding_flags);
-	}
 
 	auto dsl = device.logical.createDescriptorSetLayout(dsl_info);
 
