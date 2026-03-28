@@ -230,9 +230,6 @@ Reference operation_type_ref(const SharedBlockReference &sbr, const Operation &o
 	if (not opn.b)
 		return atype;
 
-	if (opn.code != OperationCode::eMultiply)
-		return atype;
-
 	auto btype = get_or_add_type_ref(sbr, opn.b);
 	auto &alhs = atype->as <Type> ();
 	auto &arhs = btype->as <Type> ();
@@ -243,6 +240,13 @@ Reference operation_type_ref(const SharedBlockReference &sbr, const Operation &o
 	auto lhs = alhs.as <Primitive> ();
 	auto rhs = arhs.as <Primitive> ();
 	if (primitive_family(lhs) != primitive_family(rhs))
+		return atype;
+
+	// Scalar-vector/matrix promotion (applies to all arithmetic ops)
+	if (primitive_is_scalar(lhs) and not primitive_is_scalar(rhs))
+		return btype;
+
+	if (opn.code != OperationCode::eMultiply)
 		return atype;
 
 	if (primitive_is_matrix(lhs) and primitive_is_vector(rhs)) {
