@@ -1,6 +1,6 @@
 #pragma once
 
-#include "projection.hpp"
+#include "canonical.hpp"
 #include "vector.hpp"
 #include "matrix.hpp"
 #include "aliases.hpp"
@@ -24,46 +24,46 @@ vector <T, N> abs(const vector <T, N> &v)
 }
 
 template <typename T, typename U>
-requires projectively_equivalent <T, U>
+requires canonically_equivalent <T, U>
 auto max(const T &a, const U &b)
 {
-	using result = projection_t <T>;
+	using result = canonical_type_t <T>;
 	return result::reinterpret(
-		builtin(eMax, project(a), project(b))
+		builtin(eMax, canonicalize(a), canonicalize(b))
 	);
 }
 
 template <typename T, typename U>
-requires projectively_equivalent <T, U>
+requires canonically_equivalent <T, U>
 auto min(const T &a, const U &b)
 {
-	using result = projection_t <T>;
+	using result = canonical_type_t <T>;
 	return result::reinterpret(
-		builtin(eMin, project(a), project(b))
+		builtin(eMin, canonicalize(a), canonicalize(b))
 	);
 }
 
 template <typename T, typename U, typename V>
-requires projectively_equivalent <T, U> && projectively_equivalent <T, V>
+requires canonically_equivalent <T, U> && canonically_equivalent <T, V>
 auto clamp(const T &v, const U &lo, const V &hi)
 {
 	return min(max(v, lo), hi);
 }
 
 template <typename T, typename U, typename V>
-requires projectively_equivalent <T, U> && projectively_equivalent <T, V>
+requires canonically_equivalent <T, U> && canonically_equivalent <T, V>
 auto mix(const T &a, const U &b, const V &t)
 {
 	return a + (b - a) * t;
 }
 
 template <typename T, typename U>
-requires projectively_equivalent <T, U>
+requires canonically_equivalent <T, U>
 auto pow(const T &a, const U &b)
 {
-	using result = projection_t <T>;
+	using result = canonical_type_t <T>;
 	return result::reinterpret(
-		builtin(ePow, project(a), project(b))
+		builtin(ePow, canonicalize(a), canonicalize(b))
 	);
 }
 

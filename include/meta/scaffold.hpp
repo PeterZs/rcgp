@@ -30,14 +30,14 @@ using scaffold_natural = scaffold_hint <T, 0>;
 
 // Scaffold for primitive/built-in types
 template <size_t Align, typename T, bool AlignTopLevel = false>
-struct alignas(AlignTopLevel ? Align : 0) scaffold_fundamental {
+struct alignas(AlignTopLevel ? Align : 0) scaffold_composed {
 	T value;
 
-	constexpr scaffold_fundamental() = default;
+	constexpr scaffold_composed() = default;
 
 	template <typename U>
 	requires (std::is_trivially_constructible_v <T, U>)
-	constexpr scaffold_fundamental(const U &value_) : value(value_) {}
+	constexpr scaffold_composed(const U &value_) : value(value_) {}
 
 	operator const T &() const {
 		return value;
@@ -50,16 +50,16 @@ struct alignas(AlignTopLevel ? Align : 0) scaffold_fundamental {
 
 // Scaffold for structual types with fields
 template <size_t Align, typename T, bool AlignTopLevel = false>
-struct alignas(AlignTopLevel ? Align : 0) scaffold_structural : T {
-	constexpr scaffold_structural() = default;
+struct alignas(AlignTopLevel ? Align : 0) scaffold_inherited : T {
+	constexpr scaffold_inherited() = default;
 
 	template <typename U>
 	requires (std::is_convertible_v <U, T>)
-	constexpr scaffold_structural(const U &rhs) : T(rhs) {}
+	constexpr scaffold_inherited(const U &rhs) : T(rhs) {}
 
 	template <typename U>
 	requires (std::is_convertible_v <U, T>)
-	constexpr scaffold_structural &operator=(const U &rhs) {
+	constexpr scaffold_inherited &operator=(const U &rhs) {
 		T::operator=(rhs);
 		return *this;
 	}
@@ -80,17 +80,29 @@ struct scaffold_lookup <scaffold_hint <Mapped, Align>, View, AlignTopLevel> {
 	using type = std::conditional_t <
 		Align == 0 or (sizeof(Mapped) % Align) == 0,
 		Mapped,
-		scaffold_fundamental <Align, Mapped, AlignTopLevel>
+		scaffold_composed <Align, Mapped, AlignTopLevel>
+	>;
+};
+
+// Array types (e.g. float[3] from vector mappings)
+template <typename Mapped, size_t Align, typename View, bool AlignTopLevel>
+requires (std::is_array_v <Mapped>)
+struct scaffold_lookup <scaffold_hint <Mapped, Align>, View, AlignTopLevel> {
+	using type = std::conditional_t <
+		Align == 0 or (sizeof(Mapped) % Align) == 0,
+		Mapped,
+		scaffold_composed <Align, Mapped, AlignTopLevel>
 	>;
 };
 
 // Structural types
 template <typename Mapped, size_t Align, typename View, bool AlignTopLevel>
+requires (std::is_class_v <Mapped>)
 struct scaffold_lookup <scaffold_hint <Mapped, Align>, View, AlignTopLevel> {
 	using type = std::conditional_t <
 		Align == 0 or (sizeof(Mapped) % Align) == 0,
 		Mapped,
-		scaffold_structural <Align, Mapped, AlignTopLevel>
+		scaffold_inherited <Align, Mapped, AlignTopLevel>
 	>;
 };
 

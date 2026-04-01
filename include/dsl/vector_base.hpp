@@ -3,9 +3,9 @@
 #include <cstdlib>
 #include <type_traits>
 
+#include "canonical.hpp"
 #include "primitive_of.hpp"
 #include "pygen_macro_swizzle.hpp"
-#include "scalar.hpp"
 
 namespace rcgp {
 
@@ -36,6 +36,12 @@ struct swizzle_component {
 		auto self = reinterpret_cast <const jems::handle *> (this);
 		return R::reinterpret(jems::swizzle(S, *self));
 	}
+};
+
+// Specialization: swizzle components canonicalize to their result type
+template <typename R, SwizzleCode S>
+struct canonical_type <swizzle_component <R, S>> {
+	using type = R;
 };
 
 template <native_scalar T, size_t D>

@@ -4,6 +4,7 @@
 #include "intrinsics_compute.hpp"
 
 #include "../dsl/array.hpp"
+#include "../dsl/block.hpp"
 #include "../dsl/tracer.hpp"
 #include "../util/cti.hpp"
 
@@ -33,10 +34,10 @@ template <traced T>
 struct mesh_vertex_positions : jems::handle {
 	mesh_vertex_positions() : handle(jems::system_value(SystemValue::eMeshVertices)) {}
 
-	template <projectively_int_scalar U>
+	template <canonically_integral U>
 	T operator[](const U &idx) const {
 		T result;
-		auto access = jems::array_access(_ref, project(idx));
+		auto access = jems::array_access(_ref, canonicalize(idx));
 		result.override_reference(access);
 		return result;
 	}
@@ -47,10 +48,10 @@ struct mesh_primitive_triangles : jems::handle {
 	mesh_primitive_triangles()
 		: handle(jems::system_value(SystemValue::ePrimitiveTriangleIndices)) {}
 
-	template <projectively_int_scalar U>
+	template <canonically_integral U>
 	T operator[](const U &idx) const {
 		T result;
-		auto access = jems::array_access(_ref, project(idx));
+		auto access = jems::array_access(_ref, canonicalize(idx));
 		result.override_reference(access);
 		return result;
 	}
@@ -61,10 +62,10 @@ struct PerVertex : jems::handle {
 	using element_type = T;
 	static constexpr RateProperties properties = Q <T> ::rate;
 
-	template <projectively_int_scalar U>
+	template <canonically_integral U>
 	T operator[](const U &idx) const {
 		T result;
-		auto access = jems::array_access(_ref, project(idx));
+		auto access = jems::array_access(_ref, canonicalize(idx));
 		result.override_reference(access);
 		return result;
 	}
@@ -75,10 +76,10 @@ struct PerPrimitive : jems::handle {
 	using element_type = T;
 	static constexpr RateProperties properties = Q <T> ::rate;
 
-	template <projectively_int_scalar U>
+	template <canonically_integral U>
 	T operator[](const U &idx) const {
 		T result;
-		auto access = jems::array_access(_ref, project(idx));
+		auto access = jems::array_access(_ref, canonicalize(idx));
 		result.override_reference(access);
 		return result;
 	}

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../dsl/aliases.hpp"
-#include "../dsl/projection.hpp"
+#include "../dsl/canonical.hpp"
 #include "resources.hpp"
 
 namespace rcgp {
@@ -24,7 +24,7 @@ struct write_only_intrinsic {
 };
 
 template <SystemValue G, ShaderStage S, typename T>
-struct projection <read_only_intrinsic <G, S, T>> {
+struct canonical_type <read_only_intrinsic <G, S, T>> {
 	using type = T;
 };
 

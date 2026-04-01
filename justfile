@@ -15,15 +15,16 @@ experimental: build_rcgp
 	cmake --build build -j -t experimental
 	./build/experimental
 
-# Tests for scaffold generation
-scaffold:
-	{{compiler}} {{cxxflags}} -c tests/scaffold/std430.cpp -o /tmp/std430.o
-	{{compiler}} {{cxxflags}} -c tests/scaffold/scalar.cpp -o /tmp/scalar.o
-	{{compiler}} {{cxxflags}} -c tests/scaffold/resources.cpp -o /tmp/resources.o
+# Compilation tests (static assertions, type checks)
+compile:
+	{{compiler}} {{cxxflags}} -c tests/compile/std430.cpp -o /tmp/std430.o
+	{{compiler}} {{cxxflags}} -c tests/compile/scalar.cpp -o /tmp/scalar.o
+	{{compiler}} {{cxxflags}} -c tests/compile/resources.cpp -o /tmp/resources.o
+	{{compiler}} {{cxxflags}} -c tests/compile/canonical.cpp -o /tmp/canonical.o
 
 # Tests for JIT tracing of the DSL
 dsl *args: build_test
 	./build/test {{args}}
 
 # Run all tests
-test: scaffold dsl
+test: compile dsl

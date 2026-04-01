@@ -1,7 +1,6 @@
 #pragma once
 
-#include <type_traits>
-
+#include "promotion.hpp"
 #include "vector_base.hpp"
 
 namespace rcgp {
@@ -9,7 +8,7 @@ namespace rcgp {
 template <native_scalar T, size_t N>
 struct vector : public vector_base <T, N> {
 	using vector_base <T, N> ::vector_base;
-	
+
 	// TODO: only upcast to local if its being stored into...
 	static auto reinterpret(const jems::handle &h) {
 		auto type = jems::type(primitive_of <T, N> ());
@@ -25,12 +24,11 @@ struct vector : public vector_base <T, N> {
 		return *this;
 	}
 
-	// Arithmetic operations
-	// TODO: move to a header/generate with a script?
+	// Vector-vector arithmetic
 	friend vector operator+(const vector &a, const vector &b) {
 		return reinterpret(jems::operation(OperationCode::eAdd, a, b));
 	}
-	
+
 	friend vector operator*(const vector &a, const vector &b) {
 		return reinterpret(jems::operation(OperationCode::eMultiply, a, b));
 	}
@@ -39,68 +37,68 @@ struct vector : public vector_base <T, N> {
 		return reinterpret(jems::operation(OperationCode::eSubtract, a, b));
 	}
 
+	friend vector operator/(const vector &a, const vector &b) {
+		return reinterpret(jems::operation(OperationCode::eDivide, a, b));
+	}
+
 	friend vector operator-(const vector &v) {
-		// TODO: negative operation
 		return reinterpret(jems::operation(OperationCode::eMultiply, scalar <T> (-1), v));
 	}
 
+	// Vector-scalar arithmetic (scalar on left)
 	template <typename U>
-	requires std::is_convertible_v <U, scalar <T>>
+	requires canonically_scalar <U>
 	friend vector operator+(const U &s, const vector &v) {
 		return reinterpret(jems::operation(OperationCode::eAdd, scalar <T> (s), v));
 	}
-	
+
 	template <typename U>
-	requires std::is_convertible_v <U, scalar <T>>
+	requires canonically_scalar <U>
 	friend vector operator+(const vector &v, const U &s) {
 		return reinterpret(jems::operation(OperationCode::eAdd, v, scalar <T> (s)));
 	}
 
 	template <typename U>
-	requires std::is_convertible_v <U, scalar <T>>
+	requires canonically_scalar <U>
 	friend vector operator-(const vector &v, const U &s) {
 		return reinterpret(jems::operation(OperationCode::eSubtract, v, scalar <T> (s)));
 	}
 
 	template <typename U>
-	requires std::is_convertible_v <U, scalar <T>>
+	requires canonically_scalar <U>
 	friend vector operator-(const U &s, const vector &v) {
 		return reinterpret(jems::operation(OperationCode::eSubtract, scalar <T> (s), v));
 	}
-	
+
 	template <typename U>
-	requires std::is_convertible_v <U, scalar <T>>
+	requires canonically_scalar <U>
 	friend vector operator*(const U &s, const vector &v) {
 		return reinterpret(jems::operation(OperationCode::eMultiply, scalar <T> (s), v));
 	}
 
 	template <typename U>
-	requires std::is_convertible_v <U, scalar <T>>
+	requires canonically_scalar <U>
 	friend vector operator*(const vector &v, const U &s) {
 		return reinterpret(jems::operation(OperationCode::eMultiply, v, scalar <T> (s)));
 	}
 
-	friend vector operator/(const vector &a, const vector &b) {
-		return reinterpret(jems::operation(OperationCode::eDivide, a, b));
-	}
-
 	template <typename U>
-	requires std::is_convertible_v <U, scalar <T>>
+	requires canonically_scalar <U>
 	friend vector operator/(const vector &v, const U &s) {
 		return reinterpret(jems::operation(OperationCode::eDivide, v, scalar <T> (s)));
 	}
 
 	template <typename U>
-	requires std::is_convertible_v <U, scalar <T>>
+	requires canonically_scalar <U>
 	friend vector operator/(const U &s, const vector &v) {
 		return reinterpret(jems::operation(OperationCode::eDivide, scalar <T> (s), v));
 	}
-	
+
 	vector &operator+=(const vector &other) {
 		*this = *this + other;
 		return *this;
 	}
-	
+
 	vector &operator-=(const vector &other) {
 		*this = *this - other;
 		return *this;
@@ -110,7 +108,7 @@ struct vector : public vector_base <T, N> {
 		*this = *this * other;
 		return *this;
 	}
-	
+
 	vector &operator/=(const vector &other) {
 		*this = *this / other;
 		return *this;

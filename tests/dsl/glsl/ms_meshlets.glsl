@@ -1,7 +1,7 @@
 #version 460
 
-#extension GL_EXT_scalar_block_layout : require
 #extension GL_EXT_mesh_shader : require
+#extension GL_EXT_scalar_block_layout : require
 
 struct meshlets_MeshletData {
     uint vertex_offset;
