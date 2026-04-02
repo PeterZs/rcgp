@@ -380,6 +380,11 @@ Reference get_or_add_type_ref(const SharedBlockReference &sbr, const Reference &
 	vcase(FieldAccess): {
 		auto &facc = ref->as <FieldAccess> ();
 		auto &type = get_or_add_type_ref(sbr, facc.value)->as <Type> ();
+		if (type.is <BufferReferenceType> ()) {
+			assertion(facc.fidx == 0);
+			auto &brt = type.as <BufferReferenceType> ();
+			return get_or_add_type_ref(sbr, brt.element_type);
+		}
 		assertion(type.is <Struct> ());
 		return get_or_add_type_ref(sbr, type.as <Struct>().at(facc.fidx));
 	}

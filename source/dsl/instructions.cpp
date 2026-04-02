@@ -34,6 +34,10 @@ const Type &get_type(const SharedBlockReference &sbr, const Reference &ref)
 	vcase(FieldAccess): {
 		auto &facc = ref->as <FieldAccess> ();
 		auto &type = get_type(sbr, facc.value);
+		if (type.is <BufferReferenceType> ()) {
+			assertion(facc.fidx == 0);
+			return get_type(sbr, type.as <BufferReferenceType> ().element_type);
+		}
 		assertion(type.is <Struct> ());
 		return get_type(sbr, type.as <Struct>().at(facc.fidx));
 	}

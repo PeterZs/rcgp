@@ -27,6 +27,16 @@ using WArrayBuffer = ArrayBuffer <T, L, GlobalResourceAccess::eWrite>;
 template <typename T, template <typename> typename L = layouts::std430>
 using RWArrayBuffer = ArrayBuffer <T, L, GlobalResourceAccess::eReadWrite>;
 
+// Buffer references (typed GPU pointers)
+template <typename T, template <typename> typename L = layouts::scalar>
+using RBufferRef = BufferReference <T, L, GlobalResourceAccess::eRead>;
+
+template <typename T, template <typename> typename L = layouts::scalar>
+using WBufferRef = BufferReference <T, L, GlobalResourceAccess::eWrite>;
+
+template <typename T, template <typename> typename L = layouts::scalar>
+using RWBufferRef = BufferReference <T, L, GlobalResourceAccess::eReadWrite>;
+
 // Images
 using RImage1D = StorageImage <float, 1, GlobalResourceAccess::eRead>;
 using RImage2D = StorageImage <float, 2, GlobalResourceAccess::eRead>;

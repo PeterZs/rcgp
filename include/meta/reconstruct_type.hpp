@@ -74,6 +74,27 @@ auto reconstructor_for(std::type_identity <T>, $location)
 	return jems::type(st, loc);
 }
 
+// Forward declaration for BufferReference (defined in resources.hpp)
+template <typename T, template <typename> typename L, GlobalResourceAccess A>
+struct BufferReference;
+
+template <template <typename> typename L>
+consteval GlobalResourceLayout layout_of();
+
+template <typename T, template <typename> typename L, GlobalResourceAccess A>
+auto reconstructor_for(std::type_identity <BufferReference <T, L, A>>, $location)
+{
+	auto element = reconstruct_type <T> (loc);
+	return jems::type(BufferReferenceType { element, layout_of <L> (), A }, loc);
+}
+
+template <typename T, int64_t N, template <typename> typename L, GlobalResourceAccess A>
+auto reconstructor_for(std::type_identity <BufferReference <array <T, N>, L, A>>, $location)
+{
+	auto element = reconstruct_type <array <T, N>> (loc);
+	return jems::type(BufferReferenceType { element, layout_of <L> (), A }, loc);
+}
+
 template <typename T>
 jems::handle reconstruct_type(const std::source_location &loc)
 {

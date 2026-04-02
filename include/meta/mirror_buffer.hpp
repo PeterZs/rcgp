@@ -6,6 +6,11 @@
 
 namespace rcgp {
 
+template <typename T, template <typename> typename L>
+struct BufferAddress {
+	uint64_t value = 0;
+};
+
 // TODO: move to dynamic.hpp
 template <typename T, template <typename> typename L>
 using dynamic_element_of_mirror = decltype([] {
@@ -160,6 +165,10 @@ using UniformMirrorBuffer = MirrorBuffer <T, L, vk::BufferUsageFlagBits::eUnifor
 template <typename T, template <typename> typename L>
 using StorageMirrorBuffer = MirrorBuffer <T, L, vk::BufferUsageFlagBits::eStorageBuffer>;
 
+// Buffer referenced via device address (for BufferReference<T, L> shader types)
+template <typename T, template <typename> typename L = layouts::scalar>
+using ReferencedBuffer = MirrorBuffer <T, L, vk::BufferUsageFlagBits::eShaderDeviceAddress>;
+
 // Type traits
 TYPE_TRAIT(is_vertex_buffer);
 	template <typename T, template <typename> typename L>
@@ -168,5 +177,13 @@ TYPE_TRAIT(is_vertex_buffer);
 TYPE_TRAIT(is_index_buffer);
 	template <typename T, template <typename> typename L>
 	TYPE_TRAIT_INCLUDES(is_index_buffer, IndexMirrorBuffer <T, L>);
+
+// Deferred implementation of Device::address (declared in device.hpp)
+template <typename T, template <typename> typename L, vk::BufferUsageFlagBits F>
+requires (bool(F & vk::BufferUsageFlagBits::eShaderDeviceAddress))
+auto Device::address(const MirrorBuffer <T, L, F> &buffer) const -> BufferAddress <T, L>
+{
+	return { get_address(buffer) };
+}
 
 } // namespace rcgp

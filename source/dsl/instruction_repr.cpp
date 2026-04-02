@@ -30,6 +30,12 @@ std::string Type::repr() const
 		auto base_repr = array.base ? array.base->repr() : "null";
 		return "Array(size=" + std::to_string(array.size) + " base=" + base_repr + ")";
 	}
+	vcase(BufferReferenceType): {
+		const auto &brt = as <BufferReferenceType> ();
+		auto elem_repr = brt.element_type ? brt.element_type->repr() : "null";
+		return std::format("BufferReference({}, {}, {})",
+			elem_repr, rcgp::repr(brt.layout), rcgp::repr(brt.access));
+	}
 	default:
 		break;
 	}

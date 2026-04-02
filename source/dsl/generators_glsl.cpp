@@ -57,12 +57,29 @@ bool is_unsized_type(const Type &type)
 
 		break;
 	}
+	vcase(BufferReferenceType): {
+		// Buffer references are fixed-size (8 bytes) regardless of inner type
+		break;
+	}
 	default:
 		break;
 	}
 
 	return false;
 }
+
+std::string access_qualifier(GlobalResourceAccess access)
+{
+	switch (access) {
+	case GlobalResourceAccess::eRead: return "readonly ";
+	case GlobalResourceAccess::eWrite: return "writeonly ";
+	case GlobalResourceAccess::eReadWrite: return "";
+	default: return "";
+	}
+}
+
+// Forward declaration
+std::string bufref_mangled_name(const GLSLEmitter &em, const BufferReferenceType &brt);
 
 std::string grsrc_name(const GlobalResource &grsrc)
 {
@@ -126,11 +143,27 @@ TypeRepr type_repr(const GLSLEmitter &em, const Reference &ref)
 		auto repr = type_repr(em, array.base);
 		return { repr.base, repr.suffix + size };
 	}
+	vcase(BufferReferenceType): {
+		auto &brt = type.as <BufferReferenceType> ();
+		return { bufref_mangled_name(em, brt), "" };
+	}
 	default:
 		break;
 	}
 
 	fatal("unhandled case for type_repr: {}", ref->repr());
+}
+
+std::string bufref_mangled_name(const GLSLEmitter &em, const BufferReferenceType &brt)
+{
+	auto repr = type_repr(em, brt.element_type);
+	auto suffix = repr.suffix;
+	// [] → _arr for mangling (sanitize_name strips brackets)
+	for (std::string::size_type pos; (pos = suffix.find("[]")) != std::string::npos; )
+		suffix.replace(pos, 2, "_array");
+	return std::format("BufRef_{}_{}",
+		repr_glsl(brt.layout),
+		sanitize_name(repr.base + suffix));
 }
 
 std::string expr_repr(const GLSLEmitter &em, const Reference &ref);
@@ -176,7 +209,12 @@ std::string lval_repr(const GLSLEmitter &em, const Reference &ref)
 	}
 	vcase(FieldAccess): {
 		auto &facc = ref->as <FieldAccess> ();
-		auto &st = get_struct(em.main, facc.value);
+		auto &parent_type = get_type(em.main, facc.value);
+		if (parent_type.is <BufferReferenceType> ()) {
+			// Buffer reference .value access
+			return std::format("{}.value", expr_repr(em, facc.value));
+		}
+		auto &st = parent_type.as <Struct> ();
 		return std::format("{}.{}", expr_repr(em, facc.value), st.fields[facc.fidx]);
 	}
 	vcase(Swizzle): {
@@ -512,12 +550,19 @@ auto collect_extensions(const GLSLEmitter &em)
 
 	// TODO: need to walk through all instructions...
 	for (auto &instr : *em.main) {
-		if (not instr->is <BuiltinIntrinsic> ())
-			continue;
+		if (instr->is <BuiltinIntrinsic> ()) {
+			auto &bintr = instr->as <BuiltinIntrinsic> ();
+			if (bintr.code == BuiltinIntrinsicCode::eNonUniformEXT)
+				extensions.insert("GL_EXT_nonuniform_qualifier");
+		}
 
-		auto &bintr = instr->as <BuiltinIntrinsic> ();
-		if (bintr.code == BuiltinIntrinsicCode::eNonUniformEXT)
-			extensions.insert("GL_EXT_nonuniform_qualifier");
+		if (instr->is <Type> ()) {
+			auto &type = instr->as <Type> ();
+			if (type.is <BufferReferenceType> ()) {
+				extensions.insert("GL_EXT_buffer_reference");
+				extensions.insert("GL_EXT_shader_explicit_arithmetic_types_int64");
+			}
+		}
 	}
 
 	return std::vector(extensions.begin(), extensions.end());
@@ -568,6 +613,9 @@ void collect_struct_dependencies(std::set <std::string> &deps, const Reference &
 		break;
 	vcase(Array):
 		collect_struct_dependencies(deps, type.as <Array> ().base);
+		break;
+	vcase(BufferReferenceType):
+		// Buffer reference types are forward-declared blocks, not struct dependencies
 		break;
 	default:
 		break;
@@ -626,6 +674,37 @@ auto top_sort_structs(const std::map <std::string, Struct> structs)
 	return sorted;
 }
 
+void emit_buffer_references(GLSLEmitter &em)
+{
+	// Collect unique buffer reference types from all instructions
+	std::map <std::string, const BufferReferenceType *> refs;
+	for (auto &instr : *em.main) {
+		if (not instr->is <Type> ())
+			continue;
+
+		auto &type = instr->as <Type> ();
+		if (not type.is <BufferReferenceType> ())
+			continue;
+
+		auto &brt = type.as <BufferReferenceType> ();
+		auto name = bufref_mangled_name(em, brt);
+		refs.emplace(name, &brt);
+	}
+
+	for (auto &[name, brt] : refs) {
+		auto repr = type_repr(em, brt->element_type);
+		em.emit_fmt_line(
+			"layout (buffer_reference, {}) {}buffer {} {{",
+			repr_glsl(brt->layout), access_qualifier(brt->access), name
+		);
+		em.indentation++;
+		em.emit_fmt_line("{} value{};", repr.base, repr.suffix);
+		em.indentation--;
+		em.emit_line("};");
+		em.emit_newline();
+	}
+}
+
 void emit_structs(GLSLEmitter &em)
 {
 	// TODO: make this an iteration over all method blocks
@@ -665,14 +744,8 @@ std::string buffer_access(const GlobalResource &grsrc)
 	switch (grsrc.kind) {
 	case GlobalResourceKind::eUniformBuffer: return "uniform";
 	case GlobalResourceKind::eStorageBuffer:
-		switch (grsrc.access) {
-		case GlobalResourceAccess::eRead: return "readonly buffer";
-		case GlobalResourceAccess::eWrite: return "writeonly buffer";
-		case GlobalResourceAccess::eReadWrite: return "buffer";
-		default: return "buffer";
-		}
-		break;
-	// TODO: buffer reference
+	case GlobalResourceKind::eBufferReference:
+		return access_qualifier(grsrc.access) + "buffer";
 	default:
 		break;
 	}
@@ -711,12 +784,8 @@ void emit_resource(GLSLEmitter &em, const GlobalResource &grsrc)
 
 	// Storage images
 	if (grsrc.kind == GlobalResourceKind::eStorageImage) {
-		// TODO: method
-		std::string access = " ";
-		if (grsrc.access == GlobalResourceAccess::eRead)
-			access = "readonly ";
-		else if (grsrc.access == GlobalResourceAccess::eWrite)
-			access = "writeonly ";
+		auto access = access_qualifier(grsrc.access);
+		if (access.empty()) access = " ";
 
 		em.emit_fmt_line(
 			"layout (set = {}, binding = {}) "
@@ -805,6 +874,9 @@ void emit_whole(GLSLEmitter &em)
 
 	if (extensions.size())
 		em.emit_newline();
+
+	// Buffer reference block declarations (must come before structs)
+	emit_buffer_references(em);
 
 	// Struct declarations
 	emit_structs(em);

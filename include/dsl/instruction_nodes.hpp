@@ -28,8 +28,16 @@ struct Array {
 	int64_t size;
 };
 
+struct BufferReferenceType {
+	Reference element_type;
+	GlobalResourceLayout layout;
+	GlobalResourceAccess access;
+
+	std::string repr() const;
+};
+
 // @node Type
-struct Type : variant <Primitive, Struct, Array> {
+struct Type : variant <Primitive, Struct, Array, BufferReferenceType> {
 	using variant_self::variant;
 
 	std::string repr() const;
@@ -177,6 +185,7 @@ struct Return {
 };
 
 // Additional methods
+const Type &get_type(const SharedBlockReference &sbr, const Reference &ref);
 const Struct &get_struct(const SharedBlockReference &sbr, const Reference &ref);
 
 } // namespace rcgp

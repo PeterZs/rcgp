@@ -72,6 +72,39 @@ struct Sampler : resource_handle {
 	};
 };
 
+// Buffer references (typed GPU pointers via VK_KHR_buffer_device_address)
+template <
+	typename T,
+	template <typename> typename L = layouts::scalar,
+	GlobalResourceAccess A = GlobalResourceAccess::eRead
+> struct BufferReference : jems::handle {
+	operator T() const {
+		T result;
+		result.override_reference(jems::field_access(_ref, 0));
+		return result;
+	}
+};
+
+// Array specialization: supports operator[]
+template <
+	typename T, int64_t N,
+	template <typename> typename L,
+	GlobalResourceAccess A
+> struct BufferReference <array <T, N>, L, A> : jems::handle {
+	template <canonically_integral U>
+	T operator[](const U &idx, $location) const {
+		T result;
+		auto inner = jems::field_access(_ref, 0, loc);
+		auto access = jems::array_access(inner, canonicalize(idx), loc);
+		result.override_reference(access);
+		return result;
+	}
+};
+
+TYPE_TRAIT(is_buffer_reference);
+	template <typename T, template <typename> typename L, GlobalResourceAccess A>
+	TYPE_TRAIT_INCLUDES(is_buffer_reference, BufferReference <T, L, A>);
+
 // TODO: something similar for descriptor heaps with strided access
 
 TYPE_TRAIT(is_global_resource);

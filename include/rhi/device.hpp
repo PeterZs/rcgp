@@ -28,6 +28,12 @@ struct Buffer;
 struct XlasInstance;
 struct ShaderBindingTable;
 
+template <typename T, template <typename> typename L>
+struct BufferAddress;
+
+template <typename T, template <typename> typename L, vk::BufferUsageFlagBits F>
+struct MirrorBuffer;
+
 template <auto &ref>
 struct UnboundDescriptor;
 
@@ -57,6 +63,10 @@ struct Device {
 
 	auto get_address(const Buffer &buffer) const -> vk::DeviceAddress;
 	auto get_address(const AccelerationStructure &as) const -> vk::DeviceAddress;
+
+	template <typename T, template <typename> typename L, vk::BufferUsageFlagBits F>
+	requires (bool(F & vk::BufferUsageFlagBits::eShaderDeviceAddress))
+	auto address(const MirrorBuffer <T, L, F> &buffer) const -> BufferAddress <T, L>;
 
 	// TODO: untemplate
 	template <typename Extent>

@@ -77,6 +77,7 @@ const char *repr_glsl(Primitive value);
 
 enum class GlobalResourceKind {
 	eAccelerationStructure,
+	eBufferReference,
 	ePushConstant,
 	eRayDispatcherPayload,
 	eRayReceiverPayload,

@@ -12,6 +12,17 @@
 #include "scaffold.hpp"
 #include "static_string.hpp"
 
+namespace rcgp {
+
+// Forward declarations for layout_rules specialization
+template <typename T, template <typename> typename L, GlobalResourceAccess A>
+struct BufferReference;
+
+template <typename T, template <typename> typename L>
+struct BufferAddress;
+
+} // namespace rcgp
+
 namespace rcgp::layouts {
 
 namespace detail {
@@ -126,6 +137,13 @@ template <typename Policy, native_scalar T>
 struct layout_rules <Policy, scalar <T>> {
 	static constexpr size_t alignment = alignof(T);
 	using hint = scaffold_hint <T, alignment>;
+};
+
+// Buffer references map to BufferAddress<T, L> on the host (8-byte device address)
+template <typename Policy, typename T, template <typename> typename L, GlobalResourceAccess A>
+struct layout_rules <Policy, BufferReference <T, L, A>> {
+	static constexpr size_t alignment = alignof(uint64_t);
+	using hint = scaffold_hint <BufferAddress <T, L>, alignment>;
 };
 
 } // namespace detail
