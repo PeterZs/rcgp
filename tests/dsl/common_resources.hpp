@@ -4,12 +4,9 @@
 
 using namespace rcgp;
 
-struct Ray {
-	float3 origin;
-	float3 direction;
-
-	$reflection(origin, direction);
-};
+// Note: rcgp::Ray is the canonical Ray type (from intrinsics_raytracing.hpp).
+// The tests that used ::Ray for subroutine return tests now use rcgp::Ray
+// via `using namespace rcgp`.
 
 namespace fwd {
 
@@ -155,6 +152,17 @@ static struct {
 } buffers;
 
 } // namespace meshlets
+
+namespace rt {
+
+static RaytracingAccelerationStructure tlas;
+static WImage2D image;
+
+static TraceGroup <float3, eOpaque> radiance;
+static TraceGroup <f32, eOpaque | eTerminateOnFirstHit | eSkipClosestHitShader> occlusion;
+static TraceGroup <float3> reflection;
+
+} // namespace rt
 
 namespace mapping {
 

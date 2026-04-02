@@ -314,7 +314,7 @@ add_test(sr_return_primitives)
 add_test(sr_return_aggregate)
 {
 	auto sr = $subroutine(sr)(f32 z) {
-		return ::Ray {
+		return Ray {
 			float3(0),
 			normalize(float3(1, z, 1)),
 		};
@@ -351,7 +351,7 @@ add_test(sr_invocation)
 	};
 	
 	auto sr3 = $subroutine(sr3)(f32 z) {
-		return ::Ray {
+		return Ray {
 			float3(0),
 			normalize(float3(1, z, 1)),
 		};
@@ -543,4 +543,109 @@ add_test(group_allocation_map)
 	fs->apply_group_allocation_map(gamap);
 	
 	assert_glsl_match_file(fs, "glsl/group_allocation_map.glsl");
+};
+
+add_test(rt_single_trace_group)
+{
+	auto rgen = $shader(raygen)(
+		$contracts(
+			(tlas, rt::tlas), (img, rt::image),
+			(radiance, dispatcher <rt::radiance>)
+		),
+		LaunchID idx, LaunchSize size
+	) {
+		uint3 pixel = idx;
+		radiance = float3(0);
+		radiance.trace(tlas, Ray { float3(0), float3(0, 0, 1) }, f32(0.001f), f32(100.0f));
+		img.write(uint2(pixel.xy), float4(radiance, 0));
+	};
+
+	auto chit = $shader(chit)(
+		$contracts((radiance, receiver <rt::radiance>)),
+		float2 bary, PrimitiveID prim
+	) {
+		radiance = float3(bary.x, bary.y, f32(0));
+	};
+
+	auto miss = $shader(miss)($contracts((radiance, receiver <rt::radiance>)))
+	{
+		radiance = float3(0);
+	};
+
+	resolve_trace_groups(rgen, std::tuple { miss }, chit);
+
+	assert_glsl_match_file(rgen, "glsl/rt_single_rgen.glsl");
+	assert_glsl_match_file(chit, "glsl/rt_single_chit.glsl");
+	assert_glsl_match_file(miss, "glsl/rt_single_miss.glsl");
+};
+
+add_test(rt_multi_trace_group)
+{
+	auto rgen = $shader(raygen)(
+		$contracts(
+			(tlas, rt::tlas), (img, rt::image),
+			(radiance, dispatcher <rt::radiance>)
+		),
+		LaunchID idx, LaunchSize size
+	) {
+		uint3 pixel = idx;
+		radiance = float3(0);
+		radiance.trace(tlas, Ray { float3(0), float3(0, 0, 1) }, f32(0.001f), f32(100.0f));
+		img.write(uint2(pixel.xy), float4(radiance, 0));
+	};
+
+	auto chit_radiance = $shader(chit)(
+		$contracts(
+			(tlas, rt::tlas),
+			(radiance, receiver <rt::radiance>),
+			(shadow, dispatcher <rt::occlusion>),
+			(refl, dispatcher <rt::reflection>)
+		),
+		float2 bary, WorldRayOrigin origin,
+		WorldRayDirection direction, HitTime t
+	) {
+		float3 hit = float3(origin) + float3(direction) * t;
+
+		shadow = 0.0f;
+		shadow.trace(tlas, Ray { hit, float3(0, 1, 0) }, f32(0.001f), f32(100.0f));
+
+		float3 V = normalize(float3(origin) - hit);
+		float3 N = float3(0, 1, 0);
+		float3 R = V - N * f32(2) * dot(V, N);
+		refl = float3(0);
+		refl.trace(tlas, Ray { hit, R }, f32(0.001f), f32(100.0f));
+
+		f32 shadow_val = shadow;
+		float3 refl_color = refl;
+		radiance = float3(shadow_val) + refl_color * f32(0.3f);
+	};
+
+	auto chit_reflection = $shader(chit)(
+		$contracts((radaince, receiver <rt::reflection>)),
+		float2 bary
+	) {
+		radaince = float3(bary.x, bary.y, f32(1));
+	};
+
+	auto miss_radiance = $shader(miss)($contracts((r, receiver <rt::radiance>)))
+	{ r = float3(0.5f, 0.7f, 1.0f); };
+
+	auto miss_occlusion = $shader(miss)($contracts((s, receiver <rt::occlusion>)))
+	{ s = 1.0f; };
+
+	auto miss_reflection = $shader(miss)($contracts((r, receiver <rt::reflection>)))
+	{ r = float3(0.1f, 0.1f, 0.1f); };
+
+	resolve_trace_groups(
+		rgen,
+		std::tuple { miss_radiance, miss_occlusion, miss_reflection },
+		chit_radiance, chit_reflection
+	);
+
+	assert_glsl_match_file(rgen, "glsl/rt_multi_rgen.glsl");
+	assert_glsl_match_file(chit_radiance, "glsl/rt_multi_chit_radiance.glsl");
+	assert_glsl_match_file(chit_reflection, "glsl/rt_multi_chit_reflection.glsl");
+	assert_glsl_match_file(miss_radiance, "glsl/rt_multi_miss_radiance.glsl");
+	assert_glsl_match_file(miss_occlusion, "glsl/rt_multi_miss_occlusion.glsl");
+	assert_glsl_match_file(miss_reflection, "glsl/rt_multi_miss_reflection.glsl");
 };

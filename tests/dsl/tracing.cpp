@@ -243,7 +243,7 @@ add_test(sr_return_primitives)
 add_test(sr_return_aggregate)
 {
 	auto sr = $subroutine(sr)(f32 z) {
-		return ::Ray {
+		return Ray {
 			float3(0),
 			normalize(float3(1, z, 1)),
 		};
@@ -294,7 +294,7 @@ add_test(sr_invocation)
 	};
 	
 	auto sr3 = $subroutine(sr3)(f32 z) {
-		return ::Ray {
+		return Ray {
 			float3(0),
 			normalize(float3(1, z, 1)),
 		};
