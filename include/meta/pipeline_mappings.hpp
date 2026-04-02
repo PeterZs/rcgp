@@ -10,7 +10,7 @@ namespace rcgp {
 struct PipelineMappings {
 	vk::PipelineLayout layout;
 	vk::PipelineBindPoint bind_point;
-	group_allocation_map gamap;
+	reference_allocation_map gamap;
 	std::map <void *, size_t> pc_offsets;
 	std::map <void *, vk::ShaderStageFlags> pc_stages;
 	std::map <void *, size_t> vb_offsets;

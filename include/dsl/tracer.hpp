@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "instruction_nodes.hpp"
+#include "block.hpp"
 
 namespace rcgp {
 

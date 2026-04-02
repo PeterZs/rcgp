@@ -12,14 +12,14 @@ struct GenericPipeline {
 	vk::Pipeline handle;
 	vk::PipelineLayout layout;
 	std::array <vk::DescriptorSetLayout, set_count> dsls;
-	group_allocation_map gamap;
+	reference_allocation_map gamap;
 
 	GenericPipeline() = default;
 	GenericPipeline(
 		const vk::Pipeline &handle_,
 		const vk::PipelineLayout &layout_,
 		const std::array <vk::DescriptorSetLayout, set_count> &dsls_,
-		const group_allocation_map &gamap_
+		const reference_allocation_map &gamap_
 	) : handle(handle_), layout(layout_), dsls(dsls_), gamap(gamap_) {}
 };
 

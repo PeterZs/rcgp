@@ -14,7 +14,7 @@ auto wrappers_to_gamap(const Tlist <Ts...> &)
 	);
 	
 	auto gamap = [&] <typename ... Records> (Tlist <Records...>) {
-		return group_allocation_map {
+		return reference_allocation_map {
 			{ Records::vptr, Records::index }...
 		};
 	} (alloc);

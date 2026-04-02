@@ -10,11 +10,7 @@
 
 namespace rcgp {
 
-// GRV to group index
-using group_allocation_map = std::map <void *, uint32_t>;
-
-// Push constant to offset
-using push_constant_allocation_map = std::map <void *, uint32_t>;
+using reference_allocation_map = std::map <void *, uint32_t>;
 
 // TODO: should transition to CFG style...
 // CFG nodes and a top level Module which include context info
@@ -22,6 +18,7 @@ struct Block : std::vector <Reference> {
 	ShaderStage stage = ShaderStage::eSubroutine;
 	std::map <uint32_t, bool> mesh_perprimitive_outputs;
 	std::map <void *, std::vector <Reference>> global_resources;
+	std::map <void *, std::vector <Reference>> trace_groups;
 	std::optional <MeshPrimitive> mesh_primitive_kind;
 	std::optional <Reference> hit_attribute_type;
 	std::optional <Reference> task_payload_type;
@@ -40,9 +37,11 @@ struct Block : std::vector <Reference> {
 	void add_stage_input(const StageInput &tin);
 	void add_stage_output(const StageOutput &tout);
 	void add_global_resource(void *addr, const Reference &resource);
+	void add_trace_group(void *addr, const Reference &trace_call);
 	void set_workgroup_size(uint32_t x, uint32_t y, uint32_t z);
-	void apply_group_allocation_map(const group_allocation_map &map);
-	void apply_push_constant_allocation_map(const push_constant_allocation_map &map);
+	void apply_group_allocation_map(const reference_allocation_map &map);
+	void apply_push_constant_allocation_map(const reference_allocation_map &map);
+	void apply_ray_payload_allocation_map(const reference_allocation_map &map);
 
 	Reference add(const Instruction &instr);
 	Reference add(size_t index, const Instruction &instr);

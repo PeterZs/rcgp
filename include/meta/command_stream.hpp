@@ -71,7 +71,7 @@ struct CommandStream : CommandBuffer {
 	template <auto &... refs>
 	void _bind_descriptors(
 		const vk::PipelineLayout &layout,
-		const group_allocation_map &gamap,
+		const reference_allocation_map &gamap,
 		const BoundDescriptor <refs> &... descriptors
 	) const
 	{

@@ -100,7 +100,10 @@ void inject_resource_reference(contract <ref> &value)
 	} else if constexpr (is_global_resource_v <R>) {
 		using T = R::handle_type;
 		auto grsrc = resource_intrinsic(R(), 0);
-		$tsb.add_global_resource(&ref, grsrc);
+		if constexpr (is_ray_dispatcher_v <R> or is_ray_receiver_v <R>)
+			$tsb.add_global_resource(R::address, grsrc);
+		else
+			$tsb.add_global_resource(&ref, grsrc);
 		value.override_reference(grsrc);
 	} else {
 		// Unknown cases

@@ -386,7 +386,13 @@ Reference get_or_add_type_ref(const SharedBlockReference &sbr, const Reference &
 		case SystemValue::eInstanceIndex:
 		case SystemValue::eVertexIndex:
 		case SystemValue::ePrimitiveID:
+		case SystemValue::eInstanceCustomIndex:
 			return get_or_add_type(sbr, Primitive::eUInt32);
+		case SystemValue::eHitT:
+			return get_or_add_type(sbr, Primitive::eFloat);
+		case SystemValue::eWorldRayOrigin:
+		case SystemValue::eWorldRayDirection:
+			return get_or_add_type(sbr, Primitive::eVec3);
 		case SystemValue::eTaskPayload:
 			return get_or_add_type_ref(sbr, sbr->task_payload_type.value());
 		case SystemValue::eHitAttribute:

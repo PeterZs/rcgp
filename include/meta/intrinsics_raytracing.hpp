@@ -5,6 +5,8 @@
 #include "reconstruct_type.hpp"
 #include "reflection.hpp"
 
+#include "../dsl/tracer.hpp"
+
 namespace rcgp {
 
 // Raytracing intrinsics
@@ -44,22 +46,20 @@ template <auto &ref>
 struct Dispatcher {
 	using R = reference_base_of <ref>;
 	using T = R::value_type;
+	static constexpr void *address = (void *)&ref;
 
 	struct handle_type : jems::handle {
 		handle_type &operator=(const T &value) {
-			auto payload = resource_intrinsic(Dispatcher <ref> (), 0);
-			jems::store(payload, value);
+			jems::store(*this, value);
 			return *this;
 		}
 
 		operator T() const {
 			T value;
-			auto payload = resource_intrinsic(Dispatcher <ref> (), 0);
-			value.override_reference(payload);
+			value.override_reference(*this);
 			return value;
 		}
 
-		// TODO: operator=
 		void trace(
 			RaytracingAccelerationStructure as,
 			Ray ray,
@@ -68,23 +68,19 @@ struct Dispatcher {
 			u32 mask = 0xff,
 			$location
 		) {
-			jems::builtin_intrinsic(
+			auto h = jems::builtin_intrinsic(
 				BuiltinIntrinsicCode::eTraceRaysEXT,
 				{
 					as, i32(std::to_underlying(R::flags)), mask,
-					// TODO: these 3 and hte last payload
-					// argument need a new
-					// deferred/unresolved handle type or
-					// somethign...
-					i32(0), i32(1), i32(0),
+					jems::constant(int32_t(0), loc),
+					jems::constant(int32_t(1), loc),
+					jems::constant(int32_t(-1), loc),  // miss index (unresolved)
 					ray.origin, tmin,
 					ray.direction, tmax,
-					i32(0)
-					// TODO: the unresolved handle should have
-					// a hash value (can just be &ref for now)
-					// so that we can deterministically resolve...
+					jems::constant(int32_t(-1), loc)   // payload index (unresolved)
 				}, loc
 			);
+			$tsb.add_trace_group((void *)&ref, Reference(h));
 		}
 	};
 };
@@ -93,11 +89,11 @@ template <auto &ref>
 struct Receiver {
 	using R = reference_base_of <ref>;
 	using T = R::value_type;
+	static constexpr void *address = (void *)&ref;
 
 	struct handle_type : jems::handle {
 		handle_type &operator=(const T &value) {
-			auto payload = resource_intrinsic(Receiver <ref> (), 0);
-			jems::store(payload, value);
+			jems::store(*this, value);
 			return *this;
 		}
 	};

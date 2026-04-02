@@ -3,7 +3,7 @@
 
 namespace rcgp {
 
-void Block::apply_group_allocation_map(const group_allocation_map &map)
+void Block::apply_group_allocation_map(const reference_allocation_map &map)
 {
 	for (auto &[addr, group] : map) {
 		if (global_resources.contains(addr)) {
@@ -21,12 +21,26 @@ void Block::apply_group_allocation_map(const group_allocation_map &map)
 	}
 }
 
-void Block::apply_push_constant_allocation_map(const push_constant_allocation_map &map)
+void Block::apply_push_constant_allocation_map(const reference_allocation_map &map)
 {
 	for (auto &[addr, offset] : map) {
 		if (global_resources.contains(addr)) {
 			for (auto &ref : global_resources.at(addr))
 				ref->as <GlobalResource> ().offset = offset;
+		}
+	}
+}
+
+void Block::apply_ray_payload_allocation_map(const reference_allocation_map &map)
+{
+	for (auto &[addr, index] : map) {
+		if (global_resources.contains(addr)) {
+			for (auto &ref : global_resources.at(addr)) {
+				auto &grsrc = ref->as <GlobalResource> ();
+				if (grsrc.kind == GlobalResourceKind::eRayDispatcherPayload
+					or grsrc.kind == GlobalResourceKind::eRayReceiverPayload)
+					grsrc.index = index;
+			}
 		}
 	}
 }
@@ -80,6 +94,11 @@ void Block::add_stage_output(const StageOutput &sout)
 void Block::add_global_resource(void *addr, const Reference &resource)
 {
 	global_resources[addr].push_back(resource);
+}
+
+void Block::add_trace_group(void *addr, const Reference &trace_call)
+{
+	trace_groups[addr].push_back(trace_call);
 }
 
 void Block::set_workgroup_size(uint32_t x, uint32_t y, uint32_t z)

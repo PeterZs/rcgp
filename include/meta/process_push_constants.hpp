@@ -35,7 +35,7 @@ consteval size_t push_constant_offset_for(Tlist <Wrappers...>)
 template <typename ... Wrappers>
 auto wrappers_to_pcs(const Tlist <Wrappers...> &)
 {
-	push_constant_allocation_map map;
+	reference_allocation_map map;
 	if constexpr (sizeof...(Wrappers) == 0) {
 		std::array <vk::PushConstantRange, 0> ranges;
 		return std::tuple { ranges, map };

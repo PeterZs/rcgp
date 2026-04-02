@@ -509,11 +509,17 @@ std::map <Reference, size_t> instruction_order_map(const SharedBlockReference &s
 	return order;
 }
 
-void promote_to_local(const WholeBlockStructure &wbs, const Reference &promote)
+bool promote_to_local(const WholeBlockStructure &wbs, const Reference &promote)
 {
 	auto &origin = wbs.blocks.at(promote);
 
 	auto type = get_or_add_type_ref(origin, promote);
+
+	// Cannot promote array types to locals in GLSL
+	auto &t = type->as <Type> ();
+	if (t.is <Array> ())
+		return false;
+
 	auto index = std::find(origin->begin(), origin->end(), promote) - origin->begin();
 	auto local = origin->add(index + 1, Local { type, promote });
 
@@ -524,6 +530,8 @@ void promote_to_local(const WholeBlockStructure &wbs, const Reference &promote)
 				opd = local;
 		});
 	}
+
+	return true;
 }
 
 using RefMetric = std::pair <Reference, size_t>;
@@ -541,7 +549,7 @@ bool reuse_pass(const SharedBlockReference &sbr)
 
 		std::ranges::sort(sea, std::ranges::greater(), &RefMetric::second);
 
-		Reference promote = nullptr;
+		bool promoted = false;
 		for (auto &[ref, count] : sea) {
 			if (ref->is <Argument> ()
 				or ref->is <Local> ()
@@ -552,16 +560,17 @@ bool reuse_pass(const SharedBlockReference &sbr)
 			if (count < 2)
 				continue;
 
-			promote = ref;
-			break;
-
 			// TODO: skip intrinsics with side effects
+
+			if (promote_to_local(wbs, ref)) {
+				promoted = true;
+				break;
+			}
 		}
 
-		if (not promote)
+		if (not promoted)
 			break;
 
-		promote_to_local(wbs, promote);
 		changed = true;
 	}
 
@@ -607,10 +616,15 @@ void readability_pass(const SharedBlockReference &sbr)
 
 			return order.at(lhs) < order.at(rhs);
 		});
-		if (sea.empty())
+		bool promoted = false;
+		for (auto &candidate : sea) {
+			if (promote_to_local(wbs, candidate)) {
+				promoted = true;
+				break;
+			}
+		}
+		if (not promoted)
 			break;
-
-		promote_to_local(wbs, sea[0]);
 	}
 }
 

@@ -10,6 +10,7 @@
 #include "input_assembly.hpp"
 #include "pipelines.hpp"
 #include "process_gvrs.hpp"
+#include "resolve_trace_groups.hpp"
 #include "resources_collect.hpp"
 #include "shader_stage.hpp"
 
@@ -263,7 +264,12 @@ struct RayTracingCombinator {
 			}, chits
 		);
 
-		// TODO: resolve trace SBT offsets and strides
+		// Resolve trace group SBT offsets and payload indices
+		std::apply(
+			[&](const auto &... chit_shaders) {
+				resolve_trace_groups(rgen, misses, chit_shaders...);
+			}, chits
+		);
 
 		auto modules = std::apply(
 			[&](const auto &... chit_shaders) {

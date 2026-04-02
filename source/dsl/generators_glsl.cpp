@@ -15,6 +15,7 @@ struct GLSLEmitter {
 	const SharedBlockReference &main;
 	std::vector <SharedBlockReference> subroutines;
 	std::map <const Instruction *const, uint32_t> ids;
+	std::set <const Instruction *> nonuniform_locals;
 	std::string result;
 	int32_t indentation;
 
@@ -258,7 +259,10 @@ std::string expr_repr(const GLSLEmitter &em, const Reference &ref)
 			repr.base, repr.suffix, args(ctor.args));
 	}
 	vcase(Local): {
-		return lval_repr(em, ref);
+		auto s = lval_repr(em, ref);
+		if (em.nonuniform_locals.contains(ref.get()))
+			return std::format("nonuniformEXT({})", s);
+		return s;
 	}
 	vcase(StageInput): {
 		auto &sin = ref->as <StageInput> ();
@@ -329,6 +333,14 @@ void emit_statement(GLSLEmitter &em, const Reference &ref)
 	vcase(Store): {
 		auto &store = ref->as <Store> ();
 		auto dst = lval_repr(em, store.destination);
+		if (store.destination->is <Local> () and store.source->is <BuiltinIntrinsic> ()) {
+			auto &bintr = store.source->as <BuiltinIntrinsic> ();
+			if (bintr.code == BuiltinIntrinsicCode::eNonUniformEXT) {
+				em.nonuniform_locals.insert(store.destination.get());
+				auto src = expr_repr(em, bintr.args.at(0));
+				return em.emit_fmt_line("{} = {};", dst, src);
+			}
+		}
 		auto src = expr_repr(em, store.source);
 		return em.emit_fmt_line("{} = {};", dst, src);
 	}
