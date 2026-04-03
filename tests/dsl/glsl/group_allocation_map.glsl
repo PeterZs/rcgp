@@ -20,14 +20,20 @@ layout (std430, set = 0, binding = 0) buffer Buffer0x0 {
 
 void get_albedo(vec2 arg0, out vec4 ret0)
 {
-    vec4 lvar0;
-    lvar0 = texture(r1b0, arg0);
-    ret0 = lvar0;
+    vec2 lvar0;
+    lvar0 = vec2(arg0);
+    vec4 lvar1;
+    lvar1 = texture(r1b0, lvar0);
+    ret0 = lvar1;
 }
 
 void main()
 {
-    vec4 lvar1;
-    get_albedo(lin0, lvar1);
-    lout0 = lvar1;
+    vec2 lvar2;
+    lvar2 = vec2(lin0);
+    vec2 lvar3;
+    lvar3 = vec2(lvar2);
+    vec4 lvar4;
+    get_albedo(lvar3, lvar4);
+    lout0 = lvar4;
 }

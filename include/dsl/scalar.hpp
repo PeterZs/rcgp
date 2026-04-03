@@ -16,7 +16,12 @@ public:
 	using native_scalar_type = T;
 
 	scalar() = default;
-	
+
+	scalar(const scalar &other, $location) {
+		_ref = jems::local(jems::type(primitive_of <T> (), loc));
+		jems::store(_ref, other);
+	}
+
 	scalar(const T &value, $location) {
 		_ref = jems::local(jems::type(primitive_of <T> (), loc));
 		jems::store(_ref, jems::constant(value, loc));

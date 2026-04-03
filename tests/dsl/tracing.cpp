@@ -68,18 +68,24 @@ add_test(vs_louts)
 	  $3 = Local Vec3
 	  Store $3 $2
 	  $4 = StageOutput 0: Smooth Vec3
-	  Store $4 $3
-	  $5 = Local UInt32
-	  $6 = 4
-	  Store $5 $6
+	  $5 = New Vec3($3)
+	  $6 = Local Vec3
+	  Store $6 $5
+	  Store $4 $6
 	  $7 = Local UInt32
-	  $8 = 1
+	  $8 = 4
 	  Store $7 $8
-	  $9 = New UVec2($7, $5)
-	  $10 = Local UVec2
-	  Store $10 $9
-	  $11 = StageOutput 1: Flat UVec2
-	  Store $11 $10
+	  $9 = Local UInt32
+	  $10 = 1
+	  Store $9 $10
+	  $11 = New UVec2($9, $7)
+	  $12 = Local UVec2
+	  Store $12 $11
+	  $13 = StageOutput 1: Flat UVec2
+	  $14 = New UVec2($12)
+	  $15 = Local UVec2
+	  Store $15 $14
+	  Store $13 $15
 	}
 	)");
 };
@@ -103,16 +109,22 @@ add_test(vs_stream)
 	    stage outputs: { Smooth Vec3 }
 	  }
 	  $0 = StageInput 0: Smooth Vec3
-	  $1 = Local Float
-	  $2 = 1
-	  Store $1 $2
-	  $3 = New Vec4($0, $1)
-	  $4 = Local Vec4
-	  Store $4 $3
-	  $5 = SV: ClipPosition
-	  Store $5 $4
-	  $6 = StageOutput 0: Smooth Vec3
-	  Store $6 $0
+	  $1 = New Vec3($0)
+	  $2 = Local Vec3
+	  Store $2 $1
+	  $3 = Local Float
+	  $4 = 1
+	  Store $3 $4
+	  $5 = New Vec4($2, $3)
+	  $6 = Local Vec4
+	  Store $6 $5
+	  $7 = SV: ClipPosition
+	  Store $7 $6
+	  $8 = New Vec3($2)
+	  $9 = Local Vec3
+	  Store $9 $8
+	  $10 = StageOutput 0: Smooth Vec3
+	  Store $10 $9
 	}
 	)");
 };
@@ -143,12 +155,30 @@ add_test(vs_multiple_io)
 	  $0 = StageInput 0: Smooth Vec3
 	  $1 = StageInput 1: Smooth Vec3
 	  $2 = StageInput 2: Smooth Vec2
-	  $3 = StageOutput 0: Smooth Vec3
-	  Store $3 $0
-	  $4 = StageOutput 1: Smooth Vec3
-	  Store $4 $1
-	  $5 = StageOutput 2: Smooth Vec2
-	  Store $5 $2
+	  $3 = New Vec2($2)
+	  $4 = Local Vec2
+	  Store $4 $3
+	  $5 = New Vec3($1)
+	  $6 = Local Vec3
+	  Store $6 $5
+	  $7 = New Vec3($0)
+	  $8 = Local Vec3
+	  Store $8 $7
+	  $9 = StageOutput 0: Smooth Vec3
+	  $10 = New Vec3($8)
+	  $11 = Local Vec3
+	  Store $11 $10
+	  Store $9 $11
+	  $12 = StageOutput 1: Smooth Vec3
+	  $13 = New Vec3($6)
+	  $14 = Local Vec3
+	  Store $14 $13
+	  Store $12 $14
+	  $15 = StageOutput 2: Smooth Vec2
+	  $16 = New Vec2($4)
+	  $17 = Local Vec2
+	  Store $17 $16
+	  Store $15 $17
 	}
 	)");
 };
@@ -181,28 +211,34 @@ add_test(vs_push_constant)
 	  $2 = $0.view
 	  $3 = $0.proj
 	  $4 = StageInput 0: Smooth Vec3
-	  $5 = Local Float
-	  $6 = 1
-	  Store $5 $6
-	  $7 = New Vec4($4, $5)
-	  $8 = Local Vec4
-	  Store $8 $7
-	  $9 = Multiply $1 $8
+	  $5 = New Vec3($4)
+	  $6 = Local Vec3
+	  Store $6 $5
+	  $7 = Local Float
+	  $8 = 1
+	  Store $7 $8
+	  $9 = New Vec4($6, $7)
 	  $10 = Local Vec4
 	  Store $10 $9
-	  $11 = Multiply $3 $2
-	  $12 = Local FMat4x4
+	  $11 = Multiply $1 $10
+	  $12 = Local Vec4
 	  Store $12 $11
-	  $13 = Multiply $12 $10
-	  $14 = Local Vec4
+	  $13 = Multiply $3 $2
+	  $14 = Local FMat4x4
 	  Store $14 $13
-	  $15 = SV: ClipPosition
-	  Store $15 $14
-	  $16 = New Vec3($10)
-	  $17 = Local Vec3
+	  $15 = Multiply $14 $12
+	  $16 = Local Vec4
+	  Store $16 $15
+	  $17 = SV: ClipPosition
 	  Store $17 $16
-	  $18 = StageOutput 0: Smooth Vec3
-	  Store $18 $17
+	  $18 = New Vec4($12)
+	  $19 = Local Vec4
+	  Store $19 $18
+	  $20 = New Vec3($19)
+	  $21 = Local Vec3
+	  Store $21 $20
+	  $22 = StageOutput 0: Smooth Vec3
+	  Store $22 $21
 	}
 	)");
 };
@@ -223,19 +259,31 @@ add_test(sr_return_primitives)
 	  }
 	  $0 = Argument 0: Float
 	  $1 = Argument 1: UInt32
-	  $2 = New Vec3($0, $0, $0)
-	  $3 = Local Vec3
-	  Store $3 $2
-	  $4 = Local UInt32
-	  $5 = 13
-	  Store $4 $5
-	  $6 = New UVec2($1, $4)
-	  $7 = Local UVec2
-	  Store $7 $6
-	  $9 = Return 0: $8
-	  Store $9 $3
-	  $11 = Return 1: $10
-	  Store $11 $7
+	  $2 = Local UInt32
+	  Store $2 $1
+	  $3 = Local Float
+	  Store $3 $0
+	  $4 = Local Float
+	  Store $4 $3
+	  $5 = New Vec3($4, $4, $4)
+	  $6 = Local Vec3
+	  Store $6 $5
+	  $7 = Local UInt32
+	  $8 = 13
+	  Store $7 $8
+	  $9 = New UVec2($2, $7)
+	  $10 = Local UVec2
+	  Store $10 $9
+	  $11 = New UVec2($10)
+	  $12 = Local UVec2
+	  Store $12 $11
+	  $13 = New Vec3($6)
+	  $14 = Local Vec3
+	  Store $14 $13
+	  $16 = Return 0: $15
+	  Store $16 $14
+	  $18 = Return 1: $17
+	  Store $18 $12
 	}
 	)");
 };
@@ -259,26 +307,46 @@ add_test(sr_return_aggregate)
 	  }
 	  $0 = Argument 0: Float
 	  $1 = Local Float
-	  $2 = 0
-	  Store $1 $2
-	  $3 = New Vec3($1, $1, $1)
-	  $4 = Local Vec3
-	  Store $4 $3
-	  $5 = Local Float
-	  $6 = 1
-	  Store $5 $6
-	  $7 = Local Float
-	  $8 = 1
-	  Store $7 $8
-	  $9 = New Vec3($7, $0, $5)
-	  $10 = Local Vec3
-	  Store $10 $9
-	  $11 = Normalize($10)
-	  $12 = Local Vec3
-	  Store $12 $11
-	  $14 = Return 0: $13
-	  $15 = New Ray($4, $12)
-	  Store $14 $15
+	  Store $1 $0
+	  $2 = Local Float
+	  $3 = 0
+	  Store $2 $3
+	  $4 = New Vec3($2, $2, $2)
+	  $5 = Local Vec3
+	  Store $5 $4
+	  $6 = Local Float
+	  $7 = 1
+	  Store $6 $7
+	  $8 = Local Float
+	  $9 = 1
+	  Store $8 $9
+	  $10 = New Vec3($8, $1, $6)
+	  $11 = Local Vec3
+	  Store $11 $10
+	  $12 = Normalize($11)
+	  $13 = Local Vec3
+	  Store $13 $12
+	  $15 = Return 0: $14
+	  $16 = New Vec3($13)
+	  $17 = Local Vec3
+	  Store $17 $16
+	  $18 = New Vec3($17)
+	  $19 = Local Vec3
+	  Store $19 $18
+	  $20 = New Vec3($5)
+	  $21 = Local Vec3
+	  Store $21 $20
+	  $22 = New Vec3($21)
+	  $23 = Local Vec3
+	  Store $23 $22
+	  $24 = New Vec3($19)
+	  $25 = Local Vec3
+	  Store $25 $24
+	  $26 = New Vec3($23)
+	  $27 = Local Vec3
+	  Store $27 $26
+	  $28 = New Ray($27, $25)
+	  Store $15 $28
 	}
 	)");
 };
@@ -316,34 +384,63 @@ add_test(sr_invocation)
 	  $0 = Local Float
 	  $1 = 1
 	  Store $0 $1
-	  $2 = Local Vec3
-	  sr1($0, $2)
-	  $3 = Local UInt32
-	  $4 = 2
-	  Store $3 $4
-	  $5 = Local Float
-	  $6 = 1
-	  Store $5 $6
-	  $7 = Local Vec3
-	  $8 = Local UVec2
-	  sr2($5, $3, $7, $8)
-	  $9 = Local Float
-	  $10 = 2
-	  Store $9 $10
-	  $11 = Local Ray
-	  sr3($9, $11)
-	  $12 = $11.origin
-	  $13 = $11.direction
-	  $14 = StageOutput 0: Smooth Vec3
-	  Store $14 $2
-	  $15 = StageOutput 1: Smooth Vec3
-	  Store $15 $8
-	  $16 = StageOutput 2: Smooth UVec2
-	  Store $16 $7
-	  $17 = StageOutput 3: Smooth Vec3
-	  Store $17 $12
-	  $18 = StageOutput 4: Smooth Vec3
-	  Store $18 $13
+	  $2 = Local Float
+	  Store $2 $0
+	  $3 = Local Vec3
+	  sr1($2, $3)
+	  $4 = Local UInt32
+	  $5 = 2
+	  Store $4 $5
+	  $6 = Local Float
+	  $7 = 1
+	  Store $6 $7
+	  $8 = Local Float
+	  Store $8 $6
+	  $9 = Local UInt32
+	  Store $9 $4
+	  $10 = Local Vec3
+	  $11 = Local UVec2
+	  sr2($8, $9, $10, $11)
+	  $12 = New UVec2($10)
+	  $13 = Local UVec2
+	  Store $13 $12
+	  $14 = New Vec3($11)
+	  $15 = Local Vec3
+	  Store $15 $14
+	  $16 = Local Float
+	  $17 = 2
+	  Store $16 $17
+	  $18 = Local Float
+	  Store $18 $16
+	  $19 = Local Ray
+	  sr3($18, $19)
+	  $20 = $19.origin
+	  $21 = $19.direction
+	  $22 = New Vec3($21)
+	  $23 = Local Vec3
+	  Store $23 $22
+	  $24 = New Vec3($20)
+	  $25 = Local Vec3
+	  Store $25 $24
+	  $26 = New UVec2($13)
+	  $27 = Local UVec2
+	  Store $27 $26
+	  $28 = New Vec3($15)
+	  $29 = Local Vec3
+	  Store $29 $28
+	  $30 = New Vec3($3)
+	  $31 = Local Vec3
+	  Store $31 $30
+	  $32 = StageOutput 0: Smooth Vec3
+	  Store $32 $31
+	  $33 = StageOutput 1: Smooth Vec3
+	  Store $33 $29
+	  $34 = StageOutput 2: Smooth UVec2
+	  Store $34 $27
+	  $35 = StageOutput 3: Smooth Vec3
+	  Store $35 $25
+	  $36 = StageOutput 4: Smooth Vec3
+	  Store $36 $23
 	}
 	)");
 };

@@ -22,13 +22,21 @@ layout (std430, push_constant) uniform PC {
 
 void main()
 {
-    vec3 lvar0;
-    lvar0 = vec3(lin0, pc.weight);
+    vec2 lvar0;
+    lvar0 = vec2(lin0);
     vec3 lvar1;
-    lvar1 = (pc.payload.value + lvar0);
-    float lvar2;
-    lvar2 = 1;
-    vec4 lvar3;
-    lvar3 = vec4(lvar1, lvar2);
-    lout0 = lvar3;
+    lvar1 = vec3(pc.payload.value);
+    int lvar2;
+    lvar2 = pc.payload.index;
+    float lvar3;
+    lvar3 = pc.weight;
+    vec3 lvar4;
+    lvar4 = vec3(lvar0, lvar3);
+    vec3 lvar5;
+    lvar5 = (lvar1 + lvar4);
+    float lvar6;
+    lvar6 = 1;
+    vec4 lvar7;
+    lvar7 = vec4(lvar5, lvar6);
+    lout0 = lvar7;
 }

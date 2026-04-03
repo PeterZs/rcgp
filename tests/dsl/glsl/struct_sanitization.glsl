@@ -28,13 +28,27 @@ layout (std430, push_constant) uniform PC {
 
 void main()
 {
-    vec3 lvar0;
-    lvar0 = vec3(lin0, pc.roughness.value);
+    vec2 lvar0;
+    lvar0 = vec2(lin0);
     vec3 lvar1;
-    lvar1 = (pc.albedo.value + lvar0);
-    float lvar2;
-    lvar2 = 1;
-    vec4 lvar3;
-    lvar3 = vec4(lvar1, lvar2);
-    lout0 = lvar3;
+    lvar1 = vec3(pc.albedo.value);
+    int lvar2;
+    lvar2 = pc.albedo.index;
+    vec3 lvar3;
+    lvar3 = vec3(pc.specular.value);
+    int lvar4;
+    lvar4 = pc.specular.index;
+    float lvar5;
+    lvar5 = pc.roughness.value;
+    int lvar6;
+    lvar6 = pc.roughness.index;
+    vec3 lvar7;
+    lvar7 = vec3(lvar0, lvar5);
+    vec3 lvar8;
+    lvar8 = (lvar1 + lvar7);
+    float lvar9;
+    lvar9 = 1;
+    vec4 lvar10;
+    lvar10 = vec4(lvar8, lvar9);
+    lout0 = lvar10;
 }

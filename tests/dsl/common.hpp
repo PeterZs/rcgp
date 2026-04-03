@@ -20,6 +20,7 @@ struct test {
 struct test_collection {
 	bool pass;
 	bool show_ground_truth;
+	bool update_fixtures;
 	std::vector <test> tests;
 } inline tests;
 

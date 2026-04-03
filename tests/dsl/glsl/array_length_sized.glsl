@@ -17,6 +17,10 @@ layout (std430, push_constant) uniform PC {
 
 void main()
 {
-    int lvar0;
-    lvar0 = 6;
+    uint lvar0;
+    lvar0 = pc.meshlet_count;
+    uint lvar1;
+    lvar1 = pc.task_group_width;
+    int lvar2;
+    lvar2 = 6;
 }

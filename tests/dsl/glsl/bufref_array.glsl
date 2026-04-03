@@ -28,21 +28,31 @@ layout (scalar, set = 0, binding = 0) readonly buffer Buffer0x0 {
 
 void main()
 {
-    uint lvar0;
-    lvar0 = 0;
+    vec3 lvar0;
+    lvar0 = vec3(lin0);
     uint lvar1;
     lvar1 = 0;
     uint lvar2;
-    lvar2 = 1;
+    lvar2 = lvar1;
     uint lvar3;
-    lvar3 = 2;
-    float lvar4;
-    lvar4 = 0;
-    vec3 lvar5;
-    lvar5 = vec3(r0b0.value[lvar0].uvs.value[lvar3], lvar4);
-    vec3 lvar6;
-    lvar6 = (r0b0.value[lvar0].positions.value[lvar1] + r0b0.value[lvar0].normals.value[lvar2]);
-    vec3 lvar7;
-    lvar7 = (lvar6 + lvar5);
-    lout0 = lvar7;
+    lvar3 = 0;
+    uint lvar4;
+    lvar4 = lvar3;
+    uint lvar5;
+    lvar5 = 1;
+    uint lvar6;
+    lvar6 = lvar5;
+    uint lvar7;
+    lvar7 = 2;
+    uint lvar8;
+    lvar8 = lvar7;
+    float lvar9;
+    lvar9 = 0;
+    vec3 lvar10;
+    lvar10 = vec3(r0b0.value[lvar2].uvs.value[lvar8], lvar9);
+    vec3 lvar11;
+    lvar11 = (r0b0.value[lvar2].positions.value[lvar4] + r0b0.value[lvar2].normals.value[lvar6]);
+    vec3 lvar12;
+    lvar12 = (lvar11 + lvar10);
+    lout0 = lvar12;
 }

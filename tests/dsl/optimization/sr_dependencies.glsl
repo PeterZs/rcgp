@@ -11,24 +11,30 @@ void b(float arg0, float arg1, float arg2, out float ret0)
 
 void c(vec2 arg0, vec2 arg1, vec2 arg2, out vec2 ret0)
 {
-    float lvar0;
-    b(arg0.y, arg1.y, arg2.y, lvar0);
-    float lvar1;
-    b(arg0.x, arg1.x, arg2.y, lvar1);
-    ret0 = vec2(lvar1, lvar0);
+    vec2 lvar0 = vec2(arg2);
+    vec2 lvar1 = vec2(arg1);
+    vec2 lvar2 = vec2(arg0);
+    float lvar3;
+    b(lvar2.y, lvar1.y, lvar0.y, lvar3);
+    float lvar4;
+    b(lvar2.x, lvar1.x, lvar0.y, lvar4);
+    ret0 = vec2(lvar4, lvar3);
 }
 
 void a(vec4 arg0, vec4 arg1, vec4 arg2, out vec4 ret0)
 {
-    vec2 lvar2;
-    c(arg0.zw, arg1.zw, arg2.zw, lvar2);
-    vec2 lvar3;
-    c(arg0.xy, arg1.xy, arg2.yy, lvar3);
-    ret0 = vec4(lvar3, lvar2);
+    vec4 lvar5 = vec4(arg2);
+    vec4 lvar6 = vec4(arg1);
+    vec4 lvar7 = vec4(arg0);
+    vec2 lvar8;
+    c(vec2(lvar7.zw), vec2(lvar6.zw), vec2(lvar5.zw), lvar8);
+    vec2 lvar9;
+    c(vec2(lvar7.xy), vec2(lvar6.xy), vec2(lvar5.yy), lvar9);
+    ret0 = vec4(lvar9, lvar8);
 }
 
 void main()
 {
-    vec4 lvar4;
-    a(vec4(3, 3, 3, 3), vec4(1, 1, 1, 1), vec4(2, 2, 2, 2), lvar4);
+    vec4 lvar10;
+    a(vec4(vec4(3, 3, 3, 3)), vec4(vec4(1, 1, 1, 1)), vec4(vec4(2, 2, 2, 2)), lvar10);
 }

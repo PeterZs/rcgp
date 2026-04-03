@@ -71,8 +71,8 @@ add_test(vs_louts)
 
 	void main()
 	{
-	    lout0 = vec3(1, 1, 1);
-	    lout1 = uvec2(1, 4);
+	    lout0 = vec3(vec3(1, 1, 1));
+	    lout1 = uvec2(uvec2(1, 4));
 	}
 	)");
 };
@@ -94,16 +94,16 @@ add_test(vs_stream)
 	#version 460
 
 #extension GL_EXT_scalar_block_layout : require
-	
+
 	layout (location = 0) in vec3 lin0;
-	
+
 	layout (location = 0) smooth out vec3 lout0;
-	
+
 	void main()
 	{
-	    vec3 lvar0 = lin0;
+	    vec3 lvar0 = vec3(lin0);
 	    gl_Position = vec4(lvar0, 1);
-	    lout0 = lvar0;
+	    lout0 = vec3(lvar0);
 	}
 	)");
 };
@@ -130,20 +130,20 @@ add_test(vs_multiple_io)
 	#version 460
 
 #extension GL_EXT_scalar_block_layout : require
-	
+
 	layout (location = 0) in vec3 lin0;
 	layout (location = 1) in vec3 lin1;
 	layout (location = 2) in vec2 lin2;
-	
+
 	layout (location = 0) smooth out vec3 lout0;
 	layout (location = 1) smooth out vec3 lout1;
 	layout (location = 2) smooth out vec2 lout2;
-	
+
 	void main()
 	{
-	    lout0 = lin0;
-	    lout1 = lin1;
-	    lout2 = lin2;
+	    lout0 = vec3(vec3(lin0));
+	    lout1 = vec3(vec3(lin1));
+	    lout2 = vec2(vec2(lin2));
 	}
 	)");
 };
@@ -433,8 +433,8 @@ add_test(sr_return_primitives)
 	assert_glsl_match(sr, R"(
 	void sr(float arg0, uint arg1, out vec3 ret0, out uvec2 ret1)
 	{
-	    ret0 = vec3(arg0, arg0, arg0);
-	    ret1 = uvec2(arg1, 13);
+	    ret0 = vec3(vec3(arg0, arg0, arg0));
+	    ret1 = uvec2(uvec2(arg1, 13));
 	}
 	)");
 };
@@ -453,7 +453,7 @@ add_test(sr_return_aggregate)
 	assert_glsl_match(sr, R"(
 	void sr(float arg0, out Ray ret0)
 	{
-	    ret0 = Ray(vec3(0, 0, 0), normalize(vec3(1, arg0, 1)));
+	    ret0 = Ray(vec3(vec3(vec3(vec3(0, 0, 0)))), vec3(vec3(vec3(normalize(vec3(1, arg0, 1))))));
 	}
 	)");
 };

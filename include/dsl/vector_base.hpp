@@ -59,10 +59,13 @@ public:
 	SWIZZLE_D2;
 
 	vector_base() = default;
-	
-	vector_base(const vector_base &other)
-		: handle(other) {}
-	
+
+	vector_base(const vector_base &other, $location)
+		: handle(wrap_in_local(loc,
+			jems::type(primitive_of <T, 2> (), loc),
+			{ other }
+		)) {}
+
 	vector_base(const scalar <T> &x, $location)
 		: handle(wrap_in_local(loc,
 			jems::type(primitive_of <T, 2> (), loc),
@@ -92,9 +95,12 @@ public:
 	SWIZZLE_D3;
 
 	vector_base() = default;
-	
-	vector_base(const vector_base &other)
-		: handle(other) {}
+
+	vector_base(const vector_base &other, $location)
+		: handle(wrap_in_local(loc,
+			jems::type(primitive_of <T, 3> (), loc),
+			{ other }
+		)) {}
 
 	vector_base(const scalar <T> x, $location)
 		: handle(wrap_in_local(loc,
@@ -129,10 +135,13 @@ public:
 	SWIZZLE_D4;
 
 	vector_base() = default;
-	
-	vector_base(const vector_base &other)
-		: handle(other) {}
-	
+
+	vector_base(const vector_base &other, $location)
+		: handle(wrap_in_local(loc,
+			jems::type(primitive_of <T, 4> (), loc),
+			{ other }
+		)) {}
+
 	vector_base(const scalar <T> &x, $location)
 		: handle(wrap_in_local(loc,
 			jems::type(primitive_of <T, 4> (), loc),

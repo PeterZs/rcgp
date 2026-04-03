@@ -51,7 +51,7 @@ void main()
                 break;
             }
             vec4 lvar7 = pc.frustum_planes[lvar6];
-            float lvar8 = dot(vec3(lvar7), vec3(lvar4));
+            float lvar8 = dot(vec3(vec4(lvar7)), vec3(vec4(lvar4)));
             bool lvar9 = ((lvar8 + lvar7.w) < (-1 * lvar4.w));
             if (lvar9) {
                 lvar5 = false;

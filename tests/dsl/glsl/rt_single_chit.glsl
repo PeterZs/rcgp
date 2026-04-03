@@ -9,13 +9,15 @@ layout (location = 0) rayPayloadInEXT vec3 payload0;
 
 void main()
 {
-    float lvar0;
-    lvar0 = 0;
+    vec2 lvar0;
+    lvar0 = vec2(hit_attribute);
     float lvar1;
-    lvar1 = hit_attribute.y;
+    lvar1 = 0;
     float lvar2;
-    lvar2 = hit_attribute.x;
-    vec3 lvar3;
-    lvar3 = vec3(lvar2, lvar1, lvar0);
-    payload0 = lvar3;
+    lvar2 = lvar0.y;
+    float lvar3;
+    lvar3 = lvar0.x;
+    vec3 lvar4;
+    lvar4 = vec3(lvar3, lvar2, lvar1);
+    payload0 = lvar4;
 }

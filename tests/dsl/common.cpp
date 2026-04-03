@@ -150,6 +150,8 @@ std::string clean(const std::string &input)
 
 void assert_assembly_match(const SharedBlockReference &block, const std::string &str, bool verbose)
 {
+	if (tests.update_fixtures) return;
+
 	auto expected = clean(str);
 	auto act = generate_assembly(block, false, verbose);
 	if (act != expected) {
@@ -166,6 +168,8 @@ void assert_assembly_match(const SharedBlockReference &block, const std::string 
 
 void assert_glsl_match(const SharedBlockReference &block, const std::string &str)
 {
+	if (tests.update_fixtures) return;
+
 	auto expected = clean(str);
 	auto act = generate_glsl(block);
 	if (act != expected) {
@@ -195,7 +199,8 @@ std::string read_file_contents(const std::filesystem::path &path)
 
 void assert_glsl_match_file(const SharedBlockReference &block, const std::filesystem::path &path)
 {
-	auto expected = read_file_contents("tests/dsl" / path);
+	auto full_path = "tests/dsl" / path;
+	auto expected = read_file_contents(full_path);
 	if (expected.empty()) {
 		mark_fail;
 		return;
@@ -203,6 +208,12 @@ void assert_glsl_match_file(const SharedBlockReference &block, const std::filesy
 
 	auto act = generate_glsl(block);
 	if (act != expected) {
+		if (tests.update_fixtures) {
+			std::ofstream fout(full_path);
+			fout << act;
+			return;
+		}
+
 		show_diff(expected, act);
 		if (tests.show_ground_truth) {
 			auto style = fmt::fg(fmt::color::gray)

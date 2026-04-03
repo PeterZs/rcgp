@@ -28,23 +28,24 @@ layout (set = 0, binding = 2) uniform sampler2D r0b2;
 
 void main()
 {
-    vec3 lvar0;
-    lvar0 = vec3(0, 0, 0);
-    int lvar1;
-    lvar1 = 0;
+    vec3 lvar0 = texture(r0b0, vec2(lin2)).xyz;
+    vec3 lvar1;
+    lvar1 = vec3(0, 0, 0);
+    int lvar2;
+    lvar2 = 0;
     while (true) {
-        bool lvar2 = (!(lvar1 < r0b0.count));
-        if (lvar2) {
+        bool lvar3 = (!(lvar2 < r0b0.count));
+        if (lvar3) {
             break;
         }
-        fwd_PointLight lvar3 = r0b0.lights[lvar1];
-        vec3 lvar4 = (lvar3.position - lin0);
-        float lvar5 = max(dot(lvar4, lvar4), 0.0001);
-        float lvar6 = max(dot(lin1, normalize(lvar4)), 0);
-        vec3 lvar7 = (texture(r0b0, lin2).xyz * lvar6);
-        vec3 lvar8 = ((lvar7 * lvar3.color) * (lvar3.intensity / lvar5));
-        lvar0 = (lvar0 + lvar8);
-        lvar1 = (lvar1 + 1);
+        fwd_PointLight lvar4 = r0b0.lights[lvar2];
+        vec3 lvar5 = (lvar4.position - vec3(lin0));
+        float lvar6 = max(dot(lvar5, lvar5), 0.0001);
+        float lvar7 = dot(vec3(lin1), normalize(lvar5));
+        vec3 lvar8 = (lvar0 * max(lvar7, 0));
+        vec3 lvar9 = ((lvar8 * lvar4.color) * (lvar4.intensity / lvar6));
+        lvar1 = (lvar1 + lvar9);
+        lvar2 = (lvar2 + 1);
     }
-    lout0 = lvar0;
+    lout0 = lvar1;
 }

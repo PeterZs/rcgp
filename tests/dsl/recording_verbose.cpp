@@ -140,26 +140,30 @@ add_test(increment_decrement)
 	  Store $6 $5
 	  Store $1 $6
 	  $7 = Local $0
-	  $8 = 1
-	  Store $7 $8
-	  $9 = Add $1 $7
-	  $10 = Local $0
-	  Store $10 $9
-	  Store $1 $10
+	  Store $7 $1
+	  $8 = Local $0
+	  $9 = 1
+	  Store $8 $9
+	  $10 = Add $1 $8
 	  $11 = Local $0
-	  $12 = 1
-	  Store $11 $12
-	  $13 = Subtract $1 $11
-	  $14 = Local $0
-	  Store $14 $13
-	  Store $1 $14
+	  Store $11 $10
+	  Store $1 $11
+	  $12 = Local $0
+	  $13 = 1
+	  Store $12 $13
+	  $14 = Subtract $1 $12
 	  $15 = Local $0
-	  $16 = 1
-	  Store $15 $16
-	  $17 = Subtract $1 $15
-	  $18 = Local $0
-	  Store $18 $17
-	  Store $1 $18
+	  Store $15 $14
+	  Store $1 $15
+	  $16 = Local $0
+	  Store $16 $1
+	  $17 = Local $0
+	  $18 = 1
+	  Store $17 $18
+	  $19 = Subtract $1 $17
+	  $20 = Local $0
+	  Store $20 $19
+	  Store $1 $20
 	}
 	)", true);
 };
@@ -258,9 +262,17 @@ add_test(field_access)
 	  $3 = Local $2
 	  $4 = $3.x
 	  $5 = $3.y
-	  $6 = Add $4 $5
-	  $7 = Local $0
-	  Store $7 $6
+	  $6 = Local $0
+	  Store $6 $4
+	  $7 = Local $1
+	  Store $7 $5
+	  $8 = Local $1
+	  Store $8 $7
+	  $9 = Local $0
+	  Store $9 $6
+	  $10 = Add $9 $8
+	  $11 = Local $0
+	  Store $11 $10
 	}
 	)", true);
 };
@@ -312,7 +324,7 @@ add_test(while_loop)
 		auto ret = jems::returns(typef32, 0);
 		jems::store(ret, sum);
 	};
-	
+
 	assert_assembly_match(sbr, R"(
 	Block {
 	  Context {
@@ -330,33 +342,41 @@ add_test(while_loop)
 	  $7 = 0
 	  Store $6 $7
 	  $8 = Block {
-	    $0 = Int32
 	    $1 = Float
-	    $9 = Less $6 $2
-	    $10 = Bool
-	    $11 = Local $10
-	    Store $11 $9
-	    $12 = LogicalNot $11
-	    $13 = Local $10
-	    Store $13 $12
-	    $14 = Block {
+	    $0 = Int32
+	    $9 = Local $0
+	    Store $9 $2
+	    $10 = Local $0
+	    Store $10 $6
+	    $11 = Less $10 $9
+	    $12 = Bool
+	    $13 = Local $12
+	    Store $13 $11
+	    $14 = LogicalNot $13
+	    $15 = Local $12
+	    Store $15 $14
+	    $16 = Local $12
+	    Store $16 $15
+	    $17 = Local $12
+	    Store $17 $16
+	    $18 = Block {
 	      Break
 	    }
-	    Branch $13: $14
-	    $15 = Local $1
-	    Store $15 $6
-	    $16 = Add $4 $15
-	    $17 = Local $1
-	    Store $17 $16
-	    Store $4 $17
-	    $18 = Add $6 $3
-	    $19 = Local $0
-	    Store $19 $18
-	    Store $6 $19
+	    Branch $17: $18
+	    $19 = Local $1
+	    Store $19 $6
+	    $20 = Add $4 $19
+	    $21 = Local $1
+	    Store $21 $20
+	    Store $4 $21
+	    $22 = Add $6 $3
+	    $23 = Local $0
+	    Store $23 $22
+	    Store $6 $23
 	  }
 	  Loop $8
-	  $20 = Return 0: $1
-	  Store $20 $4
+	  $24 = Return 0: $1
+	  Store $24 $4
 	}
 	)", true);
 };
@@ -380,7 +400,7 @@ add_test(for_loop)
 		auto ret = jems::returns(typef32, 0);
 		jems::store(ret, sum);
 	};
-	
+
 	assert_assembly_match(sbr, R"(
 	Block {
 	  Context {
@@ -398,33 +418,41 @@ add_test(for_loop)
 	  $7 = 0
 	  Store $6 $7
 	  $8 = Block {
-	    $0 = Int32
 	    $1 = Float
-	    $9 = Less $6 $2
-	    $10 = Bool
-	    $11 = Local $10
-	    Store $11 $9
-	    $12 = LogicalNot $11
-	    $13 = Local $10
-	    Store $13 $12
-	    $14 = Block {
+	    $0 = Int32
+	    $9 = Local $0
+	    Store $9 $2
+	    $10 = Local $0
+	    Store $10 $6
+	    $11 = Less $10 $9
+	    $12 = Bool
+	    $13 = Local $12
+	    Store $13 $11
+	    $14 = LogicalNot $13
+	    $15 = Local $12
+	    Store $15 $14
+	    $16 = Local $12
+	    Store $16 $15
+	    $17 = Local $12
+	    Store $17 $16
+	    $18 = Block {
 	      Break
 	    }
-	    Branch $13: $14
-	    $15 = Local $1
-	    Store $15 $6
-	    $16 = Add $4 $15
-	    $17 = Local $1
-	    Store $17 $16
-	    Store $4 $17
-	    $18 = Add $6 $3
-	    $19 = Local $0
-	    Store $19 $18
-	    Store $6 $19
+	    Branch $17: $18
+	    $19 = Local $1
+	    Store $19 $6
+	    $20 = Add $4 $19
+	    $21 = Local $1
+	    Store $21 $20
+	    Store $4 $21
+	    $22 = Add $6 $3
+	    $23 = Local $0
+	    Store $23 $22
+	    Store $6 $23
 	  }
 	  Loop $8
-	  $20 = Return 0: $1
-	  Store $20 $4
+	  $24 = Return 0: $1
+	  Store $24 $4
 	}
 	)", true);
 };
@@ -455,56 +483,74 @@ add_test(branching)
 	  $3 = Local $0
 	  $4 = 11
 	  Store $3 $4
-	  $5 = Less $1 $3
-	  $6 = Bool
-	  $7 = Local $6
-	  Store $7 $5
-	  $8 = Local $0
-	  $9 = 5
-	  Store $8 $9
-	  $10 = Greater $1 $8
-	  $11 = Local $6
-	  Store $11 $10
-	  $12 = LogicalAnd $7 $11
-	  $13 = Local $6
+	  $5 = Local $0
+	  Store $5 $1
+	  $6 = Less $5 $3
+	  $7 = Bool
+	  $8 = Local $7
+	  Store $8 $6
+	  $9 = Local $0
+	  $10 = 5
+	  Store $9 $10
+	  $11 = Local $0
+	  Store $11 $1
+	  $12 = Greater $11 $9
+	  $13 = Local $7
 	  Store $13 $12
-	  $14 = Local $0
-	  $15 = 11
-	  Store $14 $15
-	  $16 = Greater $1 $14
-	  $17 = Local $6
-	  Store $17 $16
-	  $18 = Block {
+	  $14 = LogicalAnd $8 $13
+	  $15 = Local $7
+	  Store $15 $14
+	  $16 = Local $7
+	  Store $16 $15
+	  $17 = Local $0
+	  $18 = 11
+	  Store $17 $18
+	  $19 = Local $0
+	  Store $19 $1
+	  $20 = Greater $19 $17
+	  $21 = Local $7
+	  Store $21 $20
+	  $22 = Local $7
+	  Store $22 $21
+	  $23 = Local $7
+	  Store $23 $22
+	  $24 = Local $7
+	  Store $24 $23
+	  $25 = Local $7
+	  Store $25 $16
+	  $26 = Local $7
+	  Store $26 $24
+	  $27 = Block {
 	    $0 = Int32
-	    $19 = Local $0
-	    $20 = 1
-	    Store $19 $20
-	    $21 = Add $1 $19
-	    $22 = Local $0
-	    Store $22 $21
-	    Store $1 $22
+	    $28 = Local $0
+	    $29 = 1
+	    Store $28 $29
+	    $30 = Add $1 $28
+	    $31 = Local $0
+	    Store $31 $30
+	    Store $1 $31
 	  }
-	  $23 = Block {
+	  $32 = Block {
 	    $0 = Int32
-	    $24 = Local $0
-	    $25 = 2
-	    Store $24 $25
-	    $26 = Add $1 $24
-	    $27 = Local $0
-	    Store $27 $26
-	    Store $1 $27
+	    $33 = Local $0
+	    $34 = 2
+	    Store $33 $34
+	    $35 = Add $1 $33
+	    $36 = Local $0
+	    Store $36 $35
+	    Store $1 $36
 	  }
-	  $28 = Block {
+	  $37 = Block {
 	    $0 = Int32
-	    $29 = Local $0
-	    $30 = 3
-	    Store $29 $30
-	    $31 = Add $1 $29
-	    $32 = Local $0
-	    Store $32 $31
-	    Store $1 $32
+	    $38 = Local $0
+	    $39 = 3
+	    Store $38 $39
+	    $40 = Add $1 $38
+	    $41 = Local $0
+	    Store $41 $40
+	    Store $1 $41
 	  }
-	  Branch $17: $18, $13: $23, else: $28
+	  Branch $26: $27, $25: $32, else: $37
 	}
 	)", true);
 };

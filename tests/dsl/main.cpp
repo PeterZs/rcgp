@@ -13,6 +13,8 @@ int main(int argc, char *argv[])
 		std::string arg = argv[argi];
 		if (arg == "--gt")
 			tests.show_ground_truth = true;
+		else if (arg == "--update")
+			tests.update_fixtures = true;
 		else if (arg.starts_with("--suite="))
 			suite = arg.substr(8);
 		else if (arg.starts_with("--filter="))

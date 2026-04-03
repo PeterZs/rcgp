@@ -45,7 +45,9 @@ void main()
     lvar14 = vec4(payload0, lvar13);
     uvec2 lvar15;
     lvar15 = lvar0.xy;
-    ivec2 lvar16;
-    lvar16 = ivec2(lvar15);
-    imageStore(r0b0, lvar16, lvar14);
+    uvec2 lvar16;
+    lvar16 = uvec2(lvar15);
+    ivec2 lvar17;
+    lvar17 = ivec2(lvar16);
+    imageStore(r0b0, lvar17, lvar14);
 }

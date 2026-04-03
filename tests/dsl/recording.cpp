@@ -135,26 +135,30 @@ add_test(increment_decrement)
 	  Store $5 $4
 	  Store $0 $5
 	  $6 = Local Int32
-	  $7 = 1
-	  Store $6 $7
-	  $8 = Add $0 $6
-	  $9 = Local Int32
-	  Store $9 $8
-	  Store $0 $9
+	  Store $6 $0
+	  $7 = Local Int32
+	  $8 = 1
+	  Store $7 $8
+	  $9 = Add $0 $7
 	  $10 = Local Int32
-	  $11 = 1
-	  Store $10 $11
-	  $12 = Subtract $0 $10
-	  $13 = Local Int32
-	  Store $13 $12
-	  Store $0 $13
+	  Store $10 $9
+	  Store $0 $10
+	  $11 = Local Int32
+	  $12 = 1
+	  Store $11 $12
+	  $13 = Subtract $0 $11
 	  $14 = Local Int32
-	  $15 = 1
-	  Store $14 $15
-	  $16 = Subtract $0 $14
-	  $17 = Local Int32
-	  Store $17 $16
-	  Store $0 $17
+	  Store $14 $13
+	  Store $0 $14
+	  $15 = Local Int32
+	  Store $15 $0
+	  $16 = Local Int32
+	  $17 = 1
+	  Store $16 $17
+	  $18 = Subtract $0 $16
+	  $19 = Local Int32
+	  Store $19 $18
+	  Store $0 $19
 	}
 	)");
 };
@@ -247,9 +251,17 @@ add_test(field_access)
 	  $0 = Local RecordingPair
 	  $1 = $0.x
 	  $2 = $0.y
-	  $3 = Add $1 $2
-	  $4 = Local Float
-	  Store $4 $3
+	  $3 = Local Float
+	  Store $3 $1
+	  $4 = Local Int32
+	  Store $4 $2
+	  $5 = Local Int32
+	  Store $5 $4
+	  $6 = Local Float
+	  Store $6 $3
+	  $7 = Add $6 $5
+	  $8 = Local Float
+	  Store $8 $7
 	}
 	)");
 };
@@ -299,7 +311,7 @@ add_test(while_loop)
 		auto ret = jems::returns(typef32, 0);
 		jems::store(ret, sum);
 	};
-	
+
 	assert_assembly_match(sbr, R"(
 	Block {
 	  Context {
@@ -315,30 +327,38 @@ add_test(while_loop)
 	  $5 = 0
 	  Store $4 $5
 	  $6 = Block {
-	    $7 = Less $4 $0
-	    $8 = Local Bool
-	    Store $8 $7
-	    $9 = LogicalNot $8
+	    $7 = Local Int32
+	    Store $7 $0
+	    $8 = Local Int32
+	    Store $8 $4
+	    $9 = Less $8 $7
 	    $10 = Local Bool
 	    Store $10 $9
-	    $11 = Block {
+	    $11 = LogicalNot $10
+	    $12 = Local Bool
+	    Store $12 $11
+	    $13 = Local Bool
+	    Store $13 $12
+	    $14 = Local Bool
+	    Store $14 $13
+	    $15 = Block {
 	      Break
 	    }
-	    Branch $10: $11
-	    $12 = Local Float
-	    Store $12 $4
-	    $13 = Add $2 $12
-	    $14 = Local Float
-	    Store $14 $13
-	    Store $2 $14
-	    $15 = Add $4 $1
-	    $16 = Local Int32
-	    Store $16 $15
-	    Store $4 $16
+	    Branch $14: $15
+	    $16 = Local Float
+	    Store $16 $4
+	    $17 = Add $2 $16
+	    $18 = Local Float
+	    Store $18 $17
+	    Store $2 $18
+	    $19 = Add $4 $1
+	    $20 = Local Int32
+	    Store $20 $19
+	    Store $4 $20
 	  }
 	  Loop $6
-	  $18 = Return 0: $17
-	  Store $18 $2
+	  $22 = Return 0: $21
+	  Store $22 $2
 	}
 	)");
 };
@@ -362,7 +382,7 @@ add_test(for_loop)
 		auto ret = jems::returns(typef32, 0);
 		jems::store(ret, sum);
 	};
-	
+
 	assert_assembly_match(sbr, R"(
 	Block {
 	  Context {
@@ -378,30 +398,38 @@ add_test(for_loop)
 	  $5 = 0
 	  Store $4 $5
 	  $6 = Block {
-	    $7 = Less $4 $0
-	    $8 = Local Bool
-	    Store $8 $7
-	    $9 = LogicalNot $8
+	    $7 = Local Int32
+	    Store $7 $0
+	    $8 = Local Int32
+	    Store $8 $4
+	    $9 = Less $8 $7
 	    $10 = Local Bool
 	    Store $10 $9
-	    $11 = Block {
+	    $11 = LogicalNot $10
+	    $12 = Local Bool
+	    Store $12 $11
+	    $13 = Local Bool
+	    Store $13 $12
+	    $14 = Local Bool
+	    Store $14 $13
+	    $15 = Block {
 	      Break
 	    }
-	    Branch $10: $11
-	    $12 = Local Float
-	    Store $12 $4
-	    $13 = Add $2 $12
-	    $14 = Local Float
-	    Store $14 $13
-	    Store $2 $14
-	    $15 = Add $4 $1
-	    $16 = Local Int32
-	    Store $16 $15
-	    Store $4 $16
+	    Branch $14: $15
+	    $16 = Local Float
+	    Store $16 $4
+	    $17 = Add $2 $16
+	    $18 = Local Float
+	    Store $18 $17
+	    Store $2 $18
+	    $19 = Add $4 $1
+	    $20 = Local Int32
+	    Store $20 $19
+	    Store $4 $20
 	  }
 	  Loop $6
-	  $18 = Return 0: $17
-	  Store $18 $2
+	  $22 = Return 0: $21
+	  Store $22 $2
 	}
 	)");
 };
@@ -431,52 +459,70 @@ add_test(branching)
 	  $2 = Local Int32
 	  $3 = 11
 	  Store $2 $3
-	  $4 = Less $0 $2
-	  $5 = Local Bool
-	  Store $5 $4
-	  $6 = Local Int32
-	  $7 = 5
-	  Store $6 $7
-	  $8 = Greater $0 $6
-	  $9 = Local Bool
-	  Store $9 $8
-	  $10 = LogicalAnd $5 $9
+	  $4 = Local Int32
+	  Store $4 $0
+	  $5 = Less $4 $2
+	  $6 = Local Bool
+	  Store $6 $5
+	  $7 = Local Int32
+	  $8 = 5
+	  Store $7 $8
+	  $9 = Local Int32
+	  Store $9 $0
+	  $10 = Greater $9 $7
 	  $11 = Local Bool
 	  Store $11 $10
-	  $12 = Local Int32
-	  $13 = 11
-	  Store $12 $13
-	  $14 = Greater $0 $12
-	  $15 = Local Bool
-	  Store $15 $14
-	  $16 = Block {
-	    $17 = Local Int32
-	    $18 = 1
-	    Store $17 $18
-	    $19 = Add $0 $17
-	    $20 = Local Int32
-	    Store $20 $19
-	    Store $0 $20
+	  $12 = LogicalAnd $6 $11
+	  $13 = Local Bool
+	  Store $13 $12
+	  $14 = Local Bool
+	  Store $14 $13
+	  $15 = Local Int32
+	  $16 = 11
+	  Store $15 $16
+	  $17 = Local Int32
+	  Store $17 $0
+	  $18 = Greater $17 $15
+	  $19 = Local Bool
+	  Store $19 $18
+	  $20 = Local Bool
+	  Store $20 $19
+	  $21 = Local Bool
+	  Store $21 $20
+	  $22 = Local Bool
+	  Store $22 $21
+	  $23 = Local Bool
+	  Store $23 $14
+	  $24 = Local Bool
+	  Store $24 $22
+	  $25 = Block {
+	    $26 = Local Int32
+	    $27 = 1
+	    Store $26 $27
+	    $28 = Add $0 $26
+	    $29 = Local Int32
+	    Store $29 $28
+	    Store $0 $29
 	  }
-	  $21 = Block {
-	    $22 = Local Int32
-	    $23 = 2
-	    Store $22 $23
-	    $24 = Add $0 $22
-	    $25 = Local Int32
-	    Store $25 $24
-	    Store $0 $25
+	  $30 = Block {
+	    $31 = Local Int32
+	    $32 = 2
+	    Store $31 $32
+	    $33 = Add $0 $31
+	    $34 = Local Int32
+	    Store $34 $33
+	    Store $0 $34
 	  }
-	  $26 = Block {
-	    $27 = Local Int32
-	    $28 = 3
-	    Store $27 $28
-	    $29 = Add $0 $27
-	    $30 = Local Int32
-	    Store $30 $29
-	    Store $0 $30
+	  $35 = Block {
+	    $36 = Local Int32
+	    $37 = 3
+	    Store $36 $37
+	    $38 = Add $0 $36
+	    $39 = Local Int32
+	    Store $39 $38
+	    Store $0 $39
 	  }
-	  Branch $15: $16, $11: $21, else: $26
+	  Branch $24: $25, $23: $30, else: $35
 	}
 	)");
 };

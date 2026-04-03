@@ -69,14 +69,18 @@ add_test(vs_louts)
 	    lvar0 = 1;
 	    vec3 lvar1;
 	    lvar1 = vec3(lvar0, lvar0, lvar0);
-	    lout0 = lvar1;
-	    uint lvar2;
-	    lvar2 = 4;
+	    vec3 lvar2;
+	    lvar2 = vec3(lvar1);
+	    lout0 = lvar2;
 	    uint lvar3;
-	    lvar3 = 1;
-	    uvec2 lvar4;
-	    lvar4 = uvec2(lvar3, lvar2);
-	    lout1 = lvar4;
+	    lvar3 = 4;
+	    uint lvar4;
+	    lvar4 = 1;
+	    uvec2 lvar5;
+	    lvar5 = uvec2(lvar4, lvar3);
+	    uvec2 lvar6;
+	    lvar6 = uvec2(lvar5);
+	    lout1 = lvar6;
 	}
 	)");
 };
@@ -96,19 +100,23 @@ add_test(vs_stream)
 	#version 460
 
 	#extension GL_EXT_scalar_block_layout : require
-	
+
 	layout (location = 0) in vec3 lin0;
-	
+
 	layout (location = 0) smooth out vec3 lout0;
-	
+
 	void main()
 	{
-	    float lvar0;
-	    lvar0 = 1;
-	    vec4 lvar1;
-	    lvar1 = vec4(lin0, lvar0);
-	    gl_Position = lvar1;
-	    lout0 = lin0;
+	    vec3 lvar0;
+	    lvar0 = vec3(lin0);
+	    float lvar1;
+	    lvar1 = 1;
+	    vec4 lvar2;
+	    lvar2 = vec4(lvar0, lvar1);
+	    gl_Position = lvar2;
+	    vec3 lvar3;
+	    lvar3 = vec3(lvar0);
+	    lout0 = lvar3;
 	}
 	)");
 };
@@ -133,20 +141,32 @@ add_test(vs_multiple_io)
 	#version 460
 
 	#extension GL_EXT_scalar_block_layout : require
-	
+
 	layout (location = 0) in vec3 lin0;
 	layout (location = 1) in vec3 lin1;
 	layout (location = 2) in vec2 lin2;
-	
+
 	layout (location = 0) smooth out vec3 lout0;
 	layout (location = 1) smooth out vec3 lout1;
 	layout (location = 2) smooth out vec2 lout2;
-	
+
 	void main()
 	{
-	    lout0 = lin0;
-	    lout1 = lin1;
-	    lout2 = lin2;
+	    vec2 lvar0;
+	    lvar0 = vec2(lin2);
+	    vec3 lvar1;
+	    lvar1 = vec3(lin1);
+	    vec3 lvar2;
+	    lvar2 = vec3(lin0);
+	    vec3 lvar3;
+	    lvar3 = vec3(lvar2);
+	    lout0 = lvar3;
+	    vec3 lvar4;
+	    lvar4 = vec3(lvar1);
+	    lout1 = lvar4;
+	    vec2 lvar5;
+	    lvar5 = vec2(lvar0);
+	    lout2 = lvar5;
 	}
 	)");
 };
@@ -299,14 +319,24 @@ add_test(sr_return_primitives)
 	assert_glsl_match(sr, R"(
 	void sr(float arg0, uint arg1, out vec3 ret0, out uvec2 ret1)
 	{
-	    vec3 lvar0;
-	    lvar0 = vec3(arg0, arg0, arg0);
-	    uint lvar1;
-	    lvar1 = 13;
-	    uvec2 lvar2;
-	    lvar2 = uvec2(arg1, lvar1);
-	    ret0 = lvar0;
-	    ret1 = lvar2;
+	    uint lvar0;
+	    lvar0 = arg1;
+	    float lvar1;
+	    lvar1 = arg0;
+	    float lvar2;
+	    lvar2 = lvar1;
+	    vec3 lvar3;
+	    lvar3 = vec3(lvar2, lvar2, lvar2);
+	    uint lvar4;
+	    lvar4 = 13;
+	    uvec2 lvar5;
+	    lvar5 = uvec2(lvar0, lvar4);
+	    uvec2 lvar6;
+	    lvar6 = uvec2(lvar5);
+	    vec3 lvar7;
+	    lvar7 = vec3(lvar3);
+	    ret0 = lvar7;
+	    ret1 = lvar6;
 	}
 	)");
 };
@@ -324,18 +354,32 @@ add_test(sr_return_aggregate)
 	void sr(float arg0, out Ray ret0)
 	{
 	    float lvar0;
-	    lvar0 = 0;
-	    vec3 lvar1;
-	    lvar1 = vec3(lvar0, lvar0, lvar0);
-	    float lvar2;
-	    lvar2 = 1;
+	    lvar0 = arg0;
+	    float lvar1;
+	    lvar1 = 0;
+	    vec3 lvar2;
+	    lvar2 = vec3(lvar1, lvar1, lvar1);
 	    float lvar3;
 	    lvar3 = 1;
-	    vec3 lvar4;
-	    lvar4 = vec3(lvar3, arg0, lvar2);
+	    float lvar4;
+	    lvar4 = 1;
 	    vec3 lvar5;
-	    lvar5 = normalize(lvar4);
-	    ret0 = Ray(lvar1, lvar5);
+	    lvar5 = vec3(lvar4, lvar0, lvar3);
+	    vec3 lvar6;
+	    lvar6 = normalize(lvar5);
+	    vec3 lvar7;
+	    lvar7 = vec3(lvar6);
+	    vec3 lvar8;
+	    lvar8 = vec3(lvar7);
+	    vec3 lvar9;
+	    lvar9 = vec3(lvar2);
+	    vec3 lvar10;
+	    lvar10 = vec3(lvar9);
+	    vec3 lvar11;
+	    lvar11 = vec3(lvar8);
+	    vec3 lvar12;
+	    lvar12 = vec3(lvar10);
+	    ret0 = Ray(lvar12, lvar11);
 	}
 	)");
 };
@@ -411,28 +455,40 @@ add_test(for_loop)
 	assert_glsl_match(sr, R"(
 	void sr(int arg0, int arg1, out float ret0)
 	{
-	    float lvar0;
-	    lvar0 = 0;
+	    int lvar0;
+	    lvar0 = arg1;
 	    int lvar1;
-	    lvar1 = 0;
+	    lvar1 = arg0;
+	    float lvar2;
+	    lvar2 = 0;
+	    int lvar3;
+	    lvar3 = 0;
 	    while (true) {
-	        bool lvar2;
-	        lvar2 = (lvar1 < arg0);
-	        bool lvar3;
-	        lvar3 = (!lvar2);
-	        if (lvar3) {
+	        int lvar4;
+	        lvar4 = lvar1;
+	        int lvar5;
+	        lvar5 = lvar3;
+	        bool lvar6;
+	        lvar6 = (lvar5 < lvar4);
+	        bool lvar7;
+	        lvar7 = (!lvar6);
+	        bool lvar8;
+	        lvar8 = lvar7;
+	        bool lvar9;
+	        lvar9 = lvar8;
+	        if (lvar9) {
 	            break;
 	        }
-	        float lvar4;
-	        lvar4 = lvar1;
-	        float lvar5;
-	        lvar5 = (lvar0 + lvar4);
-	        lvar0 = lvar5;
-	        int lvar6;
-	        lvar6 = (lvar1 + arg1);
-	        lvar1 = lvar6;
+	        float lvar10;
+	        lvar10 = lvar3;
+	        float lvar11;
+	        lvar11 = (lvar2 + lvar10);
+	        lvar2 = lvar11;
+	        int lvar12;
+	        lvar12 = (lvar3 + lvar0);
+	        lvar3 = lvar12;
 	    }
-	    ret0 = lvar0;
+	    ret0 = lvar2;
 	}
 	)");
 };
