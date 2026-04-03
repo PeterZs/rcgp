@@ -649,3 +649,38 @@ add_test(rt_multi_trace_group)
 	assert_glsl_match_file(miss_occlusion, "glsl/rt_multi_miss_occlusion.glsl");
 	assert_glsl_match_file(miss_reflection, "glsl/rt_multi_miss_reflection.glsl");
 };
+
+add_test(bufref_array)
+{
+	auto fs = $shader(fragment)(
+		$contracts(
+			(geo, bufref::geometry)
+		),
+		float3 position
+	) -> float3
+	{
+		auto verts = geo[u32(0)];
+		float3 p = verts.positions[u32(0)];
+		float3 n = verts.normals[u32(1)];
+		float2 uv = verts.uvs[u32(2)];
+		return p + n + float3(uv, 0);
+	};
+
+	assert_glsl_match_file(fs, "glsl/bufref_array.glsl");
+};
+
+add_test(bufref_single)
+{
+	auto vs = $shader(vertex)(
+		$contracts(
+			(scene, bufref::scene)
+		),
+		ClipPosition clip
+	)
+	{
+		float4x4 xform = scene.transform;
+		clip = xform * float4(0, 0, 0, 1);
+	};
+
+	assert_glsl_match_file(vs, "glsl/bufref_single.glsl");
+};

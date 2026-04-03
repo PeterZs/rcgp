@@ -164,6 +164,27 @@ static TraceGroup <float3> reflection;
 
 } // namespace rt
 
+namespace bufref {
+
+struct VertexData {
+	RBufferRef <array <float3>, layouts::scalar> positions;
+	RBufferRef <array <float3>, layouts::scalar> normals;
+	RBufferRef <array <float2>, layouts::scalar> uvs;
+
+	$reflection(positions, normals, uvs);
+};
+
+struct SceneData {
+	RBufferRef <float4x4, layouts::scalar> transform;
+
+	$reflection(transform);
+};
+
+static RArrayBuffer <VertexData, layouts::scalar> geometry;
+static PushConstant <SceneData> scene;
+
+} // namespace bufref
+
 namespace mapping {
 
 struct DirectionalLight {
