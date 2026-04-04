@@ -77,8 +77,8 @@ void inject_one_argument(TaskPayload <T> &value, InjectionCounters &)
 	value.override_reference(jems::system_value(SystemValue::eTaskPayload));
 }
 
-template <size_t I, user_defined S, typename T, T &ref>
-void inject_resource_group_element(void *addr, contract <ref> &value)
+template <size_t I, user_defined S>
+void inject_resource_group_element(void *addr, auto &value)
 {
 	using R = typename S::fields::template get <I>;
 	auto grsrc = resource_intrinsic(R(), I);
@@ -92,9 +92,10 @@ void inject_resource_reference(contract <ref> &value)
 	if constexpr (is_resource_group_v <R>) {
 		using S = R::struct_type;
 		using U = R::handle_type;
+		void *addr = &ref;
 		constexpr_for(Is, S::field_count,
 			(inject_resource_group_element
-				<Is, S> (&ref, value),
+				<Is, S> (addr, value),
 			...)
 		);
 	} else if constexpr (is_global_resource_v <R>) {
