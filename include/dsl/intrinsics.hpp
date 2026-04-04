@@ -255,6 +255,146 @@ inline u32 nonuniform(const u32 &v)
 	return u32::reinterpret(builtin(eNonUniformEXT, v));
 }
 
+// tan (enum existed but wrapper was missing)
+template <native_float_scalar T>
+scalar <T> tan(const scalar <T> &v)
+{
+	return scalar <T> ::reinterpret(builtin(eTan, v));
+}
+
+// Rounding
+template <native_float_scalar T>
+scalar <T> floor(const scalar <T> &v) { return scalar <T> ::reinterpret(builtin(eFloor, v)); }
+
+template <native_float_scalar T, size_t N>
+vector <T, N> floor(const vector <T, N> &v) { return vector <T, N> ::reinterpret(builtin(eFloor, v)); }
+
+template <native_float_scalar T>
+scalar <T> ceil(const scalar <T> &v) { return scalar <T> ::reinterpret(builtin(eCeil, v)); }
+
+template <native_float_scalar T, size_t N>
+vector <T, N> ceil(const vector <T, N> &v) { return vector <T, N> ::reinterpret(builtin(eCeil, v)); }
+
+template <native_float_scalar T>
+scalar <T> round(const scalar <T> &v) { return scalar <T> ::reinterpret(builtin(eRound, v)); }
+
+template <native_float_scalar T, size_t N>
+vector <T, N> round(const vector <T, N> &v) { return vector <T, N> ::reinterpret(builtin(eRound, v)); }
+
+template <native_float_scalar T>
+scalar <T> trunc(const scalar <T> &v) { return scalar <T> ::reinterpret(builtin(eTrunc, v)); }
+
+template <native_float_scalar T, size_t N>
+vector <T, N> trunc(const vector <T, N> &v) { return vector <T, N> ::reinterpret(builtin(eTrunc, v)); }
+
+template <native_float_scalar T>
+scalar <T> fract(const scalar <T> &v) { return scalar <T> ::reinterpret(builtin(eFract, v)); }
+
+template <native_float_scalar T, size_t N>
+vector <T, N> fract(const vector <T, N> &v) { return vector <T, N> ::reinterpret(builtin(eFract, v)); }
+
+template <native_float_scalar T>
+scalar <T> sign(const scalar <T> &v) { return scalar <T> ::reinterpret(builtin(eSign, v)); }
+
+template <native_float_scalar T, size_t N>
+vector <T, N> sign(const vector <T, N> &v) { return vector <T, N> ::reinterpret(builtin(eSign, v)); }
+
+// Modulo and step
+template <typename T, typename U>
+requires canonically_equivalent <T, U>
+auto mod(const T &a, const U &b)
+{
+	using result = canonical_type_t <T>;
+	return result::reinterpret(builtin(eMod, canonicalize(a), canonicalize(b)));
+}
+
+template <typename T, typename U>
+requires canonically_equivalent <T, U>
+auto step(const T &edge, const U &x)
+{
+	using result = canonical_type_t <T>;
+	return result::reinterpret(builtin(eStep, canonicalize(edge), canonicalize(x)));
+}
+
+// Exponential
+template <native_float_scalar T>
+scalar <T> exp(const scalar <T> &v) { return scalar <T> ::reinterpret(builtin(eExp, v)); }
+
+template <native_float_scalar T, size_t N>
+vector <T, N> exp(const vector <T, N> &v) { return vector <T, N> ::reinterpret(builtin(eExp, v)); }
+
+template <native_float_scalar T>
+scalar <T> exp2(const scalar <T> &v) { return scalar <T> ::reinterpret(builtin(eExp2, v)); }
+
+template <native_float_scalar T, size_t N>
+vector <T, N> exp2(const vector <T, N> &v) { return vector <T, N> ::reinterpret(builtin(eExp2, v)); }
+
+template <native_float_scalar T>
+scalar <T> log(const scalar <T> &v) { return scalar <T> ::reinterpret(builtin(eLog, v)); }
+
+template <native_float_scalar T, size_t N>
+vector <T, N> log(const vector <T, N> &v) { return vector <T, N> ::reinterpret(builtin(eLog, v)); }
+
+template <native_float_scalar T>
+scalar <T> log2(const scalar <T> &v) { return scalar <T> ::reinterpret(builtin(eLog2, v)); }
+
+template <native_float_scalar T, size_t N>
+vector <T, N> log2(const vector <T, N> &v) { return vector <T, N> ::reinterpret(builtin(eLog2, v)); }
+
+// Trigonometric
+template <native_float_scalar T>
+scalar <T> asin(const scalar <T> &v) { return scalar <T> ::reinterpret(builtin(eAsin, v)); }
+
+template <native_float_scalar T>
+scalar <T> acos(const scalar <T> &v) { return scalar <T> ::reinterpret(builtin(eAcos, v)); }
+
+template <native_float_scalar T>
+scalar <T> atan(const scalar <T> &v) { return scalar <T> ::reinterpret(builtin(eAtan, v)); }
+
+template <typename T, typename U>
+requires canonically_equivalent <T, U>
+auto atan(const T &y, const U &x)
+{
+	using result = canonical_type_t <T>;
+	return result::reinterpret(builtin(eAtan, canonicalize(y), canonicalize(x)));
+}
+
+template <native_float_scalar T>
+scalar <T> sinh(const scalar <T> &v) { return scalar <T> ::reinterpret(builtin(eSinh, v)); }
+
+template <native_float_scalar T>
+scalar <T> cosh(const scalar <T> &v) { return scalar <T> ::reinterpret(builtin(eCosh, v)); }
+
+template <native_float_scalar T>
+scalar <T> tanh(const scalar <T> &v) { return scalar <T> ::reinterpret(builtin(eTanh, v)); }
+
+// Geometry
+template <native_float_scalar T, size_t N>
+vector <T, N> reflect(const vector <T, N> &I, const vector <T, N> &n)
+{
+	return vector <T, N> ::reinterpret(builtin(eReflect, I, n));
+}
+
+template <native_float_scalar T, size_t N>
+vector <T, N> refract(const vector <T, N> &I, const vector <T, N> &n, const scalar <T> &eta)
+{
+	return vector <T, N> ::reinterpret(builtin(eRefract, I, n, eta));
+}
+
+template <native_float_scalar T, size_t N>
+scalar <T> distance(const vector <T, N> &a, const vector <T, N> &b)
+{
+	return scalar <T> ::reinterpret(builtin(eDistance, a, b));
+}
+
+template <typename T, typename U, typename V>
+requires canonically_equivalent <T, U> && canonically_equivalent <T, V>
+auto fma(const T &a, const U &b, const V &c)
+{
+	using result = canonical_type_t <T>;
+	return result::reinterpret(builtin(eFma, canonicalize(a), canonicalize(b), canonicalize(c)));
+}
+
 } // namespace rcgp
 
 #undef builtin

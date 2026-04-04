@@ -185,6 +185,33 @@ enum class BuiltinIntrinsicCode {
 	eUnsizedArrayLength,
 	eTraceRaysEXT,       // @glsl:traceRayEXT
 	eNonUniformEXT,	     // @glsl:nonuniformEXT
+	// Math
+	eFloor,              // @glsl:floor
+	eCeil,               // @glsl:ceil
+	eRound,              // @glsl:round
+	eTrunc,              // @glsl:trunc
+	eFract,              // @glsl:fract
+	eSign,               // @glsl:sign
+	eMod,                // @glsl:mod
+	eStep,               // @glsl:step
+	eExp,                // @glsl:exp
+	eExp2,               // @glsl:exp2
+	eLog,                // @glsl:log
+	eLog2,               // @glsl:log2
+	eAsin,               // @glsl:asin
+	eAcos,               // @glsl:acos
+	eAtan,               // @glsl:atan
+	eSinh,               // @glsl:sinh
+	eCosh,               // @glsl:cosh
+	eTanh,               // @glsl:tanh
+	// Geometry
+	eReflect,            // @glsl:reflect
+	eRefract,            // @glsl:refract
+	eDistance,           // @glsl:distance
+	eFma,                // @glsl:fma
+	// Texture
+	eImageLoad,          // @glsl:imageLoad
+	eTexelFetch,         // @glsl:texelFetch
 };
 
 const char *repr(BuiltinIntrinsicCode value);

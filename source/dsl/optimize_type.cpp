@@ -292,13 +292,16 @@ Reference builtin_intrinsic_type_ref(const SharedBlockReference &sbr, const Buil
 	case BuiltinIntrinsicCode::eSetMeshOutputsEXT:
 		fatal("intrinsic {} has no value type", repr(bintr.code));
 	case BuiltinIntrinsicCode::eDot:
-	case BuiltinIntrinsicCode::eLength: {
+	case BuiltinIntrinsicCode::eLength:
+	case BuiltinIntrinsicCode::eDistance: {
 		auto &type = arg_type(0)->as <Type> ();
 		assertion(type.is <Primitive> ());
 		auto family = primitive_family(type.as <Primitive> ());
 		return get_or_add_type(sbr, scalar_primitive(family));
 	}
-	case BuiltinIntrinsicCode::eSample: {
+	case BuiltinIntrinsicCode::eSample:
+	case BuiltinIntrinsicCode::eImageLoad:
+	case BuiltinIntrinsicCode::eTexelFetch: {
 		auto &type = arg_type(0)->as <Type> ();
 		assertion(type.is <Primitive> ());
 		auto family = primitive_family(type.as <Primitive> ());
