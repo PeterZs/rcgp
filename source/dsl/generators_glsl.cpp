@@ -536,9 +536,9 @@ void emit_main(GLSLEmitter &em)
 auto collect_extensions(const GLSLEmitter &em)
 {
 	std::set <std::string> extensions;
-	
+
 	extensions.insert("GL_EXT_scalar_block_layout");
-	
+
 	auto stage = em.main->stage;
 	if (stage == ShaderStage::eMesh
 		or stage == ShaderStage::eTask)
@@ -548,8 +548,7 @@ auto collect_extensions(const GLSLEmitter &em)
 		or stage == ShaderStage::eMiss)
 		extensions.insert("GL_EXT_ray_tracing");
 
-	// TODO: need to walk through all instructions...
-	for (auto &instr : *em.main) {
+	walk_instructions(em.main, [&](const Reference &instr) {
 		if (instr->is <BuiltinIntrinsic> ()) {
 			auto &bintr = instr->as <BuiltinIntrinsic> ();
 			if (bintr.code == BuiltinIntrinsicCode::eNonUniformEXT)
@@ -563,7 +562,7 @@ auto collect_extensions(const GLSLEmitter &em)
 				extensions.insert("GL_EXT_shader_explicit_arithmetic_types_int64");
 			}
 		}
-	}
+	}, true);
 
 	return std::vector(extensions.begin(), extensions.end());
 }
@@ -955,32 +954,13 @@ void get_subroutines(SbrMap &call_to, SbrMap &call_from, const SharedBlockRefere
 	if (not call_to.contains(whole)) call_to[whole] = {};
 	if (not call_from.contains(whole)) call_from[whole] = {};
 
-	for (auto &inst : *sbr) {
-		vswitch (*inst) {
-		vcase(Invocation): {
-			auto &inv = inst->as <Invocation> ();
-			call_to[whole].insert(inv.sbr);
-			call_from[inv.sbr].insert(whole);
-			get_subroutines(call_to, call_from, inv.sbr, inv.sbr);
-			break;
+	walk_instructions(sbr, [&](const Reference &inst) {
+		if (auto inv = inst->maybe <Invocation> ()) {
+			call_to[whole].insert(inv->sbr);
+			call_from[inv->sbr].insert(whole);
+			get_subroutines(call_to, call_from, inv->sbr, inv->sbr);
 		}
-		vcase(Branch): {
-			auto &branch = inst->as <Branch> ();
-			for (auto &b : branch.segments)
-				get_subroutines(call_to, call_from, b.body, whole);
-			if (branch.fallback)
-				get_subroutines(call_to, call_from, branch.fallback.value(), whole);
-			break;
-		}
-		vcase(Loop): {
-			auto &loop = inst->as <Loop> ();
-			get_subroutines(call_to, call_from, loop.body, whole);
-			break;
-		}
-		default:
-			break;
-		}
-	}
+	});
 }
 
 auto top_sort_sbrs(SbrMap &call_to, SbrMap &call_from)

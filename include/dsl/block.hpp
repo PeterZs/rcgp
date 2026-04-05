@@ -6,7 +6,7 @@
 #include <optional>
 #include <vector>
 
-#include "instruction_nodes.hpp"
+#include "instructions.hpp"
 
 namespace rcgp {
 
@@ -48,5 +48,43 @@ struct Block : std::vector <Reference> {
 
 	std::string repr() const;
 };
+
+template <typename F>
+void walk_instructions(const SharedBlockReference &sbr, F &&fn, bool walk_invocations = false)
+{
+	for (auto &instr : *sbr) {
+		fn(instr);
+		if (auto branch = instr->maybe <Branch> ()) {
+			for (auto &seg : branch->segments)
+				walk_instructions(seg.body, fn, walk_invocations);
+			if (branch->fallback)
+				walk_instructions(*branch->fallback, fn, walk_invocations);
+		} else if (auto loop = instr->maybe <Loop> ()) {
+			walk_instructions(loop->body, fn, walk_invocations);
+		} else if (walk_invocations) {
+			if (auto inv = instr->maybe <Invocation> ())
+				walk_instructions(inv->sbr, fn, walk_invocations);
+		}
+	}
+}
+
+template <typename F>
+void walk_blocks(const SharedBlockReference &sbr, F &&fn, bool walk_invocations = false)
+{
+	fn(sbr);
+	for (auto &instr : *sbr) {
+		if (auto branch = instr->maybe <Branch> ()) {
+			for (auto &seg : branch->segments)
+				walk_blocks(seg.body, fn, walk_invocations);
+			if (branch->fallback)
+				walk_blocks(*branch->fallback, fn, walk_invocations);
+		} else if (auto loop = instr->maybe <Loop> ()) {
+			walk_blocks(loop->body, fn, walk_invocations);
+		} else if (walk_invocations) {
+			if (auto inv = instr->maybe <Invocation> ())
+				walk_blocks(inv->sbr, fn, walk_invocations);
+		}
+	}
+}
 
 } // namespace rcgp

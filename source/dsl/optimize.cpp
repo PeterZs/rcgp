@@ -34,50 +34,21 @@ struct WholeBlockStructure {
 void build_usage_map(
 	const SharedBlockReference &sbr,
 	WholeBlockStructure &wbs
-);
-
-void add_to_usage_maps(
-	const Reference &ref,
-	WholeBlockStructure &wbs
 )
 {
-	auto &i2o = wbs.i2o;
-	auto &o2i = wbs.o2i;
-	auto &operands = i2o.try_emplace(ref).first->second;
+	walk_blocks(sbr, [&](const SharedBlockReference &block) {
+		for (auto &instr : *block) {
+			wbs.blocks.try_emplace(instr, block);
+			auto &operands = wbs.i2o.try_emplace(instr).first->second;
+			wbs.o2i.try_emplace(instr);
 
-	auto add = [&](const Reference &opd) {
-		if (not opd) return;
-		operands.add(opd);
-		auto &users = o2i.try_emplace(opd).first->second;
-		users.add(ref);
-	};
-
-	ref->apply(add);
-
-	// Nested blocks
-	if (auto branch = ref->maybe <Branch> ()) {
-		for (auto &b : branch->segments)
-			build_usage_map(b.body, wbs);
-		if (branch->fallback)
-			build_usage_map(*branch->fallback, wbs);
-	} else if (auto loop = ref->maybe <Loop> ()) {
-		build_usage_map(loop->body, wbs);
-	}
-}
-
-void build_usage_map(
-	const SharedBlockReference &sbr,
-	WholeBlockStructure &wbs
-)
-{
-	auto &i2o = wbs.i2o;
-	auto &o2i = wbs.o2i;
-	for (auto &instr : *sbr) {
-		wbs.blocks.try_emplace(instr, sbr);
-		i2o.try_emplace(instr);
-		o2i.try_emplace(instr);
-		add_to_usage_maps(instr, wbs);
-	}
+			instr->apply([&](const Reference &opd) {
+				if (not opd) return;
+				operands.add(opd);
+				wbs.o2i.try_emplace(opd).first->second.add(instr);
+			});
+		}
+	});
 }
 
 auto build_whole_block_structure(const SharedBlockReference &sbr)
@@ -92,17 +63,9 @@ void collect_blocks(
 	std::vector <SharedBlockReference> &sbrs
 )
 {
-	sbrs.emplace_back(sbr);
-	for (auto &instr : *sbr) {
-		if (auto branch = instr->maybe <Branch> ()) {
-			for (auto &b : branch->segments)
-				collect_blocks(b.body, sbrs);
-			if (branch->fallback)
-				collect_blocks(*branch->fallback, sbrs);
-		} else if (auto loop = instr->maybe <Loop> ()) {
-			collect_blocks(loop->body, sbrs);
-		}
-	}
+	walk_blocks(sbr, [&](const SharedBlockReference &block) {
+		sbrs.emplace_back(block);
+	});
 }
 
 // TODO: collect sbrs

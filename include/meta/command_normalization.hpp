@@ -161,6 +161,19 @@ consteval bool map_has_dep(Tlist <Entries...>)
 	return (false || ... || std::is_same_v <typename Entries::dep, tag_dep>);
 }
 
+template <typename T>
+struct is_target_key : std::false_type {};
+
+template <auto &ref>
+struct is_target_key <key_target <ref>> : std::true_type {};
+
+template <typename ... Entries>
+consteval bool map_has_non_target_dep(Tlist <Entries...>)
+{
+	return (false || ... ||
+		(std::is_same_v <typename Entries::dep, tag_dep> && !is_target_key <typename Entries::key> ::value));
+}
+
 // Track pending index-buffer indicators (Option B)
 template <typename Key, typename List, size_t ... Is>
 consteval bool contains_key(std::index_sequence <Is...>)
@@ -202,7 +215,7 @@ template <typename Map, typename Indicators, typename Effect>
 consteval auto normalize_step(Map, Indicators, Effect)
 {
 	if constexpr (is_dependency_sentinel_effect_v <Effect>) {
-		if constexpr (map_has_dep(Map()))
+		if constexpr (map_has_non_target_dep(Map()))
 			static_assert(false, "command recording has unresolved dependencies"_ss);
 		return std::pair <Map, Indicators> ();
 	} else if constexpr (is_enforcer_index_effect_v <Effect>) {

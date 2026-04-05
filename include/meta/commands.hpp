@@ -24,6 +24,18 @@ struct Commands : std::vector <command_operator> {
 			op(cmd, sctx);
 	}
 
+	auto label(std::string name) const {
+		Commands result;
+		result.push_back([=](const CommandBuffer &cmd, SerializationContext &) {
+			cmd.begin_label(name);
+		});
+		result.append_range(*this);
+		result.push_back([](const CommandBuffer &cmd, SerializationContext &) {
+			cmd.end_label();
+		});
+		return result;
+	}
+
 	// TODO: must be in a satisfied state...
 	auto &operator()(CommandBuffer &cmd) const {
 		SerializationContext aux;
