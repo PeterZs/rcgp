@@ -1,0 +1,89 @@
+In file included from workgroup.cpp:1:
+In file included from rcgp.hpp:4:
+In file included from rcgp-meta.hpp:13:
+In file included from function_construction.hpp:9:
+inject_arguments.hpp:37:3: error: static assertion failed due to requirement '(rcgp::ShaderStage)1 == rcgp::ShaderStage::eCompute || (rcgp::ShaderStage)1 == rcgp::ShaderStage::eMesh': WorkGroup is only valid for mesh shaders
+   37 |                 S == ShaderStage::eCompute
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+   38 |                 || S == ShaderStage::eMesh,
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eVertex, 8U, 1U, 1U>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eVertex, rcgp::WorkGroup<8>, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+In file included from workgroup.cpp:1:
+In file included from rcgp.hpp:4:
+In file included from rcgp-meta.hpp:13:
+In file included from function_construction.hpp:9:
+inject_arguments.hpp:37:3: error: static assertion failed due to requirement '(rcgp::ShaderStage)2 == rcgp::ShaderStage::eCompute || (rcgp::ShaderStage)2 == rcgp::ShaderStage::eMesh': WorkGroup is only valid for mesh shaders
+   37 |                 S == ShaderStage::eCompute
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+   38 |                 || S == ShaderStage::eMesh,
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eFragment, 8U, 1U, 1U>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eFragment, rcgp::WorkGroup<8>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+In file included from workgroup.cpp:1:
+In file included from rcgp.hpp:4:
+In file included from rcgp-meta.hpp:13:
+In file included from function_construction.hpp:9:
+inject_arguments.hpp:37:3: error: static assertion failed due to requirement '(rcgp::ShaderStage)4 == rcgp::ShaderStage::eCompute || (rcgp::ShaderStage)4 == rcgp::ShaderStage::eMesh': WorkGroup is only valid for mesh shaders
+   37 |                 S == ShaderStage::eCompute
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+   38 |                 || S == ShaderStage::eMesh,
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eTask, 1U, 1U, 1U>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eTask, rcgp::WorkGroup<1>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+In file included from workgroup.cpp:1:
+In file included from rcgp.hpp:4:
+In file included from rcgp-meta.hpp:13:
+In file included from function_construction.hpp:9:
+inject_arguments.hpp:48:3: error: static assertion failed due to requirement '(rcgp::ShaderStage)3 == rcgp::ShaderStage::eTask': TaskGroup is only valid for task shaders
+   48 |                 S == ShaderStage::eTask,
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eCompute, 8U, 1U, 1U>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eCompute, rcgp::TaskGroup<8>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+inject_arguments.hpp:48:5: note: expression evaluates to '3 == 4'
+   48 |                 S == ShaderStage::eTask,
+      |                 ~~^~~~~~~~~~~~~~~~~~~~~
+inject_arguments.hpp:48:3: error: static assertion failed due to requirement '(rcgp::ShaderStage)1 == rcgp::ShaderStage::eTask': TaskGroup is only valid for task shaders
+   48 |                 S == ShaderStage::eTask,
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eVertex, 1U, 1U, 1U>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eVertex, rcgp::TaskGroup<1>, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+inject_arguments.hpp:48:5: note: expression evaluates to '1 == 4'
+   48 |                 S == ShaderStage::eTask,
+      |                 ~~^~~~~~~~~~~~~~~~~~~~~
+5 errors generated.

@@ -1,0 +1,33 @@
+In file included from attribute_stream.cpp:1:
+In file included from rcgp.hpp:4:
+In file included from rcgp-meta.hpp:13:
+In file included from function_construction.hpp:9:
+inject_arguments.hpp:122:4: error: static assertion failed due to requirement '(rcgp::ShaderStage)2 == rcgp::ShaderStage::eVertex || (rcgp::ShaderStage)2 == rcgp::ShaderStage::eSubroutine': AttributeStream is only valid for vertex or subroutine shaders
+  122 |                         S == ShaderStage::eVertex || S == ShaderStage::eSubroutine,
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eFragment, rcgp::AttributeStream<rcgp::vector<float, 3>>, position>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eFragment, rcgp::jems::null, rcgp::contract<position>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+In file included from attribute_stream.cpp:1:
+In file included from rcgp.hpp:4:
+In file included from rcgp-meta.hpp:13:
+In file included from function_construction.hpp:9:
+inject_arguments.hpp:122:4: error: static assertion failed due to requirement '(rcgp::ShaderStage)3 == rcgp::ShaderStage::eVertex || (rcgp::ShaderStage)3 == rcgp::ShaderStage::eSubroutine': AttributeStream is only valid for vertex or subroutine shaders
+  122 |                         S == ShaderStage::eVertex || S == ShaderStage::eSubroutine,
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eCompute, rcgp::AttributeStream<rcgp::vector<float, 3>>, position>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eCompute, rcgp::jems::null, rcgp::contract<position>, rcgp::WorkGroup<1>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+2 errors generated.

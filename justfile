@@ -22,9 +22,19 @@ compile:
 	{{compiler}} {{cxxflags}} -c tests/compile/resources.cpp -o /tmp/resources.o
 	{{compiler}} {{cxxflags}} -c tests/compile/canonical.cpp -o /tmp/canonical.o
 
+# Shader module tests (must fail to compile with expected errors)
+compile_fail:
+	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/attribute_stream.cpp
+	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/intrinsics.cpp
+	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/meshlet_payload.cpp
+	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/return_types.cpp
+	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/task_payload.cpp
+	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/traced_params.cpp
+	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/workgroup.cpp
+
 # Tests for JIT tracing of the DSL
 dsl *args: build_test
 	./build/test {{args}}
 
 # Run all tests
-test: compile dsl
+test: compile compile_fail dsl

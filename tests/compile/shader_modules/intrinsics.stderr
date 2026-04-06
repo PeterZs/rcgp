@@ -1,0 +1,140 @@
+In file included from intrinsics.cpp:1:
+In file included from rcgp.hpp:4:
+In file included from rcgp-meta.hpp:13:
+In file included from function_construction.hpp:9:
+inject_arguments.hpp:66:16: error: static assertion failed due to requirement '(rcgp::ShaderStage)2 == (rcgp::ShaderStage)1': unsupported intrinsic
+   66 |         static_assert(S1 == S2, "unsupported intrinsic"_ss);
+      |                       ^~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eFragment, rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eFragment, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+inject_arguments.hpp:66:19: note: expression evaluates to '2 == 1'
+   66 |         static_assert(S1 == S2, "unsupported intrinsic"_ss);
+      |                       ~~~^~~~~
+inject_arguments.hpp:66:16: error: static assertion failed due to requirement '(rcgp::ShaderStage)3 == (rcgp::ShaderStage)1': unsupported intrinsic
+   66 |         static_assert(S1 == S2, "unsupported intrinsic"_ss);
+      |                       ^~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eCompute, rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eCompute, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>, rcgp::WorkGroup<1>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+inject_arguments.hpp:66:19: note: expression evaluates to '3 == 1'
+   66 |         static_assert(S1 == S2, "unsupported intrinsic"_ss);
+      |                       ~~~^~~~~
+inject_arguments.hpp:59:16: error: static assertion failed due to requirement '(rcgp::ShaderStage)2 == (rcgp::ShaderStage)1': unsupported intrinsic
+   59 |         static_assert(S1 == S2, "unsupported intrinsic"_ss);
+      |                       ^~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eFragment, rcgp::SystemValue::eVertexIndex, rcgp::ShaderStage::eVertex, rcgp::scalar<int>>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eFragment, rcgp::read_only_intrinsic<rcgp::SystemValue::eVertexIndex, rcgp::ShaderStage::eVertex, rcgp::scalar<int>>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+inject_arguments.hpp:59:19: note: expression evaluates to '2 == 1'
+   59 |         static_assert(S1 == S2, "unsupported intrinsic"_ss);
+      |                       ~~~^~~~~
+inject_arguments.hpp:59:16: error: static assertion failed due to requirement '(rcgp::ShaderStage)1 == (rcgp::ShaderStage)3': unsupported intrinsic
+   59 |         static_assert(S1 == S2, "unsupported intrinsic"_ss);
+      |                       ^~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eVertex, rcgp::SystemValue::eGlobalInvocationID, rcgp::ShaderStage::eCompute, rcgp::vector<unsigned int, 3>>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eVertex, rcgp::read_only_intrinsic<rcgp::SystemValue::eGlobalInvocationID, rcgp::ShaderStage::eCompute, rcgp::vector<unsigned int, 3>>, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+inject_arguments.hpp:59:19: note: expression evaluates to '1 == 3'
+   59 |         static_assert(S1 == S2, "unsupported intrinsic"_ss);
+      |                       ~~~^~~~~
+inject_arguments.hpp:59:16: error: static assertion failed due to requirement '(rcgp::ShaderStage)2 == (rcgp::ShaderStage)3': unsupported intrinsic
+   59 |         static_assert(S1 == S2, "unsupported intrinsic"_ss);
+      |                       ^~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eFragment, rcgp::SystemValue::eLocalInvocationID, rcgp::ShaderStage::eCompute, rcgp::vector<unsigned int, 3>>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eFragment, rcgp::read_only_intrinsic<rcgp::SystemValue::eLocalInvocationID, rcgp::ShaderStage::eCompute, rcgp::vector<unsigned int, 3>>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+inject_arguments.hpp:59:19: note: expression evaluates to '2 == 3'
+   59 |         static_assert(S1 == S2, "unsupported intrinsic"_ss);
+      |                       ~~~^~~~~
+inject_arguments.hpp:59:16: error: static assertion failed due to requirement '(rcgp::ShaderStage)1 == (rcgp::ShaderStage)6': unsupported intrinsic
+   59 |         static_assert(S1 == S2, "unsupported intrinsic"_ss);
+      |                       ^~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eVertex, rcgp::SystemValue::eLaunchID, rcgp::ShaderStage::eRayGeneration, rcgp::vector<unsigned int, 3>>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eVertex, rcgp::read_only_intrinsic<rcgp::SystemValue::eLaunchID, rcgp::ShaderStage::eRayGeneration, rcgp::vector<unsigned int, 3>>, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+inject_arguments.hpp:59:19: note: expression evaluates to '1 == 6'
+   59 |         static_assert(S1 == S2, "unsupported intrinsic"_ss);
+      |                       ~~~^~~~~
+inject_arguments.hpp:59:16: error: static assertion failed due to requirement '(rcgp::ShaderStage)3 == (rcgp::ShaderStage)6': unsupported intrinsic
+   59 |         static_assert(S1 == S2, "unsupported intrinsic"_ss);
+      |                       ^~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eCompute, rcgp::SystemValue::eLaunchSize, rcgp::ShaderStage::eRayGeneration, rcgp::vector<unsigned int, 3>>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eCompute, rcgp::read_only_intrinsic<rcgp::SystemValue::eLaunchSize, rcgp::ShaderStage::eRayGeneration, rcgp::vector<unsigned int, 3>>, rcgp::WorkGroup<1>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+inject_arguments.hpp:59:19: note: expression evaluates to '3 == 6'
+   59 |         static_assert(S1 == S2, "unsupported intrinsic"_ss);
+      |                       ~~~^~~~~
+inject_arguments.hpp:59:16: error: static assertion failed due to requirement '(rcgp::ShaderStage)1 == (rcgp::ShaderStage)7': unsupported intrinsic
+   59 |         static_assert(S1 == S2, "unsupported intrinsic"_ss);
+      |                       ^~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eVertex, rcgp::SystemValue::eHitT, rcgp::ShaderStage::eClosestHit, rcgp::scalar<float>>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eVertex, rcgp::read_only_intrinsic<rcgp::SystemValue::eHitT, rcgp::ShaderStage::eClosestHit, rcgp::scalar<float>>, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+inject_arguments.hpp:59:19: note: expression evaluates to '1 == 7'
+   59 |         static_assert(S1 == S2, "unsupported intrinsic"_ss);
+      |                       ~~~^~~~~
+inject_arguments.hpp:59:16: error: static assertion failed due to requirement '(rcgp::ShaderStage)3 == (rcgp::ShaderStage)7': unsupported intrinsic
+   59 |         static_assert(S1 == S2, "unsupported intrinsic"_ss);
+      |                       ^~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eCompute, rcgp::SystemValue::ePrimitiveID, rcgp::ShaderStage::eClosestHit, rcgp::scalar<unsigned int>>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eCompute, rcgp::read_only_intrinsic<rcgp::SystemValue::ePrimitiveID, rcgp::ShaderStage::eClosestHit, rcgp::scalar<unsigned int>>, rcgp::WorkGroup<1>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+inject_arguments.hpp:59:19: note: expression evaluates to '3 == 7'
+   59 |         static_assert(S1 == S2, "unsupported intrinsic"_ss);
+      |                       ~~~^~~~~
+9 errors generated.
