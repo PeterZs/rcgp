@@ -4,6 +4,7 @@
 
 #include "scalar.hpp"
 #include "primitive_of.hpp"
+#include "vector.hpp"
 
 namespace rcgp {
 
@@ -12,6 +13,16 @@ class matrix : public jems::handle {
 	explicit matrix(const jems::handle &h) : handle(h) {}
 public:
 	matrix() = default;
+
+	// Construct from N column vectors of dimension M
+	template <typename ... C>
+	requires (sizeof...(C) == N && (std::is_same_v <C, vector <T, M>> && ...))
+	matrix(const C &... columns)
+		: handle(wrap_in_local(
+			std::source_location::current(),
+			jems::type(primitive_of <T, N, M> ()),
+			{ columns... }
+		)) {}
 
 	template <size_t A, size_t B>
 	explicit matrix(const matrix <T, A, B> &other)

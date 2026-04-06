@@ -6,6 +6,7 @@
 #include "implicit_context.hpp"
 #include "coerce_to_handle.hpp"
 #include "resources_collect.hpp"
+#include "stage_registry.hpp"
 
 namespace rcgp {
 
@@ -13,7 +14,10 @@ namespace rcgp {
 template <ShaderStage S, typename R, typename ... Args>
 struct shader_stage : SharedBlockReference {
 	shader_stage(const SharedBlockReference &sbr)
-		: SharedBlockReference(sbr) {}
+		: SharedBlockReference(sbr)
+	{
+		static auto _ [[maybe_unused]] = (register_gvrs(gvrs), 0);
+	}
 
 	using icontext = icontext_from_args_t <Args...>;
 
