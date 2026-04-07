@@ -19,4 +19,8 @@ struct WorkGroup {
 	GlobalInvocationID global_index;
 };
 
+TYPE_TRAIT(is_workgroup);
+	template <uint32_t X, uint32_t Y, uint32_t Z>
+	TYPE_TRAIT_INCLUDES(is_workgroup, WorkGroup <X, Y, Z>);
+
 } // namespace rcgp

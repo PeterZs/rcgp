@@ -23,6 +23,14 @@ struct write_only_intrinsic {
 	}
 };
 
+TYPE_TRAIT(is_read_only_intrinsic);
+	template <SystemValue G, ShaderStage S, builtin T>
+	TYPE_TRAIT_INCLUDES(is_read_only_intrinsic, read_only_intrinsic <G, S, T>);
+
+TYPE_TRAIT(is_write_only_intrinsic);
+	template <SystemValue G, ShaderStage S, builtin T>
+	TYPE_TRAIT_INCLUDES(is_write_only_intrinsic, write_only_intrinsic <G, S, T>);
+
 template <SystemValue G, ShaderStage S, typename T>
 struct canonical_type <read_only_intrinsic <G, S, T>> {
 	using type = T;

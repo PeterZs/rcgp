@@ -1,0 +1,28 @@
+raytracing_combinator.cpp:31:18: error: no matching function for call to object of type 'RayTracingCombinator'
+   31 |         auto pipeline = RayTracingCombinator {
+      |                         ^~~~~~~~~~~~~~~~~~~~~~
+   32 |                 .device = device,
+      |                 ~~~~~~~~~~~~~~~~~
+   33 |                 .compiler = compiler,
+      |                 ~~~~~~~~~~~~~~~~~~~~~
+   34 |         } (vs, std::tuple { miss }, std::tuple { chit });
+      |         ~
+combinators.hpp:248:7: note: candidate template ignored: constraints not satisfied [with RayGenerationShader = shader_stage<rcgp::ShaderStage::eVertex, void, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>>, MissShaders = <rcgp::shader_stage<rcgp::ShaderStage::eMiss, void, rcgp::jems::null, rcgp::contract<rcgp::receiver>>>, ClosestHitShaders = <rcgp::shader_stage<rcgp::ShaderStage::eClosestHit, void, rcgp::jems::null, rcgp::contract<rcgp::receiver>, rcgp::vector<float, 2>>>]
+  248 |         auto operator()(
+      |              ^
+combinators.hpp:245:11: note: because 'is_raygen_shader_v<rcgp::shader_stage<rcgp::ShaderStage::eVertex, void, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>>>' evaluated to false
+  245 |         requires is_raygen_shader_v <RayGenerationShader>
+      |                  ^
+combinators.hpp:253:17: error: static assertion failed due to requirement 'raytracing_receivers_covered<rcgp::Tlist<rcgp::address_tag<&radiance>>, rcgp::Tlist<rcgp::address_tag<&radiance>, rcgp::address_tag<&occlusion>>>': receiver has no matching dispatcher in the pipeline
+  253 |                 static_assert(raytracing_receivers_covered <
+      |                               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  254 |                         all_dispatcher_addresses_t <RayGenerationShader, MissShaders..., ClosestHitShaders...>,
+      |                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  255 |                         all_receiver_addresses_t <MissShaders..., ClosestHitShaders...>
+      |                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  256 |                 >, "receiver has no matching dispatcher in the pipeline");
+      |                 ~
+raytracing_combinator.cpp:53:4: note: in instantiation of function template specialization 'rcgp::RayTracingCombinator::operator()<rcgp::shader_stage<rcgp::ShaderStage::eRayGeneration, void, rcgp::jems::null, rcgp::contract<rcgp::dispatcher>, rcgp::read_only_intrinsic<rcgp::SystemValue::eLaunchID, rcgp::ShaderStage::eRayGeneration, rcgp::vector<unsigned int, 3>>>, rcgp::shader_stage<rcgp::ShaderStage::eMiss, void, rcgp::jems::null, rcgp::contract<rcgp::receiver>>, rcgp::shader_stage<rcgp::ShaderStage::eClosestHit, void, rcgp::jems::null, rcgp::contract<rcgp::receiver>, rcgp::contract<rcgp::receiver>, rcgp::vector<float, 2>>>' requested here
+   53 |         } (rgen, std::tuple { miss }, std::tuple { chit });
+      |           ^
+2 errors generated.

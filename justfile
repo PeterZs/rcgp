@@ -32,6 +32,10 @@ compile_fail:
 	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/traced_params.cpp
 	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/subroutine_call.cpp
 	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/workgroup.cpp
+	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/rasterization_combinator.cpp
+	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/compute_combinator.cpp
+	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/mesh_shading_combinator.cpp
+	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/raytracing_combinator.cpp
 
 # Tests for JIT tracing of the DSL
 dsl *args: build_test

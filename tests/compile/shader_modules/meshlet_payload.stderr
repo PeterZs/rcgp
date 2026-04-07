@@ -1,8 +1,8 @@
 In file included from meshlet_payload.cpp:1:
 In file included from rcgp.hpp:4:
 In file included from rcgp-meta.hpp:6:
-intrinsics_mesh.hpp:98:16: error: static assertion failed due to requirement '0U > 0': MeshletPayload MaxVertices must be > 0
-   98 |         static_assert(MaxVertices > 0, "MeshletPayload MaxVertices must be > 0");
+intrinsics_mesh.hpp:105:16: error: static assertion failed due to requirement '0U > 0': MeshletPayload MaxVertices must be > 0
+  105 |         static_assert(MaxVertices > 0, "MeshletPayload MaxVertices must be > 0");
       |                       ^~~~~~~~~~~~~~~
 meshlet_payload.cpp:41:53: note: in instantiation of template class 'rcgp::MeshletPayload<rcgp::MeshPrimitive::eTriangles, 0, 126>' requested here
    41 |         MeshletPayload <MeshPrimitive::eTriangles, 0, 126> bad;
@@ -10,8 +10,8 @@ meshlet_payload.cpp:41:53: note: in instantiation of template class 'rcgp::Meshl
 In file included from meshlet_payload.cpp:1:
 In file included from rcgp.hpp:4:
 In file included from rcgp-meta.hpp:6:
-intrinsics_mesh.hpp:99:16: error: static assertion failed due to requirement '0U > 0': MeshletPayload MaxPrimitives must be > 0
-   99 |         static_assert(MaxPrimitives > 0, "MeshletPayload MaxPrimitives must be > 0");
+intrinsics_mesh.hpp:106:16: error: static assertion failed due to requirement '0U > 0': MeshletPayload MaxPrimitives must be > 0
+  106 |         static_assert(MaxPrimitives > 0, "MeshletPayload MaxPrimitives must be > 0");
       |                       ^~~~~~~~~~~~~~~~~
 meshlet_payload.cpp:46:52: note: in instantiation of template class 'rcgp::MeshletPayload<rcgp::MeshPrimitive::eTriangles, 64, 0>' requested here
    46 |         MeshletPayload <MeshPrimitive::eTriangles, 64, 0> bad;

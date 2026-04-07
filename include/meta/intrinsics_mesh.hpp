@@ -22,6 +22,9 @@ struct TaskGroup : WorkGroup <X, Y, Z> {
 	}
 };
 
+template <uint32_t X, uint32_t Y, uint32_t Z>
+TYPE_TRAIT_INCLUDES(is_workgroup, TaskGroup <X, Y, Z>);
+
 // Required result of the task shader
 template <traced T>
 struct TaskPayload : T {
@@ -29,6 +32,10 @@ struct TaskPayload : T {
 		this->override_reference(jems::system_value(SystemValue::eTaskPayload));
 	}
 };
+
+TYPE_TRAIT(is_task_payload);
+	template <typename T>
+	TYPE_TRAIT_INCLUDES(is_task_payload, TaskPayload <T>);
 
 template <traced T>
 struct mesh_vertex_positions : jems::handle {

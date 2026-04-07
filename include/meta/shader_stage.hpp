@@ -101,6 +101,8 @@ struct shader_stage : SharedBlockReference {
 		static auto _ [[maybe_unused]] = (register_gvrs(gvrs), 0);
 	}
 
+	using return_type = R;
+	using args = Tlist <Args...>;
 	using icontext = icontext_from_args_t <Args...>;
 
 	static constexpr auto stage = S;
@@ -148,6 +150,18 @@ TYPE_TRAIT(is_mesh_shader);
 TYPE_TRAIT(is_task_shader);
 	template <typename R, typename ... Args>
 	TYPE_TRAIT_INCLUDES(is_task_shader, shader_stage <ShaderStage::eTask, R, Args...>);
+
+TYPE_TRAIT(is_raygen_shader);
+	template <typename R, typename ... Args>
+	TYPE_TRAIT_INCLUDES(is_raygen_shader, shader_stage <ShaderStage::eRayGeneration, R, Args...>);
+
+TYPE_TRAIT(is_miss_shader);
+	template <typename R, typename ... Args>
+	TYPE_TRAIT_INCLUDES(is_miss_shader, shader_stage <ShaderStage::eMiss, R, Args...>);
+
+TYPE_TRAIT(is_closest_hit_shader);
+	template <typename R, typename ... Args>
+	TYPE_TRAIT_INCLUDES(is_closest_hit_shader, shader_stage <ShaderStage::eClosestHit, R, Args...>);
 
 TYPE_TRAIT(is_subroutine);
 	template <typename R, typename ... Args>

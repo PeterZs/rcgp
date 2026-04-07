@@ -8,6 +8,7 @@
 #include "../rhi/pipelines.hpp"
 #include "../rhi/shader_compiler.hpp"
 #include "input_assembly.hpp"
+#include "interface_validation.hpp"
 #include "pipelines.hpp"
 #include "process_gvrs.hpp"
 #include "resolve_trace_groups.hpp"
@@ -73,10 +74,8 @@ struct RasterizationCombinator {
 	requires is_vertex_shader_v <VertexShader>
 		and is_fragment_shader_v <FragmentShader>
 	auto operator()(VertexShader &vertex_shader, FragmentShader &fragment_shader) const {
-		// TODO: return a Tlist of error static strings?
-		// probably needs a error <auto s>
-		// [[maybe_unused]] constexpr bool interface_ok =
-		// 	vertex_fragment_interface <VRet, Bs...> ::value;
+		static_assert(vertex_fragment_io_compatible <VertexShader, FragmentShader>,
+			"vertex shader outputs do not match fragment shader inputs");
 
 		transfer_io_rates(vertex_shader, fragment_shader);
 
@@ -193,7 +192,15 @@ struct MeshShadingCombinator {
 	RasterizationOptions options;
 
 	template <typename TaskShader, typename MeshShader, typename FragmentShader>
+	requires is_task_shader_v <TaskShader>
+		and is_mesh_shader_v <MeshShader>
+		and is_fragment_shader_v <FragmentShader>
 	auto operator()(TaskShader &task, MeshShader &mesh, FragmentShader &fragment) const {
+		static_assert(task_mesh_payload_compatible <TaskShader, MeshShader>,
+			"task shader payload type does not match mesh shader payload type");
+		static_assert(mesh_fragment_io_compatible <MeshShader, FragmentShader>,
+			"mesh shader outputs do not match fragment shader inputs");
+
 		auto gvrs = merge_stage_wrappers(tlist_concat(
 			TaskShader::gvrs,
 			MeshShader::gvrs,
@@ -235,11 +242,19 @@ struct RayTracingCombinator {
 		typename ... MissShaders,
 		typename ... ClosestHitShaders
 	>
+	requires is_raygen_shader_v <RayGenerationShader>
+		and (is_miss_shader_v <MissShaders> and ...)
+		and (is_closest_hit_shader_v <ClosestHitShaders> and ...)
 	auto operator()(
 		const RayGenerationShader &rgen,
 		const std::tuple <MissShaders...> &misses,
 		const std::tuple <ClosestHitShaders...> &chits
 	) const {
+		static_assert(raytracing_receivers_covered <
+			all_dispatcher_addresses_t <RayGenerationShader, MissShaders..., ClosestHitShaders...>,
+			all_receiver_addresses_t <MissShaders..., ClosestHitShaders...>
+		>, "receiver has no matching dispatcher in the pipeline");
+
 		auto gvrs = [&] <size_t... CI, size_t... MI> (
 			std::index_sequence <CI...>,
 			std::index_sequence <MI...>

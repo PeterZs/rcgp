@@ -1,0 +1,31 @@
+compute_combinator.cpp:21:18: error: no matching function for call to object of type 'ComputeCombinator'
+   21 |         auto pipeline = ComputeCombinator {
+      |                         ^~~~~~~~~~~~~~~~~~~
+   22 |                 .device = device,
+      |                 ~~~~~~~~~~~~~~~~~
+   23 |                 .compiler = compiler,
+      |                 ~~~~~~~~~~~~~~~~~~~~~
+   24 |         } (vs);
+      |         ~
+combinators.hpp:167:7: note: candidate template ignored: constraints not satisfied [with ComputeShader = shader_stage<rcgp::ShaderStage::eVertex, void, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>>]
+  167 |         auto operator()(ComputeShader &compute_shader) const {
+      |              ^
+combinators.hpp:166:11: note: because 'is_compute_shader_v<rcgp::shader_stage<rcgp::ShaderStage::eVertex, void, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>>>' evaluated to false
+  166 |         requires is_compute_shader_v <ComputeShader>
+      |                  ^
+compute_combinator.cpp:32:18: error: no matching function for call to object of type 'ComputeCombinator'
+   32 |         auto pipeline = ComputeCombinator {
+      |                         ^~~~~~~~~~~~~~~~~~~
+   33 |                 .device = device,
+      |                 ~~~~~~~~~~~~~~~~~
+   34 |                 .compiler = compiler,
+      |                 ~~~~~~~~~~~~~~~~~~~~~
+   35 |         } (fs);
+      |         ~
+combinators.hpp:167:7: note: candidate template ignored: constraints not satisfied [with ComputeShader = shader_stage<rcgp::ShaderStage::eFragment, rcgp::vector<float, 4>, rcgp::vector<float, 3>>]
+  167 |         auto operator()(ComputeShader &compute_shader) const {
+      |              ^
+combinators.hpp:166:11: note: because 'is_compute_shader_v<rcgp::shader_stage<rcgp::ShaderStage::eFragment, rcgp::vector<float, 4>, rcgp::vector<float, 3>>>' evaluated to false
+  166 |         requires is_compute_shader_v <ComputeShader>
+      |                  ^
+2 errors generated.
