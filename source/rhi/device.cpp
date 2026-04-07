@@ -1,7 +1,5 @@
 #include <ranges>
 #include <algorithm>
-#include <cstdlib>
-#include <iostream>
 #include <limits>
 #include <print>
 #include <set>
@@ -19,6 +17,7 @@
 #include "rhi/timestamp_pool.hpp"
 #include "rhi/window.hpp"
 #include "util/cti.hpp"
+#include "util/error.hpp"
 
 namespace rcgp {
 
@@ -78,8 +77,7 @@ auto Device::find_memory_type(uint32_t filter, vk::MemoryPropertyFlags flags) co
 			return i;
 	}
 
-	std::println(std::cerr, "no compatible memory type for buffer");
-	std::abort();
+	fatal("no compatible memory type for buffer");
 }
 
 auto Device::get_address(const Buffer &buffer) const
@@ -173,10 +171,8 @@ std::optional <uint32_t> Device::acquire_next_frame(
 	sync.current_slot = (sync.current_slot + 1) % sync.fences.size();
 
 	auto wait = logical.waitForFences(sync.fences[sync.current_slot], true, timeout);
-	if (wait != vk::Result::eSuccess && wait != vk::Result::eTimeout) {
-		std::println(std::cerr, "waitForFences failed ({})", vk::to_string(wait));
-		std::abort();
-	}
+	if (wait != vk::Result::eSuccess && wait != vk::Result::eTimeout)
+		fatal("waitForFences failed ({})", vk::to_string(wait));
 
 	uint32_t image_index = 0;
 	auto acq_result = static_cast <vk::Result> (vkAcquireNextImageKHR(
@@ -193,10 +189,8 @@ std::optional <uint32_t> Device::acquire_next_frame(
 		return std::nullopt;
 	}
 
-	if (acq_result != vk::Result::eSuccess) {
-		std::println(std::cerr, "acquireNextImageKHR failed ({})", vk::to_string(acq_result));
-		std::abort();
-	}
+	if (acq_result != vk::Result::eSuccess)
+		fatal("acquireNextImageKHR failed ({})", vk::to_string(acq_result));
 
 	logical.resetFences(sync.fences[sync.current_slot]);
 	sync.current_image = image_index;

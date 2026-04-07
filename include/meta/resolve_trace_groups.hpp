@@ -75,15 +75,15 @@ void resolve_trace_groups(
 	auto resolve_block = [&](this auto &self, const SharedBlockReference &block) -> void {
 		for (auto &[addr, trace_calls] : block->trace_groups) {
 			auto miss_it = miss_map.find(addr);
-			assertion(miss_it != miss_map.end());
+			assertion(miss_it != miss_map.end(), "missing miss shader for trace group");
 
 			auto payload_it = payload_map.find(addr);
-			assertion(payload_it != payload_map.end());
+			assertion(payload_it != payload_map.end(), "missing payload for trace group");
 
 			for (auto &ref : trace_calls) {
 				auto &bintr = ref->as <BuiltinIntrinsic> ();
-				assertion(bintr.code == BuiltinIntrinsicCode::eTraceRaysEXT);
-				assertion(bintr.args.size() == 11);
+				assertion(bintr.code == BuiltinIntrinsicCode::eTraceRaysEXT, "expected TraceRaysEXT intrinsic");
+				assertion(bintr.args.size() == 11, "TraceRaysEXT expects 11 arguments");
 
 				// args[5] = miss index
 				bintr.args[5] = std::make_shared <Instruction> (

@@ -22,23 +22,24 @@ const Type &get_type(const SharedBlockReference &sbr, const Reference &ref)
 			or grsrc.kind == GlobalResourceKind::eRayDispatcherPayload
 			or grsrc.kind == GlobalResourceKind::eRayReceiverPayload
 			or grsrc.kind == GlobalResourceKind::eStorageBuffer
-			or grsrc.kind == GlobalResourceKind::eUniformBuffer);
+			or grsrc.kind == GlobalResourceKind::eUniformBuffer,
+			"unexpected global resource kind in get_type");
 		return get_type(sbr, grsrc.type);
 	}
 	vcase(ArrayAccess): {
 		auto &aacc = ref->as <ArrayAccess> ();
 		auto &type = get_type(sbr, aacc.value);
-		assertion(type.is <Array> ());
+		assertion(type.is <Array> (), "expected Array type in ArrayAccess");
 		return get_type(sbr, type.as <Array> ().base);
 	}
 	vcase(FieldAccess): {
 		auto &facc = ref->as <FieldAccess> ();
 		auto &type = get_type(sbr, facc.value);
 		if (type.is <BufferReferenceType> ()) {
-			assertion(facc.fidx == 0);
+			assertion(facc.fidx == 0, "BufferReferenceType field index must be 0");
 			return get_type(sbr, type.as <BufferReferenceType> ().element_type);
 		}
-		assertion(type.is <Struct> ());
+		assertion(type.is <Struct> (), "expected Struct type in FieldAccess");
 		return get_type(sbr, type.as <Struct>().at(facc.fidx));
 	}
 	vcase(SystemValue): {

@@ -1,8 +1,6 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <cstdio>
-#include <cstdlib>
 #include <cstdint>
 #include <string>
 #include <tuple>
@@ -11,6 +9,7 @@
 #include "rhi/buffer.hpp"
 #include "rhi/command_buffer.hpp"
 #include "rhi/image.hpp"
+#include "util/error.hpp"
 
 namespace rcgp {
 
@@ -241,10 +240,8 @@ void CommandBuffer::end() const
 
 void CommandBuffer::draw_mesh_tasks(uint32_t x, uint32_t y, uint32_t z) const
 {
-	if (loader == nullptr) {
-		std::fputs("draw_mesh_tasks requires a dynamic loader\n", stderr);
-		std::abort();
-	}
+	if (loader == nullptr)
+		fatal("draw_mesh_tasks requires a dynamic loader");
 	loader->vkCmdDrawMeshTasksEXT(*this, x, y, z);
 }
 

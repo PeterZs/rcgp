@@ -1,16 +1,12 @@
-#include <cstdio>
-#include <cstdlib>
-
 #include "rhi/timestamp_pool.hpp"
+#include "util/error.hpp"
 
 namespace rcgp {
 
 std::optional <double> TimestampQueryResult::delta(size_t a, size_t b) const
 {
-	if (!ready()) {
-		std::fputs("cannot query deltas for unready time stamps\n", stderr);
-		std::abort();
-	}
+	if (!ready())
+		fatal("cannot query deltas for unready timestamps");
 
 	auto K = period / 1'000'000.0f;
 	if (flags & vk::QueryResultFlagBits::eWithAvailability) {

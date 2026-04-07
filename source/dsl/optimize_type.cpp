@@ -11,7 +11,7 @@ namespace rcgp {
 Primitive swizzle_type(Primitive base, SwizzleCode swizzle)
 {
 	const auto result_dim = std::string_view(repr(swizzle)).size();
-	assertion(result_dim >= 1 && result_dim <= 4);
+	assertion(result_dim >= 1 && result_dim <= 4, "swizzle dimension out of range");
 
 	const auto is_in_family = [&](Primitive vec2) {
 		const auto offset = std::to_underlying(base) - std::to_underlying(vec2);
@@ -105,7 +105,7 @@ PrimitiveFamily primitive_family(Primitive prim)
 
 size_t primitive_vector_dimension(Primitive prim)
 {
-	assertion(primitive_is_scalar(prim) or primitive_is_vector(prim));
+	assertion(primitive_is_scalar(prim) or primitive_is_vector(prim), "expected scalar or vector primitive");
 	if (primitive_is_scalar(prim))
 		return 1;
 
@@ -121,7 +121,7 @@ size_t primitive_vector_dimension(Primitive prim)
 
 size_t primitive_matrix_columns(Primitive prim)
 {
-	assertion(primitive_is_matrix(prim));
+	assertion(primitive_is_matrix(prim), "expected matrix primitive");
 	const auto base = [&]() {
 		if (prim >= Primitive::eIMat2x2 and prim <= Primitive::eIMat4x4)
 			return Primitive::eIMat2x2;
@@ -136,7 +136,7 @@ size_t primitive_matrix_columns(Primitive prim)
 
 size_t primitive_matrix_rows(Primitive prim)
 {
-	assertion(primitive_is_matrix(prim));
+	assertion(primitive_is_matrix(prim), "expected matrix primitive");
 	const auto base = [&]() {
 		if (prim >= Primitive::eIMat2x2 and prim <= Primitive::eIMat4x4)
 			return Primitive::eIMat2x2;
@@ -169,7 +169,7 @@ Primitive scalar_primitive(PrimitiveFamily family)
 
 Primitive vector_primitive(PrimitiveFamily family, size_t dim)
 {
-	assertion(dim >= 2 and dim <= 4);
+	assertion(dim >= 2 and dim <= 4, "vector dimension out of range");
 	switch (family) {
 	case PrimitiveFamily::eInt:
 		return Primitive(std::to_underlying(Primitive::eIVec2) + (dim - 2));
@@ -186,8 +186,8 @@ Primitive vector_primitive(PrimitiveFamily family, size_t dim)
 
 Primitive matrix_primitive(PrimitiveFamily family, size_t cols, size_t rows)
 {
-	assertion(cols >= 2 and cols <= 4);
-	assertion(rows >= 2 and rows <= 4);
+	assertion(cols >= 2 and cols <= 4, "matrix columns out of range");
+	assertion(rows >= 2 and rows <= 4, "matrix rows out of range");
 
 	const auto base = [&]() {
 		switch (family) {
@@ -280,7 +280,7 @@ Reference operation_type_ref(const SharedBlockReference &sbr, const Operation &o
 Reference builtin_intrinsic_type_ref(const SharedBlockReference &sbr, const BuiltinIntrinsic &bintr)
 {
 	auto arg_type = [&](size_t i) {
-		assertion(i < bintr.args.size());
+		assertion(i < bintr.args.size(), "intrinsic argument index out of range");
 		return get_or_add_type_ref(sbr, bintr.args[i]);
 	};
 
@@ -295,7 +295,7 @@ Reference builtin_intrinsic_type_ref(const SharedBlockReference &sbr, const Buil
 	case BuiltinIntrinsicCode::eLength:
 	case BuiltinIntrinsicCode::eDistance: {
 		auto &type = arg_type(0)->as <Type> ();
-		assertion(type.is <Primitive> ());
+		assertion(type.is <Primitive> (), "expected Primitive type for dot/length/distance");
 		auto family = primitive_family(type.as <Primitive> ());
 		return get_or_add_type(sbr, scalar_primitive(family));
 	}
@@ -303,7 +303,7 @@ Reference builtin_intrinsic_type_ref(const SharedBlockReference &sbr, const Buil
 	case BuiltinIntrinsicCode::eImageLoad:
 	case BuiltinIntrinsicCode::eTexelFetch: {
 		auto &type = arg_type(0)->as <Type> ();
-		assertion(type.is <Primitive> ());
+		assertion(type.is <Primitive> (), "expected Primitive type for sample/imageLoad/texelFetch");
 		auto family = primitive_family(type.as <Primitive> ());
 		return get_or_add_type(sbr, vector_primitive(family, 4));
 	}
@@ -377,18 +377,18 @@ Reference get_or_add_type_ref(const SharedBlockReference &sbr, const Reference &
 	vcase(ArrayAccess): {
 		auto &aacc = ref->as <ArrayAccess> ();
 		auto &type = get_or_add_type_ref(sbr, aacc.value)->as <Type> ();
-		assertion(type.is <Array> ());
+		assertion(type.is <Array> (), "expected Array type in ArrayAccess");
 		return get_or_add_type_ref(sbr, type.as <Array> ().base);
 	}
 	vcase(FieldAccess): {
 		auto &facc = ref->as <FieldAccess> ();
 		auto &type = get_or_add_type_ref(sbr, facc.value)->as <Type> ();
 		if (type.is <BufferReferenceType> ()) {
-			assertion(facc.fidx == 0);
+			assertion(facc.fidx == 0, "BufferReferenceType field index must be 0");
 			auto &brt = type.as <BufferReferenceType> ();
 			return get_or_add_type_ref(sbr, brt.element_type);
 		}
-		assertion(type.is <Struct> ());
+		assertion(type.is <Struct> (), "expected Struct type in FieldAccess");
 		return get_or_add_type_ref(sbr, type.as <Struct>().at(facc.fidx));
 	}
 	vcase(SystemValue): {
@@ -440,7 +440,7 @@ Reference get_or_add_type_ref(const SharedBlockReference &sbr, const Reference &
 	vcase(Swizzle): {
 		auto &swz = ref->as <Swizzle> ();
 		auto type = get_or_add_type_ref(sbr, swz.value)->as <Type> ();
-		assertion(type.is <Primitive> ());
+		assertion(type.is <Primitive> (), "expected Primitive type for swizzle");
 		auto prim = type.as <Primitive> ();
 		return get_or_add_type(sbr, swizzle_type(prim, swz.code));
 	}

@@ -1,21 +1,16 @@
 #include <cstring>
 
-#include <cstdlib>
-#include <iostream>
-#include <print>
-
 #include "rhi/buffer.hpp"
+#include "util/error.hpp"
 
 namespace rcgp {
 
 auto Buffer::write(const void *data, size_t bytes, vk::DeviceSize relative_offset) const
 	-> const Buffer &
 {
-	if (relative_offset + bytes > size) {
-		std::println(std::cerr, "buffer upload exceeds allocation ({} + {} > {})",
+	if (relative_offset + bytes > size)
+		fatal("buffer upload exceeds allocation ({} + {} > {})",
 			relative_offset, bytes, size);
-		std::abort();
-	}
 
 	auto mapped = device.mapMemory(backing, offset + relative_offset, bytes);
 	std::memcpy(mapped, data, bytes);
@@ -27,11 +22,9 @@ auto Buffer::write(const void *data, size_t bytes, vk::DeviceSize relative_offse
 auto Buffer::read(void *data, size_t bytes, vk::DeviceSize relative_offset) const
 	-> const Buffer &
 {
-	if (relative_offset + bytes > size) {
-		std::println(std::cerr, "buffer read exceeds allocation ({} + {} > {})",
+	if (relative_offset + bytes > size)
+		fatal("buffer read exceeds allocation ({} + {} > {})",
 			relative_offset, bytes, size);
-		std::abort();
-	}
 
 	auto mapped = device.mapMemory(backing, offset + relative_offset, bytes);
 	std::memcpy(data, mapped, bytes);

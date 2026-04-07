@@ -1,5 +1,6 @@
 #include "dsl/block.hpp"
 #include "dsl/instructions.hpp"
+#include "util/error.hpp"
 
 namespace rcgp {
 
@@ -48,8 +49,7 @@ void Block::apply_ray_payload_allocation_map(const reference_allocation_map &map
 void Block::add_argument(const Argument &arg)
 {
 	if (arguments.size() > arg.argi) {
-		// already registered
-		__builtin_trap();
+		fatal("argument {} already registered", arg.argi);
 	} else {
 		arguments.resize(arg.argi + 1);
 		arguments[arg.argi] = arg;
@@ -59,8 +59,7 @@ void Block::add_argument(const Argument &arg)
 void Block::add_return(const Return &ret)
 {
 	if (returns.size() > ret.argi) {
-		// already registered
-		__builtin_trap();
+		fatal("return {} already registered", ret.argi);
 	} else {
 		returns.resize(ret.argi + 1);
 		returns[ret.argi] = ret;
@@ -70,8 +69,7 @@ void Block::add_return(const Return &ret)
 void Block::add_stage_input(const StageInput &sin)
 {
 	if (stage_inputs.size() > sin.argi) {
-		// already registered
-		__builtin_trap();
+		fatal("stage input {} already registered", sin.argi);
 	} else {
 		stage_inputs.resize(sin.argi + 1);
 		stage_inputs[sin.argi] = sin;
@@ -81,10 +79,9 @@ void Block::add_stage_input(const StageInput &sin)
 void Block::add_stage_output(const StageOutput &sout)
 {
 	if (stage_outputs.size() > sout.argi) {
-		// already registered
 		// TODO: this is fine, just make sure its the same or
 		// its uninitialized...
-		__builtin_trap();
+		fatal("stage output {} already registered", sout.argi);
 	} else {
 		stage_outputs.resize(sout.argi + 1);
 		stage_outputs[sout.argi] = sout;
@@ -104,9 +101,8 @@ void Block::add_trace_group(void *addr, const Reference &trace_call)
 void Block::set_workgroup_size(uint32_t x, uint32_t y, uint32_t z)
 {
 	auto size = std::array <uint32_t, 3> { x, y, z };
-	if (workgroup_size.has_value() && workgroup_size.value() != size) {
-		__builtin_trap();
-	}
+	if (workgroup_size.has_value() && workgroup_size.value() != size)
+		fatal("workgroup size mismatch");
 	workgroup_size = size;
 }
 

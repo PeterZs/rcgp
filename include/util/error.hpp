@@ -3,9 +3,9 @@
 #include <iostream>
 #include <print>
 
-#define assertion(c) 								\
+#define assertion(c, ...) 							\
 	if (not (c)) {								\
-		std::println(std::cerr, "rcgp: assertion failed: {}", #c);	\
+		std::println(std::cerr, "rcgp: " __VA_ARGS__);			\
 		std::flush(std::cerr);						\
 		__builtin_trap();						\
 	}

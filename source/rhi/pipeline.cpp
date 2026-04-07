@@ -1,8 +1,5 @@
-#include <cstdlib>
-#include <iostream>
-#include <print>
-
 #include "rhi/pipelines.hpp"
+#include "util/error.hpp"
 
 namespace rcgp {
 
@@ -153,10 +150,8 @@ vk::Pipeline compile_rasterization_pipeline(
 		pipeline_info.setPNext(&render_state.as <vk::PipelineRenderingCreateInfo> ());
 
 	auto [result, pipeline] = device.logical.createGraphicsPipeline(nullptr, pipeline_info, nullptr);
-	if (result != vk::Result::eSuccess) {
-		std::println(std::cerr, "failed to compile pipeline");
-		std::abort();
-	}
+	if (result != vk::Result::eSuccess)
+		fatal("failed to compile rasterization pipeline");
 
 	return pipeline;
 }
@@ -178,10 +173,8 @@ vk::Pipeline compile_compute_pipeline(
 		.setLayout(layout);
 
 	auto [result, pipeline] = device.logical.createComputePipeline(nullptr, pipeline_info, nullptr);
-	if (result != vk::Result::eSuccess) {
-		std::println(std::cerr, "failed to compile pipeline");
-		std::abort();
-	}
+	if (result != vk::Result::eSuccess)
+		fatal("failed to compile compute pipeline");
 
 	return pipeline;
 }
@@ -308,10 +301,8 @@ vk::Pipeline compile_mesh_shading_pipeline(
 		pipeline_info.setPNext(&render_state.as <vk::PipelineRenderingCreateInfo> ());
 
 	auto [result, pipeline] = device.logical.createGraphicsPipeline(nullptr, pipeline_info, nullptr);
-	if (result != vk::Result::eSuccess) {
-		std::println(std::cerr, "failed to compile mesh shading pipeline");
-		std::abort();
-	}
+	if (result != vk::Result::eSuccess)
+		fatal("failed to compile mesh shading pipeline");
 
 	return pipeline;
 }
@@ -339,10 +330,8 @@ vk::Pipeline compile_raytracing_pipeline(
 
 	auto [result, pipeline] = device.logical.createRayTracingPipelineKHR(
 		nullptr, nullptr, pipeline_info, nullptr, device.loader);
-	if (result != vk::Result::eSuccess) {
-		std::println(std::cerr, "failed to compile raytracing pipeline");
-		std::abort();
-	}
+	if (result != vk::Result::eSuccess)
+		fatal("failed to compile raytracing pipeline");
 
 	return pipeline;
 }

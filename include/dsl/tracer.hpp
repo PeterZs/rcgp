@@ -1,10 +1,10 @@
 #pragma once
 
-#include <cstdlib>
 #include <unordered_map>
 #include <vector>
 
 #include "block.hpp"
+#include "../util/error.hpp"
 
 namespace rcgp {
 
@@ -14,7 +14,7 @@ struct Tracer {
 
 	Block &active() {
 		if (records.empty())
-			std::abort();
+			fatal("no active tracing block");
 		return *records.back();
 	}
 
