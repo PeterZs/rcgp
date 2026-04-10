@@ -147,17 +147,8 @@ auto operator|(Commands <true, A...> live, const Commands <false, B...> &deferre
 
 // Live + live is intentionally NOT declared. Concatenating two bound modules has no
 // well-defined meaning ("which buffer wins?") so we forbid it at the type level.
-
 TYPE_TRAIT(is_commands);
 	template <bool Live, typename ... Effects>
 	TYPE_TRAIT_INCLUDES(is_commands, Commands <Live, Effects...>);
-
-TYPE_TRAIT(is_live_commands);
-	template <typename ... Effects>
-	TYPE_TRAIT_INCLUDES(is_live_commands, Commands <true, Effects...>);
-
-TYPE_TRAIT(is_deferred_commands);
-	template <typename ... Effects>
-	TYPE_TRAIT_INCLUDES(is_deferred_commands, Commands <false, Effects...>);
 
 } // namespace rcgp

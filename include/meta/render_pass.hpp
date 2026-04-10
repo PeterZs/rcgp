@@ -38,14 +38,6 @@ inline auto writer = Writer <ref> ();
 template <auto &ref>
 inline auto reader = Reader <ref> ();
 
-TYPE_TRAIT(is_target_writer);
-	template <auto &ref>
-	TYPE_TRAIT_INCLUDES(is_target_writer, Writer <ref>);
-
-TYPE_TRAIT(is_target_reader);
-	template <auto &ref>
-	TYPE_TRAIT_INCLUDES(is_target_reader, Reader <ref>);
-
 // Split a flat list of Writer/Reader types into Writes and Reads Tlists
 template <typename Writes, typename Reads, typename ... Ts>
 struct split_targets;

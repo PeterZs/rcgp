@@ -163,8 +163,4 @@ TYPE_TRAIT(is_closest_hit_shader);
 	template <typename R, typename ... Args>
 	TYPE_TRAIT_INCLUDES(is_closest_hit_shader, shader_stage <ShaderStage::eClosestHit, R, Args...>);
 
-TYPE_TRAIT(is_subroutine);
-	template <typename R, typename ... Args>
-	TYPE_TRAIT_INCLUDES(is_subroutine, shader_stage <ShaderStage::eSubroutine, R, Args...>);
-
 } // namespace rcgp

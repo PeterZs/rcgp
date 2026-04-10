@@ -101,10 +101,6 @@ template <
 	}
 };
 
-TYPE_TRAIT(is_buffer_reference);
-	template <typename T, template <typename> typename L, GlobalResourceAccess A>
-	TYPE_TRAIT_INCLUDES(is_buffer_reference, BufferReference <T, L, A>);
-
 // TODO: something similar for descriptor heaps with strided access
 
 TYPE_TRAIT(is_global_resource);
@@ -189,10 +185,6 @@ TYPE_TRAIT_INCLUDES(is_global_resource, ResourceGroup <T>);
 // Render targets
 struct ColorTarget : resource_handle { struct handle_type {}; };
 struct DepthTarget : resource_handle { struct handle_type {}; };
-
-TYPE_TRAIT(is_color_target);
-	template <>
-	TYPE_TRAIT_INCLUDES(is_color_target, ColorTarget);
 
 TYPE_TRAIT(is_depth_target);
 	template <>
