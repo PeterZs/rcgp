@@ -176,7 +176,7 @@ inline auto draw_indexed(uint32_t count)
 	return Commands <
 		false,
 		DependencyEnforcerForIndexBuffer,
-		DependencySentinel
+		TerminalSentinel <PipelineKind::eRasterization>
 	> { binder };
 }
 
@@ -186,7 +186,7 @@ inline auto draw(uint32_t count, uint32_t instances = 1)
 		cmd.draw(count, instances, 0, 0);
 	};
 
-	return Commands <false, DependencySentinel> { binder };
+	return Commands <false, TerminalSentinel <PipelineKind::eRasterization>> { binder };
 }
 
 inline auto draw_mesh_tasks(uint32_t x, uint32_t y = 1, uint32_t z = 1)
@@ -195,7 +195,7 @@ inline auto draw_mesh_tasks(uint32_t x, uint32_t y = 1, uint32_t z = 1)
 		cmd.draw_mesh_tasks(x, y, z);
 	};
 
-	return Commands <false, DependencySentinel> { binder };
+	return Commands <false, TerminalSentinel <PipelineKind::eMeshShading>> { binder };
 }
 
 inline auto end_render_pass()
@@ -388,7 +388,7 @@ inline auto dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1)
 		cmd.dispatch(x, y, z);
 	};
 
-	return Commands <false, DependencySentinel> { binder };
+	return Commands <false, TerminalSentinel <PipelineKind::eCompute>> { binder };
 }
 
 inline auto trace_rays(
@@ -403,7 +403,7 @@ inline auto trace_rays(
 		cmd.traceRaysKHR(raygen, miss, hit, callable, width, height, depth, *cmd.loader);
 	};
 
-	return Commands <false, DependencySentinel> { binder };
+	return Commands <false, TerminalSentinel <PipelineKind::eRayTracing>> { binder };
 }
 
 template <typename T, typename F>

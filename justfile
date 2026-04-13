@@ -17,27 +17,12 @@ experimental: build_rcgp
 
 # Compilation tests (static assertions, type checks, expected errors)
 compile:
-	{{compiler}} {{cxxflags}} -c tests/compile/std430.cpp -o /tmp/std430.o
-	{{compiler}} {{cxxflags}} -c tests/compile/scalar.cpp -o /tmp/scalar.o
-	{{compiler}} {{cxxflags}} -c tests/compile/resources.cpp -o /tmp/resources.o
-	{{compiler}} {{cxxflags}} -c tests/compile/canonical.cpp -o /tmp/canonical.o
-	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/attribute_stream.cpp
-	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/intrinsics.cpp
-	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/meshlet_payload.cpp
-	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/return_types.cpp
-	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/task_payload.cpp
-	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/traced_params.cpp
-	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/subroutine_call.cpp
-	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/workgroup.cpp
-	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/rasterization_combinator.cpp
-	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/compute_combinator.cpp
-	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/mesh_shading_combinator.cpp
-	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/shader_modules/raytracing_combinator.cpp
-	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/command_modules/rasterization.cpp
-	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/command_modules/compute.cpp
-	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/command_modules/mesh_shading.cpp
-	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/command_modules/raytracing.cpp
-	python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} tests/compile/command_modules/deferred.cpp
+	for t in std430 scalar resources canonical; do \
+		{{compiler}} {{cxxflags}} -c tests/compile/$t.cpp -o /tmp/$t.o || exit 1; \
+	done
+	for t in tests/compile/shader_modules/*.cpp tests/compile/command_modules/*.cpp; do \
+		python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} $t || exit 1; \
+	done
 
 # Tests for JIT tracing of the DSL
 dsl *args: build_test

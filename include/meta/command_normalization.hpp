@@ -102,12 +102,15 @@ enum class EffectKind : std::uint8_t {
 	eBarrier,
 	eIndicator,
 	eEnforcer,
+	eActivatePipeline,
+	eBegin,
 	eSentinel,
 };
 
 struct effect_projection {
 	EffectKind kind = EffectKind::eUnsupported;
 	norm_entry entry {};
+	PipelineKind pipeline_kind = PipelineKind::eNone;
 };
 
 template <typename T>
@@ -188,9 +191,21 @@ constexpr effect_projection project_effect(const DependencyEnforcerForIndexBuffe
 	return { EffectKind::eEnforcer, {} };
 }
 
-constexpr effect_projection project_effect(const DependencySentinel &)
+template <PipelineKind K>
+constexpr effect_projection project_effect(const ActivatePipeline <K> &)
 {
-	return { EffectKind::eSentinel, {} };
+	return { EffectKind::eActivatePipeline, {}, K };
+}
+
+template <PipelineKind K>
+constexpr effect_projection project_effect(const TerminalSentinel <K> &)
+{
+	return { EffectKind::eSentinel, {}, K };
+}
+
+constexpr effect_projection project_effect(const Begin &)
+{
+	return { EffectKind::eBegin, {} };
 }
 
 template <std::size_t N>
@@ -198,12 +213,19 @@ struct norm_state {
 	std::array <norm_entry, N> entries {};
 	std::size_t count = 0;
 	bool sentinel_error = false;
+	bool pipeline_kind_error = false;
+	bool backstop_active = false;
+	PipelineKind current_pipeline = PipelineKind::eNone;
+	PipelineKind expected_pipeline = PipelineKind::eNone;
 	norm_key first_error_key {};
 
 	constexpr std::size_t find(norm_key k) const
 	{
-		for (std::size_t i = 0; i < count; ++i)
-			if (entries[i].key == k) return i;
+		for (std::size_t i = 0; i < count; i++) {
+			if (entries[i].key == k)
+				return i;
+		}
+
 		return N;
 	}
 
@@ -214,6 +236,7 @@ struct norm_state {
 			entries[count++] = e;
 			return;
 		}
+
 		entries[i] = combine(entries[i], e);
 		if (entries[i].empty()) {
 			entries[i] = entries[--count];
@@ -259,8 +282,20 @@ constexpr void apply_effect(norm_state <N> &state)
 				}
 			}
 		}
+		// strict check when backstop is active (submission context) or a
+		// pipeline is already bound; fragments without either pass through
+		const bool strict = state.backstop_active ||
+			state.current_pipeline != PipelineKind::eNone;
+		if (strict && state.current_pipeline != p.pipeline_kind) {
+			state.pipeline_kind_error = true;
+			state.expected_pipeline = p.pipeline_kind;
+		}
 	} else if constexpr (p.kind == EffectKind::eEnforcer) {
 		state.enforce_index_deps();
+	} else if constexpr (p.kind == EffectKind::eActivatePipeline) {
+		state.current_pipeline = p.pipeline_kind;
+	} else if constexpr (p.kind == EffectKind::eBegin) {
+		state.backstop_active = true;
 	} else {
 		state.apply(p.entry);
 	}
@@ -290,21 +325,31 @@ constexpr effect_projection project_effect(const NormalEntry <Value> &)
 }
 
 template <auto State, std::size_t ... Is>
-auto decode_state(std::index_sequence <Is...>)
+auto decode_entries(std::index_sequence <Is...>)
 	-> Tlist <NormalEntry <State.entries[Is]>...>;
 
-// Returns a pair (normalized Tlist, error). `error` is int(0) when the fold
-// is clean, or a static_string with a diagnostic when the sentinel caught an
-// unresolved dep. The call site (operator|) discriminates on the error type
-// and fires the static_assert locally — keeping the instantiation chain short.
+template <PipelineKind K, typename EntriesList>
+struct prepend_pipeline_marker {
+	using type = EntriesList;
+};
+
+template <PipelineKind K, typename ... Ts>
+requires (K != PipelineKind::eNone)
+struct prepend_pipeline_marker <K, Tlist <Ts...>> {
+	using type = Tlist <ActivatePipeline <K>, Ts...>;
+};
+
 template <typename ... Effects>
 consteval auto normalize_effects(Tlist <Effects...>)
 {
 	constexpr auto state = fold_effects <Effects...> ();
-	using tlist_t = decltype(decode_state <state> (std::make_index_sequence <state.count> ()));
+	using entries_list = decltype(decode_entries <state> (std::make_index_sequence <state.count> ()));
+	using tlist_t = typename prepend_pipeline_marker <state.current_pipeline, entries_list> ::type;
 
 	if constexpr (state.sentinel_error)
 		return std::pair { tlist_t {}, "command recording has unresolved dependencies"_ss };
+	else if constexpr (state.pipeline_kind_error)
+		return std::pair { tlist_t {}, "command recording: terminal directive expects a different pipeline kind than the one currently bound"_ss };
 	else
 		return std::pair { tlist_t {}, 0 };
 }

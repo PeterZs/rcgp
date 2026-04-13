@@ -1,9 +1,32 @@
 #pragma once
 
+#include <cstdint>
+
 #include "contract.hpp"
 #include "pipelines.hpp"
 
 namespace rcgp {
+
+enum class PipelineKind : std::uint8_t {
+	eNone,
+	eRasterization,
+	eCompute,
+	eMeshShading,
+	eRayTracing,
+};
+
+template <PipelineKind K>
+struct ActivatePipeline {
+	static constexpr PipelineKind kind = K;
+};
+
+template <PipelineKind K>
+struct TerminalSentinel {
+	static constexpr PipelineKind kind = K;
+};
+
+// injected at Live|Deferred concat — marks "end of context, no more prepending"
+struct Begin {};
 
 // We have a dependency on ref
 template <auto &ref>
@@ -37,9 +60,6 @@ template <Topology T>
 struct ResolvantForIndexBuffer {
 	static constexpr auto topology = T;
 };
-
-// We need all previous dependencies to be resolved
-struct DependencySentinel {};
 
 // We have synchronized ref
 // TODO: this is useless now?
@@ -119,31 +139,35 @@ consteval auto command_effects_for_grcs(Tlist <Wrappers...>)
 template <Topology T, typename AS, typename GAMAP, typename GRCs>
 consteval auto command_effects(const RasterizationPipeline <T, AS, GAMAP, GRCs> &pipeline)
 {
+	auto activate = Tlist <ActivatePipeline <PipelineKind::eRasterization>> {};
 	auto ib = Tlist <DependencyIndicatorForIndexBuffer <T>> {};
 	auto as = command_effects_for_streams(AS());
 	auto grcs = command_effects_for_grcs(GRCs());
-	return tlist_concat(ib, as, grcs);
+	return tlist_concat(activate, ib, as, grcs);
 }
 
 template <typename GAMAP, typename GRCs>
 consteval auto command_effects(const ComputePipeline <GAMAP, GRCs> &pipeline)
 {
+	auto activate = Tlist <ActivatePipeline <PipelineKind::eCompute>> {};
 	auto grcs = command_effects_for_grcs(GRCs());
-	return grcs;
+	return tlist_concat(activate, grcs);
 }
 
 template <typename GAMAP, typename GRCs>
 consteval auto command_effects(const MeshShadingPipeline <GAMAP, GRCs> &pipeline)
 {
+	auto activate = Tlist <ActivatePipeline <PipelineKind::eMeshShading>> {};
 	auto grcs = command_effects_for_grcs(GRCs());
-	return grcs;
+	return tlist_concat(activate, grcs);
 }
 
 template <typename GAMAP, typename GRCs>
 consteval auto command_effects(const RayTracingPipeline <GAMAP, GRCs> &pipeline)
 {
+	auto activate = Tlist <ActivatePipeline <PipelineKind::eRayTracing>> {};
 	auto grcs = command_effects_for_grcs(GRCs());
-	return grcs;
+	return tlist_concat(activate, grcs);
 }
 
 } // namespace rcgp

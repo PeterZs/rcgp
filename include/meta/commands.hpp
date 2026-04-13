@@ -128,7 +128,7 @@ auto operator|(const std::nullptr_t &, const Commands <false, E...> &x)
 template <typename ... A, typename ... B>
 auto operator|(Commands <true, A...> live, const Commands <false, B...> &deferred)
 {
-	constexpr auto norm = normalize_effects(Tlist <A..., B...> {});
+	constexpr auto norm = normalize_effects(Tlist <Begin, A..., B...> {});
 	if constexpr (not std::is_same_v <std::decay_t <decltype(norm.second)>, int>)
 		static_assert(false, norm.second);
 	using result_t = commands_from_t <true, decltype(norm.first)>;
