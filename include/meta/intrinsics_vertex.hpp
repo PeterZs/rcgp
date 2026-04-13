@@ -15,12 +15,13 @@ struct Interpolant : jems::handle {
 	Interpolant() = default;
 
 	template <typename U>
-	requires std::is_convertible_v <U, T>
 	Interpolant(const U &value, $location)
 		: handle(jems::stage_output(
 			reconstruct_type <T> (), 0, P, loc
 		))
 	{
+		constexpr bool is_convertible = std::is_convertible_v <U, T>;
+		static_assert(is_convertible, "Interpolant: arg@0 is not convertible to the interpolant's stored type");
 		jems::store(*this, T(value), loc);
 	}
 };

@@ -1,47 +1,37 @@
-rasterization_combinator.cpp:42:18: error: no matching function for call to object of type 'RasterizationCombinator<Topology::eTriangleList>'
-   42 |         auto pipeline = RasterizationCombinator <Topology::eTriangleList> {
-      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-   43 |                 .device = device,
-      |                 ~~~~~~~~~~~~~~~~~
-   44 |                 .compiler = compiler,
-      |                 ~~~~~~~~~~~~~~~~~~~~~
-   45 |                 .render_state = rs,
-      |                 ~~~~~~~~~~~~~~~~~~~
+In file included from rasterization_combinator.cpp:1:
+In file included from rcgp.hpp:4:
+In file included from rcgp-meta.hpp:8:
+combinators.hpp:76:17: error: static assertion failed due to requirement 'is_vertex': rasterization combinator: arg@0 is not a vertex shader
+   76 |                 static_assert(is_vertex, "rasterization combinator: arg@0 is not a vertex shader");
+      |                               ^~~~~~~~~
+rasterization_combinator.cpp:46:4: note: in instantiation of function template specialization 'rcgp::RasterizationCombinator<rcgp::Topology::eTriangleList>::operator()<rcgp::shader_stage<rcgp::ShaderStage::eFragment, rcgp::vector<float, 4>, rcgp::vector<float, 3>>, rcgp::shader_stage<rcgp::ShaderStage::eVertex, rcgp::Smooth<rcgp::vector<float, 3>>, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>>>' requested here
    46 |         } (fs, vs);
-      |         ~
-combinators.hpp:76:7: note: candidate template ignored: constraints not satisfied [with VertexShader = shader_stage<rcgp::ShaderStage::eFragment, rcgp::vector<float, 4>, rcgp::vector<float, 3>>, FragmentShader = shader_stage<rcgp::ShaderStage::eVertex, rcgp::Smooth<rcgp::vector<float, 3>>, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>>]
-   76 |         auto operator()(VertexShader &vertex_shader, FragmentShader &fragment_shader) const {
-      |              ^
-combinators.hpp:74:11: note: because 'is_vertex_shader_v<rcgp::shader_stage<rcgp::ShaderStage::eFragment, rcgp::vector<float, 4>, rcgp::vector<float, 3>>>' evaluated to false
-   74 |         requires is_vertex_shader_v <VertexShader>
-      |                  ^
-combinators.hpp:127:7: note: candidate function template not viable: requires single argument 'vertex_shader', but 2 arguments were provided
-  127 |         auto operator()(VertexShader &vertex_shader) const {
-      |              ^          ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-rasterization_combinator.cpp:55:18: error: no matching function for call to object of type 'RasterizationCombinator<Topology::eTriangleList>'
-   55 |         auto pipeline = RasterizationCombinator <Topology::eTriangleList> {
-      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-   56 |                 .device = device,
-      |                 ~~~~~~~~~~~~~~~~~
-   57 |                 .compiler = compiler,
-      |                 ~~~~~~~~~~~~~~~~~~~~~
-   58 |                 .render_state = rs,
-      |                 ~~~~~~~~~~~~~~~~~~~
+      |           ^
+In file included from rasterization_combinator.cpp:1:
+In file included from rcgp.hpp:4:
+In file included from rcgp-meta.hpp:8:
+combinators.hpp:78:17: error: static assertion failed due to requirement 'is_fragment': rasterization combinator: arg@1 is not a fragment shader
+   78 |                 static_assert(is_fragment, "rasterization combinator: arg@1 is not a fragment shader");
+      |                               ^~~~~~~~~~~
+combinators.hpp:80:17: error: static assertion failed due to requirement 'io_compatible': rasterization combinator: vertex shader outputs do not match fragment shader inputs
+   80 |                 static_assert(io_compatible, "rasterization combinator: vertex shader outputs do not match fragment shader inputs");
+      |                               ^~~~~~~~~~~~~
+combinators.hpp:76:17: error: static assertion failed due to requirement 'is_vertex': rasterization combinator: arg@0 is not a vertex shader
+   76 |                 static_assert(is_vertex, "rasterization combinator: arg@0 is not a vertex shader");
+      |                               ^~~~~~~~~
+rasterization_combinator.cpp:59:4: note: in instantiation of function template specialization 'rcgp::RasterizationCombinator<rcgp::Topology::eTriangleList>::operator()<rcgp::shader_stage<rcgp::ShaderStage::eCompute, void, rcgp::WorkGroup<1>>, rcgp::shader_stage<rcgp::ShaderStage::eFragment, rcgp::vector<float, 4>, rcgp::vector<float, 3>>>' requested here
    59 |         } (cs, fs);
-      |         ~
-combinators.hpp:76:7: note: candidate template ignored: constraints not satisfied [with VertexShader = shader_stage<rcgp::ShaderStage::eCompute, void, rcgp::WorkGroup<1>>, FragmentShader = shader_stage<rcgp::ShaderStage::eFragment, rcgp::vector<float, 4>, rcgp::vector<float, 3>>]
-   76 |         auto operator()(VertexShader &vertex_shader, FragmentShader &fragment_shader) const {
-      |              ^
-combinators.hpp:74:11: note: because 'is_vertex_shader_v<rcgp::shader_stage<rcgp::ShaderStage::eCompute, void, rcgp::WorkGroup<1>>>' evaluated to false
-   74 |         requires is_vertex_shader_v <VertexShader>
-      |                  ^
-combinators.hpp:127:7: note: candidate function template not viable: requires single argument 'vertex_shader', but 2 arguments were provided
-  127 |         auto operator()(VertexShader &vertex_shader) const {
-      |              ^          ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-combinators.hpp:77:17: error: static assertion failed due to requirement 'vertex_fragment_io_compatible<rcgp::shader_stage<rcgp::ShaderStage::eVertex, rcgp::Smooth<rcgp::vector<float, 3>>, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>>, rcgp::shader_stage<rcgp::ShaderStage::eFragment, rcgp::vector<float, 4>, rcgp::vector<float, 2>>>': vertex shader outputs do not match fragment shader inputs
-   77 |                 static_assert(vertex_fragment_io_compatible <VertexShader, FragmentShader>,
-      |                               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |           ^
+In file included from rasterization_combinator.cpp:1:
+In file included from rcgp.hpp:4:
+In file included from rcgp-meta.hpp:8:
+combinators.hpp:80:17: error: static assertion failed due to requirement 'io_compatible': rasterization combinator: vertex shader outputs do not match fragment shader inputs
+   80 |                 static_assert(io_compatible, "rasterization combinator: vertex shader outputs do not match fragment shader inputs");
+      |                               ^~~~~~~~~~~~~
+combinators.hpp:80:17: error: static assertion failed due to requirement 'io_compatible': rasterization combinator: vertex shader outputs do not match fragment shader inputs
+   80 |                 static_assert(io_compatible, "rasterization combinator: vertex shader outputs do not match fragment shader inputs");
+      |                               ^~~~~~~~~~~~~
 rasterization_combinator.cpp:75:4: note: in instantiation of function template specialization 'rcgp::RasterizationCombinator<rcgp::Topology::eTriangleList>::operator()<rcgp::shader_stage<rcgp::ShaderStage::eVertex, rcgp::Smooth<rcgp::vector<float, 3>>, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>>, rcgp::shader_stage<rcgp::ShaderStage::eFragment, rcgp::vector<float, 4>, rcgp::vector<float, 2>>>' requested here
    75 |         } (vs, fs);
       |           ^
-3 errors generated.
+6 errors generated.

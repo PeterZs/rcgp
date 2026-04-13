@@ -62,9 +62,11 @@ inline auto begin_rendering(
 }
 
 template <typename Pipeline>
-requires is_pipeline_v <Pipeline>
 auto bind_pipeline(const Pipeline &pipeline)
 {
+	constexpr bool is_pipeline = is_pipeline_v <Pipeline>;
+	static_assert(is_pipeline, "bind_pipeline: arg@0 is not a pipeline type");
+
 	static const size_t id = RuntimeTypeRegistry::id <Pipeline> ();
 
 	if (not PipelineMappings::cache.contains(id)) {
@@ -405,10 +407,13 @@ inline auto trace_rays(
 }
 
 template <typename T, typename F>
-requires is_commands_v <std::invoke_result_t <F, T>>
 auto foreach(const std::vector <T> &container, F &&ftn)
 {
+	constexpr bool is_invocable = std::is_invocable_v <F, T>;
+	static_assert(is_invocable, "foreach: arg@1 is not invocable with the container element type");
 	using C = std::invoke_result_t <F, T>;
+	constexpr bool returns_commands = is_commands_v <C>;
+	static_assert(returns_commands, "foreach: arg@1 must return a Commands module");
 
 	auto binder = [=](const CommandBuffer &cmd, SerializationContext &sctx) {
 		for (auto &&value : container)

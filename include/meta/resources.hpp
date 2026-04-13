@@ -198,8 +198,9 @@ TYPE_TRAIT(is_render_target);
 	TYPE_TRAIT_INCLUDES(is_render_target, DepthTarget);
 
 template <auto &target_ref>
-requires is_render_target_v <reference_base_of <target_ref>>
 struct sampler : resource_handle {
+	static constexpr bool is_render_target = is_render_target_v <reference_base_of <target_ref>>;
+	static_assert(is_render_target, "sampler<&ref>: ref must point to a ColorTarget or DepthTarget");
 	using handle_type = typename Sampler <float, 2> ::handle_type;
 };
 

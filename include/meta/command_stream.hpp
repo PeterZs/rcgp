@@ -9,8 +9,10 @@
 namespace rcgp {
 
 template <typename ... Buffers>
-requires (is_vertex_buffer_v <Buffers> && ...)
 struct DrawParameters {
+	static constexpr bool all_vertex_buffers = (is_vertex_buffer_v <Buffers> && ...);
+	static_assert(all_vertex_buffers, "DrawParameters: all arguments must be vertex buffers");
+
 	std::tuple <Buffers...> vertex_buffers;
 
 	DrawParameters(const Buffers &... buffers)
@@ -19,8 +21,12 @@ struct DrawParameters {
 
 // TODO: topology as a selector?
 template <typename IndexBuffer, typename ... Buffers>
-requires (is_index_buffer_v <IndexBuffer> and (is_vertex_buffer_v <Buffers> && ...))
 struct DrawIndexedParameters {
+	static constexpr bool is_index = is_index_buffer_v <IndexBuffer>;
+	static_assert(is_index, "DrawIndexedParameters: arg@0 is not an index buffer");
+	static constexpr bool all_vertex_buffers = (is_vertex_buffer_v <Buffers> && ...);
+	static_assert(all_vertex_buffers, "DrawIndexedParameters: arg@1.. must all be vertex buffers");
+
 	IndexBuffer index_buffer;
 	vk::IndexType index_type;
 	std::tuple <Buffers...> vertex_buffers;
@@ -134,7 +140,6 @@ struct CommandStream : CommandBuffer {
 	}
 
 	template <Topology T, auto &... streams, typename GAMAP, typename GRCs, typename IndexBuffer>
-	requires is_index_buffer_v <IndexBuffer>
 	auto draw_indexed(
 		const RasterizationPipeline <T, Tlist <contract <streams>...>, GAMAP, GRCs> &pipeline,
 		const DescTuple <GRCs> &descriptors,
@@ -142,6 +147,8 @@ struct CommandStream : CommandBuffer {
 		const DrawIndexedParameters <IndexBuffer, ResourceTypeFor <streams>...> &parameters,
 		const DrawDispatchSize &dispatch_size
 	) const {
+		constexpr bool is_index = is_index_buffer_v <IndexBuffer>;
+		static_assert(is_index, "draw_indexed: parameters index buffer is not an index buffer");
 		super::bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.handle);
 		lambda_apply(descriptors, descs, _bind_descriptors(pipeline.layout, pipeline.gamap, descs...));
 		lambda_apply(push_constants, constants, _bind_constants <GRCs> (pipeline.layout, constants...));

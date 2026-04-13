@@ -19,7 +19,6 @@ struct MirrorSampler;
 struct RaytracingAccelerationStructure;
 
 template <auto &target_ref>
-requires is_render_target_v <reference_base_of <target_ref>>
 struct TargetMirrorSampler;
 
 // Resource translation mappings

@@ -71,11 +71,13 @@ struct RasterizationCombinator {
 	RasterizationOptions options;
 
 	template <typename VertexShader, typename FragmentShader>
-	requires is_vertex_shader_v <VertexShader>
-		and is_fragment_shader_v <FragmentShader>
 	auto operator()(VertexShader &vertex_shader, FragmentShader &fragment_shader) const {
-		static_assert(vertex_fragment_io_compatible <VertexShader, FragmentShader>,
-			"vertex shader outputs do not match fragment shader inputs");
+		constexpr bool is_vertex = is_vertex_shader_v <VertexShader>;
+		static_assert(is_vertex, "rasterization combinator: arg@0 is not a vertex shader");
+		constexpr bool is_fragment = is_fragment_shader_v <FragmentShader>;
+		static_assert(is_fragment, "rasterization combinator: arg@1 is not a fragment shader");
+		constexpr bool io_compatible = vertex_fragment_io_compatible <VertexShader, FragmentShader>;
+		static_assert(io_compatible, "rasterization combinator: vertex shader outputs do not match fragment shader inputs");
 
 		transfer_io_rates(vertex_shader, fragment_shader);
 
@@ -123,8 +125,10 @@ struct RasterizationCombinator {
 	}
 
 	template <typename VertexShader>
-	requires is_vertex_shader_v <VertexShader>
 	auto operator()(VertexShader &vertex_shader) const {
+		constexpr bool is_vertex = is_vertex_shader_v <VertexShader>;
+		static_assert(is_vertex, "rasterization combinator: arg@0 is not a vertex shader");
+
 		auto streams = collect_streams(typename VertexShader::icontext());
 
 		auto vertex_bindings = sequence_to_vertex_bindings(streams);
@@ -163,8 +167,10 @@ struct ComputeCombinator {
 	CompilerOptions compiler_options;
 
 	template <typename ComputeShader>
-	requires is_compute_shader_v <ComputeShader>
 	auto operator()(ComputeShader &compute_shader) const {
+		constexpr bool is_compute = is_compute_shader_v <ComputeShader>;
+		static_assert(is_compute, "compute combinator: arg@0 is not a compute shader");
+
 		auto gvrs = ComputeShader::gvrs;
 		auto [layout, dsls, grcs, gamap] = apply_gvrs(device, gvrs, compute_shader);
 		
@@ -192,14 +198,17 @@ struct MeshShadingCombinator {
 	RasterizationOptions options;
 
 	template <typename TaskShader, typename MeshShader, typename FragmentShader>
-	requires is_task_shader_v <TaskShader>
-		and is_mesh_shader_v <MeshShader>
-		and is_fragment_shader_v <FragmentShader>
 	auto operator()(TaskShader &task, MeshShader &mesh, FragmentShader &fragment) const {
-		static_assert(task_mesh_payload_compatible <TaskShader, MeshShader>,
-			"task shader payload type does not match mesh shader payload type");
-		static_assert(mesh_fragment_io_compatible <MeshShader, FragmentShader>,
-			"mesh shader outputs do not match fragment shader inputs");
+		constexpr bool is_task = is_task_shader_v <TaskShader>;
+		static_assert(is_task, "mesh-shading combinator: arg@0 is not a task shader");
+		constexpr bool is_mesh = is_mesh_shader_v <MeshShader>;
+		static_assert(is_mesh, "mesh-shading combinator: arg@1 is not a mesh shader");
+		constexpr bool is_fragment = is_fragment_shader_v <FragmentShader>;
+		static_assert(is_fragment, "mesh-shading combinator: arg@2 is not a fragment shader");
+		constexpr bool payload_compatible = task_mesh_payload_compatible <TaskShader, MeshShader>;
+		static_assert(payload_compatible, "mesh-shading combinator: task shader payload type does not match mesh shader payload type");
+		constexpr bool io_compatible = mesh_fragment_io_compatible <MeshShader, FragmentShader>;
+		static_assert(io_compatible, "mesh-shading combinator: mesh shader outputs do not match fragment shader inputs");
 
 		auto gvrs = merge_stage_wrappers(tlist_concat(
 			TaskShader::gvrs,
@@ -242,18 +251,22 @@ struct RayTracingCombinator {
 		typename ... MissShaders,
 		typename ... ClosestHitShaders
 	>
-	requires is_raygen_shader_v <RayGenerationShader>
-		and (is_miss_shader_v <MissShaders> and ...)
-		and (is_closest_hit_shader_v <ClosestHitShaders> and ...)
 	auto operator()(
 		const RayGenerationShader &rgen,
 		const std::tuple <MissShaders...> &misses,
 		const std::tuple <ClosestHitShaders...> &chits
 	) const {
-		static_assert(raytracing_receivers_covered <
+		constexpr bool is_raygen = is_raygen_shader_v <RayGenerationShader>;
+		static_assert(is_raygen, "ray tracing combinator: arg@0 is not a ray generation shader");
+		constexpr bool all_miss = (is_miss_shader_v <MissShaders> and ...);
+		static_assert(all_miss, "ray tracing combinator: arg@1 (miss shader tuple) contains a non-miss-shader element");
+		constexpr bool all_chit = (is_closest_hit_shader_v <ClosestHitShaders> and ...);
+		static_assert(all_chit, "ray tracing combinator: arg@2 (closest-hit shader tuple) contains a non-closest-hit-shader element");
+		constexpr bool receivers_covered = raytracing_receivers_covered <
 			all_dispatcher_addresses_t <RayGenerationShader, MissShaders..., ClosestHitShaders...>,
 			all_receiver_addresses_t <MissShaders..., ClosestHitShaders...>
-		>, "receiver has no matching dispatcher in the pipeline");
+		>;
+		static_assert(receivers_covered, "ray tracing combinator: a receiver has no matching dispatcher in the pipeline");
 
 		auto gvrs = [&] <size_t... CI, size_t... MI> (
 			std::index_sequence <CI...>,

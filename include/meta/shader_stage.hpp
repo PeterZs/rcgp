@@ -113,8 +113,11 @@ struct shader_stage : SharedBlockReference {
 	}
 
 	auto operator()(const Args &... args)
-	requires (S == ShaderStage::eSubroutine && !has_resource_args_v <Args...>)
 	{
+		constexpr bool is_subroutine = (S == ShaderStage::eSubroutine);
+		static_assert(is_subroutine, "shader_stage::operator(): direct call only permitted on subroutines");
+		constexpr bool no_resource_args = not has_resource_args_v <Args...>;
+		static_assert(no_resource_args, "shader_stage::operator(): subroutine with resource arguments must be invoked via $use");
 		return filtered_invocable_t <R, Args...> (*this)(args...);
 	}
 };

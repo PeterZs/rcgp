@@ -36,8 +36,10 @@ struct MirrorSampler {
 };
 
 template <auto &target_ref>
-requires is_render_target_v <reference_base_of <target_ref>>
 struct TargetMirrorSampler {
+	static constexpr bool is_render_target = is_render_target_v <reference_base_of <target_ref>>;
+	static_assert(is_render_target, "TargetMirrorSampler<&ref>: ref must point to a ColorTarget or DepthTarget");
+
 	using image_type = std::conditional_t <
 		is_depth_target_v <reference_base_of <target_ref>>,
 		DepthTargetImage, ColorTargetImage

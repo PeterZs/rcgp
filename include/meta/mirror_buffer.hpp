@@ -178,9 +178,10 @@ TYPE_TRAIT(is_index_buffer);
 
 // Deferred implementation of Device::address (declared in device.hpp)
 template <typename T, template <typename> typename L, vk::BufferUsageFlagBits F>
-requires (bool(F & vk::BufferUsageFlagBits::eShaderDeviceAddress))
 auto Device::address(const MirrorBuffer <T, L, F> &buffer) const -> BufferAddress <T, L>
 {
+	constexpr bool has_device_address_flag = bool(F & vk::BufferUsageFlagBits::eShaderDeviceAddress);
+	static_assert(has_device_address_flag, "Device::address: buffer must be allocated with eShaderDeviceAddress usage");
 	return { get_address(buffer) };
 }
 

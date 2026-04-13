@@ -68,7 +68,6 @@ struct Device {
 	auto get_address(const AccelerationStructure &as) const -> vk::DeviceAddress;
 
 	template <typename T, template <typename> typename L, vk::BufferUsageFlagBits F>
-	requires (bool(F & vk::BufferUsageFlagBits::eShaderDeviceAddress))
 	auto address(const MirrorBuffer <T, L, F> &buffer) const -> BufferAddress <T, L>;
 
 	// TODO: untemplate
@@ -147,7 +146,6 @@ struct Device {
 
 	// One-shot command submission
 	template <typename F>
-	requires std::is_invocable_v <F, const CommandBuffer &>
 	auto one_shot(const Queue &queue, const CommandPool &cpool, F &&ftn) const;
 
 	// Timestamp pool

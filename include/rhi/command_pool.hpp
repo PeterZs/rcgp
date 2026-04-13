@@ -13,9 +13,11 @@ struct CommandPool : vk::CommandPool {
 };
 
 template <typename F>
-requires std::is_invocable_v <F, const CommandBuffer &>
 auto Device::one_shot(const Queue &queue, const CommandPool &cpool, F &&ftn) const
 {
+	constexpr bool is_invocable = std::is_invocable_v <F, const CommandBuffer &>;
+	static_assert(is_invocable, "Device::one_shot: callable must be invocable with (const CommandBuffer &)");
+
 	auto cmd = new_command_buffers(cpool, 1).front();
 
 	using R = std::invoke_result_t <F, const CommandBuffer &>;
