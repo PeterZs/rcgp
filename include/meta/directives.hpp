@@ -364,19 +364,19 @@ inline auto barriers(const Barrier <refs, SrcPhases, DstPhases> &... barriers)
 }
 
 template <bool Live, typename ... Es, auto &ref, typename SrcPhase, typename DstPhase>
-auto operator|(const Commands <Live, Es...> &cmds, const Barrier <ref, SrcPhase, DstPhase> &b)
+[[nodiscard]] auto operator|(const Commands <Live, Es...> &cmds, const Barrier <ref, SrcPhase, DstPhase> &b)
 {
 	return cmds | barriers(b);
 }
 
 template <auto &ref, typename SrcPhase, typename DstPhase, bool Live, typename ... Es>
-auto operator|(const Barrier <ref, SrcPhase, DstPhase> &b, const Commands <Live, Es...> &cmds)
+[[nodiscard]] auto operator|(const Barrier <ref, SrcPhase, DstPhase> &b, const Commands <Live, Es...> &cmds)
 {
 	return barriers(b) | cmds;
 }
 
 template <auto &ref, typename SrcPhase, typename DstPhase>
-auto operator|(const std::nullptr_t &, const Barrier <ref, SrcPhase, DstPhase> &b)
+[[nodiscard]] auto operator|(const std::nullptr_t &, const Barrier <ref, SrcPhase, DstPhase> &b)
 {
 	return barriers(b);
 }
@@ -417,7 +417,8 @@ auto foreach(const std::vector <T> &container, F &&ftn)
 
 	auto binder = [=](const CommandBuffer &cmd, SerializationContext &sctx) {
 		for (auto &&value : container)
-			ftn(value).serialize(cmd, sctx);
+			for (auto &op : ftn(value))
+				op(cmd, sctx);
 	};
 
 	return C { binder };

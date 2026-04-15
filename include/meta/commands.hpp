@@ -42,11 +42,6 @@ template <typename ... Effects>
 struct Commands <false, Effects...> : std::vector <command_operator> {
 	using std::vector <command_operator> ::vector;
 
-	void serialize(const CommandBuffer &cmd, SerializationContext &sctx) const {
-		for (auto &op : *this)
-			op(cmd, sctx);
-	}
-
 	auto label(std::string name) const {
 		Commands result;
 		result.push_back([=](const CommandBuffer &cmd, SerializationContext &) {
@@ -70,32 +65,12 @@ struct Commands <true, Effects...> {
 	Commands() = default;
 	explicit Commands(const CommandBuffer &cmd) : handle(cmd) {}
 
-	void ensure_recording() {
-		if (not *recording) {
-			handle.reset();
-			handle.begin(vk::CommandBufferBeginInfo());
-			*recording = true;
-			*sctx = SerializationContext {};
-		}
-	}
-
 	vk::CommandBuffer finalize() {
 		if (*recording) {
 			handle.end();
 			*recording = false;
 		}
 		return handle;
-	}
-
-	auto &label(std::string name) {
-		ensure_recording();
-		handle.begin_label(name);
-		return *this;
-	}
-
-	auto &end_label() {
-		handle.end_label();
-		return *this;
 	}
 };
 
@@ -107,7 +82,7 @@ using DeferredCommands = Commands <false, Effects...>;
 
 // Live + live is ambiguous so it shall not be defined
 template <typename ... A, typename ... B>
-auto operator|(const Commands <false, A...> &a, const Commands <false, B...> &b)
+[[nodiscard]] auto operator|(const Commands <false, A...> &a, const Commands <false, B...> &b)
 {
 	constexpr auto norm = normalize_effects(Tlist <A..., B...> {});
 	if constexpr (not std::is_same_v <std::decay_t <decltype(norm.second)>, int>)
@@ -120,20 +95,26 @@ auto operator|(const Commands <false, A...> &a, const Commands <false, B...> &b)
 }
 
 template <typename ... E>
-auto operator|(const std::nullptr_t &, const Commands <false, E...> &x)
+[[nodiscard]] auto operator|(const std::nullptr_t &, const Commands <false, E...> &x)
 {
 	return x;
 }
 
 template <typename ... A, typename ... B>
-auto operator|(Commands <true, A...> live, const Commands <false, B...> &deferred)
+[[nodiscard]] auto operator|(Commands <true, A...> live, const Commands <false, B...> &deferred)
 {
 	constexpr auto norm = normalize_effects(Tlist <Begin, A..., B...> {});
 	if constexpr (not std::is_same_v <std::decay_t <decltype(norm.second)>, int>)
 		static_assert(false, norm.second);
 	using result_t = commands_from_t <true, decltype(norm.first)>;
 
-	live.ensure_recording();
+	if (not *live.recording) {
+		live.handle.reset();
+		live.handle.begin(vk::CommandBufferBeginInfo());
+		*live.recording = true;
+		*live.sctx = SerializationContext {};
+	}
+
 	for (auto &op : deferred)
 		op(live.handle, *live.sctx);
 
