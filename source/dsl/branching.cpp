@@ -57,4 +57,36 @@ _branch_holder operator+(_branch_holder &&a, _else b)
 	return result;
 }
 
+void _emit_switch_branch(
+	std::vector <std::pair <Reference, _branch_body>> segments,
+	std::optional <_branch_body> fallback
+) {
+	auto trace_body = [](const _branch_body &body) {
+		auto sbr = std::make_shared <Block> ();
+		if (auto s = jems::scope(sbr)) {
+			body();
+		}
+		return sbr;
+	};
+
+	std::vector <Branch::Segment> out;
+	out.reserve(segments.size());
+
+	for (auto &seg : segments) {
+		out.push_back(Branch::Segment {
+			seg.first,
+			trace_body(seg.second),
+		});
+	}
+
+	std::optional <SharedBlockReference> fb;
+	if (fallback.has_value())
+		fb = trace_body(*fallback);
+
+	Tracer::singleton.active().add(Instruction(Branch {
+		std::move(out),
+		std::move(fb),
+	}, DebugInfo {}));
+}
+
 } // namespace rcgp

@@ -527,6 +527,99 @@ add_test(branching)
 	)");
 };
 
+add_test(switch_branch)
+{
+	auto sbr = record {
+		i32 m = 1;
+		$switch (m)
+		$case (i32(0)) {
+			m += 10;
+		}
+		$case (i32(1)) {
+			m += 20;
+		}
+		$default {
+			m += 30;
+		};
+	};
+
+	assert_assembly_match(sbr, R"(
+	Block {
+	  Context {
+	    stage: Subroutine,
+	    name: recorded,
+	  }
+	  $0 = Local Int32
+	  $1 = 1
+	  Store $0 $1
+	  $2 = Local Int32
+	  $3 = 1
+	  Store $2 $3
+	  $4 = Local Int32
+	  Store $4 $2
+	  $5 = Local Int32
+	  $6 = 0
+	  Store $5 $6
+	  $7 = Local Int32
+	  Store $7 $5
+	  $8 = Local Int32
+	  Store $8 $0
+	  $9 = Local Int32
+	  Store $9 $7
+	  $10 = Local Int32
+	  Store $10 $8
+	  $11 = Equal $10 $9
+	  $12 = Local Bool
+	  Store $12 $11
+	  $13 = Local Bool
+	  Store $13 $12
+	  $14 = Local Int32
+	  Store $14 $8
+	  $15 = Local Int32
+	  Store $15 $4
+	  $16 = Local Int32
+	  Store $16 $14
+	  $17 = Equal $16 $15
+	  $18 = Local Bool
+	  Store $18 $17
+	  $19 = Local Bool
+	  Store $19 $18
+	  $20 = Local Int32
+	  Store $20 $14
+	  $21 = Local Int32
+	  Store $21 $20
+	  $22 = Block {
+	    $23 = Local Int32
+	    $24 = 10
+	    Store $23 $24
+	    $25 = Add $0 $23
+	    $26 = Local Int32
+	    Store $26 $25
+	    Store $0 $26
+	  }
+	  $27 = Block {
+	    $28 = Local Int32
+	    $29 = 20
+	    Store $28 $29
+	    $30 = Add $0 $28
+	    $31 = Local Int32
+	    Store $31 $30
+	    Store $0 $31
+	  }
+	  $32 = Block {
+	    $33 = Local Int32
+	    $34 = 30
+	    Store $33 $34
+	    $35 = Add $0 $33
+	    $36 = Local Int32
+	    Store $36 $35
+	    Store $0 $36
+	  }
+	  Branch $13: $22, $19: $27, else: $32
+	}
+	)");
+};
+
 add_test(vector_store)
 {
 	auto sbr = record {
