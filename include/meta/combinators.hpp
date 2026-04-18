@@ -50,13 +50,15 @@ auto shaders_to_modules(
 			printf("assembly:\n%s\n", sasm.c_str());
 		}
 
-		auto glsl = generate_glsl(shader);
-		if (compiler_options.dump_glsl)
-			printf("glsl:\n%s\n", glsl.c_str());
-		
-		auto spirv = compiler.glsl_to_spirv(glsl, stage);
+		auto artifacts = compiler.compile(shader, stage);
 
-		return device.new_shader_module(spirv);
+		if (compiler_options.dump_glsl) {
+			if (artifacts.glsl.empty())
+				artifacts.glsl = generate_glsl(shader);
+			printf("glsl:\n%s\n", artifacts.glsl.c_str());
+		}
+
+		return device.new_shader_module(artifacts.spirv);
 	};
 
 	return std::tuple(process(shaders)...);
