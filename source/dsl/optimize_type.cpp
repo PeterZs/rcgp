@@ -416,6 +416,14 @@ Reference get_or_add_type_ref(const SharedBlockReference &sbr, const Reference &
 			return get_or_add_type_ref(sbr, sbr->task_payload_type.value());
 		case SystemValue::eHitAttribute:
 			return get_or_add_type_ref(sbr, sbr->hit_attribute_type.value());
+		case SystemValue::eMeshVertices: {
+			auto base = get_or_add_type(sbr, Primitive::eVec4);
+			return get_or_add_type(sbr, Array { base, sbr->mesh_max_vertices.value() });
+		}
+		case SystemValue::ePrimitiveTriangleIndices: {
+			auto base = get_or_add_type(sbr, Primitive::eUVec3);
+			return get_or_add_type(sbr, Array { base, sbr->mesh_max_primitives.value() });
+		}
 		default:
 			break;
 		}
