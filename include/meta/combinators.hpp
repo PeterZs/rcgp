@@ -249,7 +249,6 @@ struct RayTracingCombinator {
 	const Device &device;
 	const ShaderCompiler &compiler;
 	CompilerOptions compiler_options;
-	// TODO: automate the handling SBT buffers
 	RaytracingOptions options;
 
 	template <
@@ -296,10 +295,9 @@ struct RayTracingCombinator {
 			}, chits
 		);
 
-		// Resolve trace group SBT offsets and payload indices
-		std::apply(
+		auto tg_layout = std::apply(
 			[&](const auto &... chit_shaders) {
-				resolve_trace_groups(rgen, misses, chit_shaders...);
+				return resolve_trace_groups(rgen, misses, chit_shaders...);
 			}, chits
 		);
 
@@ -369,9 +367,11 @@ struct RayTracingCombinator {
 		auto pipeline = compile_raytracing_pipeline(device, stages, groups, layout, options);
 
 		return RayTracingPipeline <
+			sizeof...(MissShaders),
+			sizeof...(ClosestHitShaders),
 			decltype(grcs),
 			decltype(gvrs)
-		> (pipeline, layout, dsls, gamap);
+		> (pipeline, layout, dsls, gamap, tg_layout.group_count, std::move(tg_layout.chit_to_group));
 	}
 };
 

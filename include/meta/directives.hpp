@@ -14,7 +14,9 @@
 #include "commands.hpp"
 #include "descriptor.hpp"
 #include "pipeline_mappings.hpp"
+#include "pipelines.hpp"
 #include "static_string.hpp"
+#include "../rhi/sbt.hpp"
 
 namespace rcgp {
 
@@ -391,14 +393,19 @@ inline auto dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1)
 	return Commands <false, TerminalSentinel <PipelineKind::eCompute>> { binder };
 }
 
+template <size_t MC, size_t CC, typename GA, typename GR>
 inline auto trace_rays(
-    const vk::StridedDeviceAddressRegionKHR &raygen,
-    const vk::StridedDeviceAddressRegionKHR &miss,
-    const vk::StridedDeviceAddressRegionKHR &hit,
-    const vk::StridedDeviceAddressRegionKHR &callable,
-    uint32_t width, uint32_t height, uint32_t depth = 1
+	const RayTracingPipeline <MC, CC, GA, GR> &pipeline,
+	const ShaderBindingTable &sbt,
+	uint32_t width, uint32_t height, uint32_t depth = 1
 )
 {
+	(void)pipeline;
+	auto raygen = sbt.raygen;
+	auto miss = sbt.miss;
+	auto hit = sbt.hit;
+	auto callable = sbt.callable;
+
 	auto binder = [=](const CommandBuffer &cmd, SerializationContext &) {
 		cmd.traceRaysKHR(raygen, miss, hit, callable, width, height, depth, *cmd.loader);
 	};

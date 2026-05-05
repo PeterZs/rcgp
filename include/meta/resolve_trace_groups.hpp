@@ -9,15 +9,18 @@
 
 namespace rcgp {
 
+struct trace_group_layout {
+	uint32_t group_count;
+	std::vector <uint32_t> chit_to_group;
+};
+
 template <typename ... MissShaders>
-void resolve_trace_groups(
+auto resolve_trace_groups(
 	const SharedBlockReference &rgen,
 	const std::tuple <MissShaders...> &misses,
 	auto &... chit_blocks
-)
+) -> trace_group_layout
 {
-	// 1. Build miss map: trace_group_addr -> miss_shader_index
-	//    by inspecting each miss shader's global_resources for eRayReceiverPayload
 	std::map <void *, uint32_t> miss_map;
 
 	auto register_miss = [&] <size_t... Is> (std::index_sequence <Is...>) {
@@ -38,8 +41,8 @@ void resolve_trace_groups(
 
 	register_miss(std::index_sequence_for <MissShaders...> {});
 
-	// 2. Build payload index map: trace_group_addr -> payload_index
-	//    Collect from all blocks' trace_groups maps and global_resources
+	const uint32_t G = uint32_t(miss_map.size());
+
 	std::map <void *, uint32_t> payload_map;
 	uint32_t next_payload = 0;
 
@@ -48,15 +51,12 @@ void resolve_trace_groups(
 			payload_map.emplace(addr, next_payload++);
 	};
 
-	// From raygen trace_groups (dispatchers)
 	for (auto &[addr, _] : rgen->trace_groups)
 		assign_payload(addr);
 
-	// From miss shaders (receivers)
 	for (auto &[addr, _] : miss_map)
 		assign_payload(addr);
 
-	// From chit blocks (receivers)
 	auto assign_from_chit = [&](auto &block) {
 		for (auto &[addr, refs] : block->global_resources) {
 			for (auto &ref : refs) {
@@ -71,7 +71,26 @@ void resolve_trace_groups(
 
 	(assign_from_chit(chit_blocks), ...);
 
-	// 3. Resolve eTraceRaysEXT intrinsics in all blocks that have trace_groups
+	auto group_of_chit = [&](auto &block) -> uint32_t {
+		for (auto &[addr, refs] : block->global_resources) {
+			for (auto &ref : refs) {
+				if (not ref->template is <GlobalResource> ())
+					continue;
+				auto &grsrc = ref->template as <GlobalResource> ();
+				if (grsrc.kind != GlobalResourceKind::eRayReceiverPayload)
+					continue;
+				auto it = miss_map.find(addr);
+				if (it != miss_map.end())
+					return it->second;
+			}
+		}
+		return 0;
+	};
+
+	std::vector <uint32_t> chit_to_group;
+	chit_to_group.reserve(sizeof...(chit_blocks));
+	(chit_to_group.push_back(group_of_chit(chit_blocks)), ...);
+
 	auto resolve_block = [&](this auto &self, const SharedBlockReference &block) -> void {
 		for (auto &[addr, trace_calls] : block->trace_groups) {
 			auto miss_it = miss_map.find(addr);
@@ -85,19 +104,24 @@ void resolve_trace_groups(
 				assertion(bintr.code == BuiltinIntrinsicCode::eTraceRaysEXT, "expected TraceRaysEXT intrinsic");
 				assertion(bintr.args.size() == 11, "TraceRaysEXT expects 11 arguments");
 
-				// args[5] = miss index
+				bintr.args[3] = std::make_shared <Instruction> (
+					Constant(int32_t(miss_it->second))
+				);
+
+				bintr.args[4] = std::make_shared <Instruction> (
+					Constant(int32_t(G))
+				);
+
 				bintr.args[5] = std::make_shared <Instruction> (
 					Constant(int32_t(miss_it->second))
 				);
 
-				// args[10] = payload index
 				bintr.args[10] = std::make_shared <Instruction> (
 					Constant(int32_t(payload_it->second))
 				);
 			}
 		}
 
-		// Recurse into nested blocks (branches, loops)
 		for (auto &ref : *block) {
 			if (ref->is <Branch> ()) {
 				auto &branch = ref->as <Branch> ();
@@ -114,12 +138,13 @@ void resolve_trace_groups(
 	resolve_block(rgen);
 	(resolve_block(chit_blocks), ...);
 
-	// 4. Apply payload allocation map to all shader blocks
 	rgen->apply_ray_payload_allocation_map(payload_map);
 	[&] <size_t... Is> (std::index_sequence <Is...>) {
 		(std::get <Is> (misses)->apply_ray_payload_allocation_map(payload_map), ...);
 	}(std::index_sequence_for <MissShaders...> {});
 	(chit_blocks->apply_ray_payload_allocation_map(payload_map), ...);
+
+	return { G, std::move(chit_to_group) };
 }
 
 } // namespace rcgp

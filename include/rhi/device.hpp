@@ -31,6 +31,9 @@ struct Buffer;
 struct XlasInstance;
 struct ShaderBindingTable;
 
+template <size_t MissCount, size_t ChitCount, typename GAMAP, typename GRCs>
+struct RayTracingPipeline;
+
 template <typename T, template <typename> typename L>
 struct BufferAddress;
 
@@ -137,12 +140,24 @@ struct Device {
 		const std::vector <XlasInstance> &instances
 	) const -> std::tuple <AccelerationStructure, Buffer>;
 
-	// Shader binding table
-	auto build_sbt(
+	// Untyped primitive; prefer the pipeline-aware overload below.
+	// hit_slot_count = number of interleaved hit slots in the SBT (G).
+	// chit_to_group  = trace-group index of each pipeline chit shader.
+	auto new_sbt(
 		vk::Pipeline pipeline,
 		uint32_t miss_count,
-		uint32_t hit_count
+		uint32_t hit_count,
+		uint32_t hit_slot_count,
+		std::span <const uint32_t> chit_to_group
 	) const -> ShaderBindingTable;
+
+	template <size_t MC, size_t CC, typename GA, typename GR>
+	auto new_sbt(const RayTracingPipeline <MC, CC, GA, GR> &pipeline) const
+	{
+		return new_sbt(pipeline.handle, MC, CC,
+			pipeline.trace_group_count,
+			std::span <const uint32_t> { pipeline.chit_to_group });
+	}
 
 	// One-shot command submission
 	template <typename F>

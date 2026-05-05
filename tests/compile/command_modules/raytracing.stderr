@@ -6,7 +6,7 @@ were provided:
 	missing dependencies: tlas, image
    89 |                 static_assert(false, norm.second);
       |                               ^~~~~
-raytracing.cpp:143:3: note: in instantiation of function template specialization 'rcgp::operator|<rcgp::ActivatePipeline<rcgp::PipelineKind::eRayTracing>, rcgp::NormalEntry<norm_entry{{1, &tlas, 0}, 1, {{0, 0}, {0, 0}}, &ref_name_storage._M_elems[0]}>, rcgp::NormalEntry<norm_entry{{1, &image, 0}, 1, {{0, 0}, {0, 0}}, &ref_name_storage._M_elems[0]}>, rcgp::TerminalSentinel<rcgp::PipelineKind::eRayTracing>>' requested here
-  143 |                 | trace_rays(sbt.raygen, sbt.miss, sbt.hit, sbt.callable, 1024, 1024);
+raytracing.cpp:146:3: note: in instantiation of function template specialization 'rcgp::operator|<rcgp::ActivatePipeline<rcgp::PipelineKind::eRayTracing>, rcgp::NormalEntry<norm_entry{{1, &tlas, 0}, 1, {{0, 0}, {0, 0}}, &ref_name_storage._M_elems[0]}>, rcgp::NormalEntry<norm_entry{{1, &image, 0}, 1, {{0, 0}, {0, 0}}, &ref_name_storage._M_elems[0]}>, rcgp::TerminalSentinel<rcgp::PipelineKind::eRayTracing>>' requested here
+  146 |                 | trace_rays(pipeline, sbt, 1024, 1024);
       |                 ^
 1 error generated.

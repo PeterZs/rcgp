@@ -100,8 +100,8 @@ auto pipeline_mappings(const MeshShadingPipeline <GAMAP, GRCs> &pipeline)
 	return result;
 }
 
-template <typename GAMAP, typename GRCs>
-auto pipeline_mappings(const RayTracingPipeline <GAMAP, GRCs> &pipeline)
+template <size_t MC, size_t CC, typename GAMAP, typename GRCs>
+auto pipeline_mappings(const RayTracingPipeline <MC, CC, GAMAP, GRCs> &pipeline)
 {
 	PipelineMappings result;
 	result.layout = pipeline.layout;

@@ -13,8 +13,7 @@ void rt_full(
 	const Device &device, const ShaderCompiler &compiler,
 	const BoundDescriptor <tlas> &bound_tlas,
 	const BoundDescriptor <image> &bound_image,
-	const ResourceTypeFor <view> &pc,
-	const ShaderBindingTable &sbt
+	const ResourceTypeFor <view> &pc
 )
 {
 	auto rgen = $shader(raygen)(
@@ -48,19 +47,20 @@ void rt_full(
 		.compiler = compiler,
 	} (rgen, std::tuple { miss }, std::tuple { chit });
 
+	ShaderBindingTable sbt {};
+
 	auto cmds = nullptr
 		| bind_pipeline(pipeline)
 		| bind_descriptors(bound_tlas, bound_image)
 		| bind_push_constants <view> (pc)
-		| trace_rays(sbt.raygen, sbt.miss, sbt.hit, sbt.callable, 1024, 1024);
+		| trace_rays(pipeline, sbt, 1024, 1024);
 }
 
 // Valid: no push constants, just descriptors
 void rt_no_push_constants(
 	const Device &device, const ShaderCompiler &compiler,
 	const BoundDescriptor <tlas> &bound_tlas,
-	const BoundDescriptor <image> &bound_image,
-	const ShaderBindingTable &sbt
+	const BoundDescriptor <image> &bound_image
 )
 {
 	auto rgen = $shader(raygen)(
@@ -93,17 +93,18 @@ void rt_no_push_constants(
 		.compiler = compiler,
 	} (rgen, std::tuple { miss }, std::tuple { chit });
 
+	ShaderBindingTable sbt {};
+
 	auto cmds = nullptr
 		| bind_pipeline(pipeline)
 		| bind_descriptors(bound_tlas, bound_image)
-		| trace_rays(sbt.raygen, sbt.miss, sbt.hit, sbt.callable, 1024, 1024);
+		| trace_rays(pipeline, sbt, 1024, 1024);
 }
 
 // Invalid: trace_rays without binding descriptors
 void rt_missing_descriptors(
 	const Device &device, const ShaderCompiler &compiler,
-	const ResourceTypeFor <view> &pc,
-	const ShaderBindingTable &sbt
+	const ResourceTypeFor <view> &pc
 )
 {
 	auto rgen = $shader(raygen)(
@@ -137,8 +138,10 @@ void rt_missing_descriptors(
 		.compiler = compiler,
 	} (rgen, std::tuple { miss }, std::tuple { chit });
 
+	ShaderBindingTable sbt {};
+
 	auto cmds = nullptr
 		| bind_pipeline(pipeline)
 		| bind_push_constants <view> (pc)
-		| trace_rays(sbt.raygen, sbt.miss, sbt.hit, sbt.callable, 1024, 1024);
+		| trace_rays(pipeline, sbt, 1024, 1024);
 }

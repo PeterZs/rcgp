@@ -38,7 +38,7 @@ void main()
     lvar11 = vec3(lvar10, lvar9, lvar8);
     int lvar12;
     lvar12 = 1;
-    traceRayEXT(r0b0, lvar12, lvar3, 0, 1, 0, lvar7, lvar5, lvar11, lvar4, 0);
+    traceRayEXT(r0b0, lvar12, lvar3, 0, 3, 0, lvar7, lvar5, lvar11, lvar4, 0);
     float lvar13;
     lvar13 = 0;
     vec4 lvar14;

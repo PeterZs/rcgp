@@ -6,10 +6,12 @@
 
 namespace rcgp {
 
-auto Device::build_sbt(
+auto Device::new_sbt(
 	vk::Pipeline pipeline,
 	uint32_t miss_count,
-	uint32_t hit_count
+	uint32_t hit_count,
+	uint32_t hit_slot_count,
+	std::span <const uint32_t> chit_to_group
 ) const -> ShaderBindingTable
 {
 	vk::PhysicalDeviceRayTracingPipelinePropertiesKHR rt_props;
@@ -30,7 +32,7 @@ auto Device::build_sbt(
 
 	uint32_t raygen_region = region_size(1);
 	uint32_t miss_region = region_size(miss_count);
-	uint32_t hit_region = region_size(hit_count);
+	uint32_t hit_region = region_size(hit_slot_count);
 	uint32_t sbt_total = raygen_region + miss_region + hit_region;
 
 	uint32_t group_count = 1 + miss_count + hit_count;
@@ -39,6 +41,19 @@ auto Device::build_sbt(
 		pipeline, 0, group_count, handles.size(), handles.data(), loader
 	);
 	(void)result;
+
+	// Per-trace-group source chit: the first chit whose receiver maps to that
+	// group, falling back to chit 0 (the entry is unreachable when a trace
+	// group has no own chit, since such groups carry eSkipClosestHitShader).
+	std::vector <uint32_t> hit_source(hit_slot_count, 0);
+	std::vector <uint8_t> assigned(hit_slot_count, 0);
+	for (uint32_t i = 0; i < chit_to_group.size(); i++) {
+		uint32_t g = chit_to_group[i];
+		if (g < hit_slot_count && not assigned[g]) {
+			hit_source[g] = i;
+			assigned[g] = 1;
+		}
+	}
 
 	auto sbt_buf = Buffer::from(*this,
 		sbt_total,
@@ -50,10 +65,8 @@ auto Device::build_sbt(
 
 	auto *dst = static_cast <uint8_t *> (logical.mapMemory(sbt_buf.backing, 0, sbt_total));
 
-	// Raygen group (always 1)
 	std::memcpy(dst, handles.data(), handle_size);
 
-	// Miss groups
 	for (uint32_t i = 0; i < miss_count; i++) {
 		std::memcpy(
 			dst + raygen_region + i * entry_stride,
@@ -62,11 +75,11 @@ auto Device::build_sbt(
 		);
 	}
 
-	// Hit groups
-	for (uint32_t i = 0; i < hit_count; i++) {
+	for (uint32_t g = 0; g < hit_slot_count; g++) {
+		uint32_t chit_idx = hit_source[g];
 		std::memcpy(
-			dst + raygen_region + miss_region + i * entry_stride,
-			handles.data() + (1 + miss_count + i) * handle_size,
+			dst + raygen_region + miss_region + g * entry_stride,
+			handles.data() + (1 + miss_count + chit_idx) * handle_size,
 			handle_size
 		);
 	}

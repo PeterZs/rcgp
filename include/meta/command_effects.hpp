@@ -162,8 +162,8 @@ consteval auto command_effects(const MeshShadingPipeline <GAMAP, GRCs> &pipeline
 	return tlist_concat(activate, grcs);
 }
 
-template <typename GAMAP, typename GRCs>
-consteval auto command_effects(const RayTracingPipeline <GAMAP, GRCs> &pipeline)
+template <size_t MC, size_t CC, typename GAMAP, typename GRCs>
+consteval auto command_effects(const RayTracingPipeline <MC, CC, GAMAP, GRCs> &pipeline)
 {
 	auto activate = Tlist <ActivatePipeline <PipelineKind::eRayTracing>> {};
 	auto grcs = command_effects_for_grcs(GRCs());

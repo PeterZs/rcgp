@@ -48,7 +48,7 @@ void main()
     lvar14 = vec3(lvar13, lvar12, lvar11);
     int lvar15;
     lvar15 = 13;
-    traceRayEXT(r0b0, lvar15, lvar7, 0, 1, 1, lvar10, lvar9, lvar14, lvar8, 1);
+    traceRayEXT(r0b0, lvar15, lvar7, 1, 3, 1, lvar10, lvar9, lvar14, lvar8, 1);
     vec3 lvar16;
     lvar16 = gl_WorldRayOriginEXT;
     vec3 lvar17;
@@ -94,7 +94,7 @@ void main()
     lvar36 = vec3(lvar29);
     int lvar37;
     lvar37 = 0;
-    traceRayEXT(r0b0, lvar37, lvar32, 0, 1, 2, lvar35, lvar34, lvar36, lvar33, 2);
+    traceRayEXT(r0b0, lvar37, lvar32, 2, 3, 2, lvar35, lvar34, lvar36, lvar33, 2);
     float lvar38;
     lvar38 = 0.3;
     float lvar39;
