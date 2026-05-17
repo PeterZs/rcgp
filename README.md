@@ -4,7 +4,7 @@ Reference implementation for *RCGP: Resource Contracts for Graphics
 Programming* (SIGGRAPH 2026 / TOG).
 
 <p align="center">
-  <img src="docs/teaser.png" width="100%" />
+  <img src="https://iveevi.github.io/rcgp/teaser.png" width="100%" />
 </p>
 
 RCGP is a header-and-static-library C++ project. This README explains how to
