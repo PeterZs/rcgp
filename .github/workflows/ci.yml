@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Build and test (gcc-15, Debian Trixie)
+    runs-on: ubuntu-24.04
+    container:
+      image: gcc:15
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      CC: gcc
+      CXX: g++
+      VK_ICD_FILENAMES: /usr/share/vulkan/icd.d/lvp_icd.json
+      VK_LOADER_DRIVERS_SELECT: lvp_icd.json
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install system packages
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ca-certificates git python3 python3-pip python-is-python3 nodejs just \
+            ninja-build mold pkg-config \
+            clang \
+            libvulkan-dev vulkan-tools vulkan-validationlayers \
+            mesa-vulkan-drivers \
+            glslang-dev glslang-tools spirv-headers spirv-tools \
+            libfmt-dev libglfw3-dev \
+            libxkbcommon-dev libwayland-dev xorg-dev \
+            xvfb xauth
+
+      - name: Install CMake 4
+        run: |
+          pip install --break-system-packages 'cmake>=4.0,<5'
+          cmake --version
+          just --version
+
+      - name: Install up-to-date Vulkan headers
+        env:
+          VULKAN_HEADERS_TAG: v1.4.350
+        run: |
+          git clone --depth 1 --branch "$VULKAN_HEADERS_TAG" \
+            https://github.com/KhronosGroup/Vulkan-Headers.git /tmp/vk-headers
+          cmake -S /tmp/vk-headers -B /tmp/vk-headers/build -DCMAKE_INSTALL_PREFIX=/usr
+          cmake --install /tmp/vk-headers/build
+          grep "VK_HEADER_VERSION " /usr/include/vulkan/vulkan_core.h | head -1
+
+      - name: Sanity-check the Vulkan loader
+        run: vulkaninfo --summary || true
+
+      - name: Cache CMake build
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: cmake-gcc15-${{ hashFiles('CMakeLists.txt', 'include/scripts/*.py') }}
+          restore-keys: |
+            cmake-gcc15-
+
+      - name: Build library
+        run: just build_rcgp
+
+      - name: Compile-time tests
+        run: just cxxflags="-std=c++26 -I include --gcc-toolchain=/usr/local" compile
+
+      - name: DSL runtime tests
+        env:
+          XDG_RUNTIME_DIR: /tmp/xdg-runtime
+        run: |
+          mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
+          xvfb-run -a just dsl

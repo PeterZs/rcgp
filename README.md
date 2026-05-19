@@ -12,10 +12,12 @@ pull it into your own application.
 
 ## Requirements
 
-- Clang 19+ or GCC 14+ (C++26)
+- A C++26 toolchain with a recent standard library:
+  - GCC 15+ (provides `<print>`, `std::views::enumerate`, `vector::append_range`), or
+  - Clang 19+ paired with libstdc++-15+ or libc++ 17+.
 - CMake ≥ 4.0
-- Vulkan SDK (with ray tracing extensions enabled)
-- `glslang`, `fmt`, `glfw`
+- Vulkan SDK ≥ 1.3.275 (with ray tracing extensions; needs `vk::ResultValue::has_value`)
+- `glslang`, `fmt` ≥ 9.1 (for `fmt::println`), `glfw`
 - Python 3 (used by the build for source generation)
 
 ## Adding RCGP to a CMake project

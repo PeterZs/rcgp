@@ -54,7 +54,7 @@ def main():
 
         # Normal repr
         asm_src.append("")
-        asm_src.append(f"static auto g_{snake_name} = std::array {{")
+        asm_src.append(f"static std::array <const char *, {len(entries)}> g_{snake_name} {{")
         for enum, _ in entries:
             enum = enum[1:]
             if name == "SwizzleCode":
@@ -70,7 +70,7 @@ def main():
         # GLSL repr
         if any(glsl for _, glsl in entries):
             glsl_src.append("")
-            glsl_src.append(f"static auto g_{snake_name} = std::array {{")
+            glsl_src.append(f"static std::array <const char *, {len(entries)}> g_{snake_name} {{")
             for _, glsl in entries:
                 glsl_src.append(f'\t"{glsl}",')
             glsl_src.append("};")

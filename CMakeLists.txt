@@ -8,6 +8,7 @@ set(CMAKE_LINKER_TYPE MOLD)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 find_package(Vulkan REQUIRED)
 find_package(glslang REQUIRED)
+find_package(SPIRV-Tools-opt REQUIRED)
 
 include_directories(include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/source)
@@ -54,8 +55,12 @@ add_dependencies(rcgp
 	rcgp_generate_enumeration_strings
 )
 target_link_libraries(rcgp PUBLIC
-	fmt glfw Vulkan::Vulkan
-	glslang::glslang glslang::glslang-default-resource-limits
+	fmt
+	glfw
+	Vulkan::Vulkan
+	glslang::glslang
+	glslang::glslang-default-resource-limits
+	SPIRV-Tools-opt
 )
 
 # Runtime tests
