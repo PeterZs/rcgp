@@ -1,0 +1,13 @@
+In file included from include/rcgp-meta.hpp:9,
+                 from include/rcgp.hpp:4,
+                 from tests/compile/command_modules/deferred.cpp:1:
+include/meta/commands.hpp: In instantiation of 'auto rcgp::operator|(const Commands<false, Effects ...>&, const Commands<false, B ...>&) [with A = {ActivatePipeline<rcgp::PipelineKind::eRasterization>, NormalEntry<norm_entry{norm_key{rcgp::KeyKind::eTarget, ((void*)(& gbuf::targets.gbuf::<unnamed struct>::color)), rcgp::Topology::eTriangleList}, rcgp::NormOp::eRes, norm_bar{norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}, norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}}, 0}>, NormalEntry<norm_entry{norm_key{rcgp::KeyKind::eIndex, 0, rcgp::Topology::eTriangleList}, rcgp::NormOp::ePendingDep, norm_bar{norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}, norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}}, 0}>, NormalEntry<norm_entry{norm_key{rcgp::KeyKind::eTarget, ((void*)(& lighting_missing::targets.lighting_missing::<unnamed struct>::screen)), rcgp::Topology::eTriangleList}, rcgp::NormOp::eRes, norm_bar{norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}, norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}}, 0}>, NormalEntry<norm_entry{norm_key{rcgp::KeyKind::eSampledDecl, ((void*)(& gbuf::targets.gbuf::<unnamed struct>::color)), rcgp::Topology::eTriangleList}, rcgp::NormOp::eDep, norm_bar{norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}, norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}}, ((const char*)(& ref_name_storage<gbuf::targets.gbuf::<unnamed struct>::color>.std::array<char, 6>::_M_elems))}>}; B = {TerminalSentinel<rcgp::PipelineKind::eRasterization>}]':
+tests/compile/command_modules/deferred.cpp:176:11:   required from here
+  176 |                 | draw(3)
+      |                         ^
+include/meta/commands.hpp:89:31: error: static assertion failed: commands combinator detected dispatch before all dependencies
+were provided:
+	missing dependencies: color
+   89 |                 static_assert(false, norm.second);
+      |                               ^~~~~
+include/meta/commands.hpp:89:31: note: 'false' evaluates to false

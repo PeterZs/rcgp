@@ -41,12 +41,26 @@ def drop_error_summary(text):
 	return re.sub(r'^\d+ errors? generated\.\n?', '', text, flags=re.MULTILINE)
 
 
+def normalize_quotes(text):
+	return text.replace("‘", "'").replace("’", "'")
+
+
 def normalize(text):
 	text = strip_paths(text)
 	text = strip_lowercase_ns(text)
 	text = drop_macro_expansion_notes(text)
 	text = drop_error_summary(text)
+	text = normalize_quotes(text)
 	return text
+
+
+def compiler_family(compiler):
+	name = Path(compiler).name.lower()
+	if "clang" in name:
+		return "clang"
+	if "g++" in name or "gcc" in name:
+		return "gcc"
+	return None
 
 
 def main():
@@ -57,10 +71,15 @@ def main():
 	compiler = sys.argv[1]
 	cxxflags = sys.argv[2:-1]
 	source = Path(sys.argv[-1])
-	expected_path = source.with_suffix(".stderr")
 
+	family = compiler_family(compiler)
+	if family is None:
+		print(f"{RED}failed:{RESET} {source}: cannot identify compiler family of {compiler!r}")
+		sys.exit(2)
+
+	expected_path = source.with_name(f"{source.stem}.{family}.stderr")
 	if not expected_path.exists():
-		print(f"{RED}failed:{RESET} {source} missing expected output {expected_path}")
+		print(f"{RED}failed:{RESET} {source}: missing expected output {expected_path}")
 		sys.exit(1)
 
 	result = subprocess.run(
@@ -70,7 +89,7 @@ def main():
 	)
 
 	if result.returncode == 0:
-		print(f"{RED}failed:{RESET} {source} expected compilation to fail")
+		print(f"{RED}failed:{RESET} {source}: expected compilation to fail")
 		sys.exit(1)
 
 	actual_text = normalize(result.stderr)
@@ -86,7 +105,7 @@ def main():
 		print(f"{GREEN}passed:{RESET} {source}")
 		sys.exit(0)
 
-	print(f"{RED}failed:{RESET} {source} expected diagnostics not present in actual output")
+	print(f"{RED}failed:{RESET} {source}: expected diagnostics not present in actual output")
 	sys.stderr.write(f"{BOLD}missing lines:{RESET}\n")
 	for line in missing:
 		sys.stderr.write(f"  {line}\n")

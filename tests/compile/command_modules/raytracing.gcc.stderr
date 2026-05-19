@@ -1,0 +1,13 @@
+In file included from include/rcgp-meta.hpp:9,
+                 from include/rcgp.hpp:4,
+                 from tests/compile/command_modules/raytracing.cpp:1:
+include/meta/commands.hpp: In instantiation of 'auto rcgp::operator|(const Commands<false, Effects ...>&, const Commands<false, B ...>&) [with A = {ActivatePipeline<rcgp::PipelineKind::eRayTracing>, NormalEntry<norm_entry{norm_key{rcgp::KeyKind::eRef, ((void*)(& tlas)), rcgp::Topology::eTriangleList}, rcgp::NormOp::eDep, norm_bar{norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}, norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}}, ((const char*)(& ref_name_storage<tlas>.std::array<char, 5>::_M_elems))}>, NormalEntry<norm_entry{norm_key{rcgp::KeyKind::eRef, ((void*)(& image)), rcgp::Topology::eTriangleList}, rcgp::NormOp::eDep, norm_bar{norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}, norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}}, ((const char*)(& ref_name_storage<image>.std::array<char, 6>::_M_elems))}>}; B = {TerminalSentinel<rcgp::PipelineKind::eRayTracing>}]':
+tests/compile/command_modules/raytracing.cpp:146:41:   required from here
+  146 |                 | trace_rays(pipeline, sbt, 1024, 1024);
+      |                                                       ^
+include/meta/commands.hpp:89:31: error: static assertion failed: commands combinator detected dispatch before all dependencies
+were provided:
+	missing dependencies: tlas, image
+   89 |                 static_assert(false, norm.second);
+      |                               ^~~~~
+include/meta/commands.hpp:89:31: note: 'false' evaluates to false

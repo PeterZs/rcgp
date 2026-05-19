@@ -16,12 +16,12 @@ experimental: build_rcgp
 	./build/experimental
 
 # Compilation tests (static assertions, type checks, expected errors)
-compile:
+compile cxx=compiler:
 	for t in std430 scalar resources canonical; do \
-		{{compiler}} {{cxxflags}} -c tests/compile/$t.cpp -o /tmp/$t.o || exit 1; \
+		{{cxx}} {{cxxflags}} -c tests/compile/$t.cpp -o /tmp/$t.o || exit 1; \
 	done
 	for t in tests/compile/shader_modules/*.cpp tests/compile/command_modules/*.cpp; do \
-		python tests/compile/check_compile_fail.py {{compiler}} {{cxxflags}} $t || exit 1; \
+		python tests/compile/check_compile_fail.py {{cxx}} {{cxxflags}} $t || exit 1; \
 	done
 
 # Tests for JIT tracing of the DSL

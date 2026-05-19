@@ -1,0 +1,76 @@
+In file included from include/meta/function_construction.hpp:9,
+                 from include/rcgp-meta.hpp:13,
+                 from include/rcgp.hpp:4,
+                 from tests/compile/shader_modules/traced_params.cpp:1:
+include/meta/inject_arguments.hpp: In instantiation of 'void rcgp::inject_one_argument(T&, InjectionCounters&) [with ShaderStage S = rcgp::ShaderStage::eVertex; T = vector<float, 3>]':
+include/meta/inject_arguments.hpp:178:2:   required from 'rcgp::inject_arguments<rcgp::ShaderStage::eVertex, vector<float, 3>, write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, vector<float, 4> > >(std::tuple<vector<float, 3>, write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, vector<float, 4> > >&)::<lambda(std::index_sequence<Is ...>)> [with long unsigned int ...Is = {0, 1}; std::index_sequence<Is ...> = std::integer_sequence<long unsigned int, 0, 1>]'
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^~~~~~~~~~~~~~~~~~~~~~~
+include/meta/inject_arguments.hpp:178:2:   required from 'void rcgp::inject_arguments(std::tuple<_Elements ...>&) [with ShaderStage S = rcgp::ShaderStage::eVertex; Args = {vector<float, 3>, write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, vector<float, 4> >}]'
+    7 |         [&] <size_t ... name> (std::index_sequence <name...>) { \
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    8 |                 __VA_ARGS__;                                    \
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    9 |         } (std::make_index_sequence <N> ())
+      |         ~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/function_construction.hpp:53:24:   required from 'auto rcgp::trace(auto:101) [with ShaderStage S = rcgp::ShaderStage::eVertex; auto:101 = traced_param_in_vertex()::<lambda(vec3, ClipPosition)>]'
+   53 |                 inject_arguments <S> (args);
+      |                 ~~~~~~~~~~~~~~~~~~~~~^~~~~~
+include/meta/function_construction.hpp:77:26:   required from 'auto rcgp::operator<<(_fn_tag<S>, auto:102) [with ShaderStage S = rcgp::ShaderStage::eVertex; auto:102 = traced_param_in_vertex()::<lambda(vec3, ClipPosition)>]'
+   77 |         auto result = trace <S> (lambda);
+      |                       ~~~~~~~~~~^~~~~~~~
+tests/compile/shader_modules/traced_params.cpp:31:2:   required from here
+   31 |         };
+      |         ^
+include/meta/inject_arguments.hpp:168:31: error: static assertion failed: argument type f32[3] is not supported in Stage X
+  168 |                 static_assert(false, "argument type "_ss + $ss_type(T)
+      |                               ^~~~~
+include/meta/inject_arguments.hpp:168:31: note: 'false' evaluates to false
+include/meta/inject_arguments.hpp: In instantiation of 'void rcgp::inject_one_argument(T&, InjectionCounters&) [with ShaderStage S = rcgp::ShaderStage::eCompute; T = vector<float, 3>]':
+include/meta/inject_arguments.hpp:178:2:   required from 'rcgp::inject_arguments<rcgp::ShaderStage::eCompute, vector<float, 3>, WorkGroup<1, 1, 1> >(std::tuple<vector<float, 3>, WorkGroup<1, 1, 1> >&)::<lambda(std::index_sequence<Is ...>)> [with long unsigned int ...Is = {0, 1}; std::index_sequence<Is ...> = std::integer_sequence<long unsigned int, 0, 1>]'
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^~~~~~~~~~~~~~~~~~~~~~~
+include/meta/inject_arguments.hpp:178:2:   required from 'void rcgp::inject_arguments(std::tuple<_Elements ...>&) [with ShaderStage S = rcgp::ShaderStage::eCompute; Args = {vector<float, 3>, WorkGroup<1, 1, 1>}]'
+    7 |         [&] <size_t ... name> (std::index_sequence <name...>) { \
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    8 |                 __VA_ARGS__;                                    \
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    9 |         } (std::make_index_sequence <N> ())
+      |         ~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/function_construction.hpp:53:24:   required from 'auto rcgp::trace(auto:101) [with ShaderStage S = rcgp::ShaderStage::eCompute; auto:101 = traced_param_in_compute()::<lambda(vec3, WorkGroup<1>)>]'
+   53 |                 inject_arguments <S> (args);
+      |                 ~~~~~~~~~~~~~~~~~~~~~^~~~~~
+include/meta/function_construction.hpp:77:26:   required from 'auto rcgp::operator<<(_fn_tag<S>, auto:102) [with ShaderStage S = rcgp::ShaderStage::eCompute; auto:102 = traced_param_in_compute()::<lambda(vec3, WorkGroup<1>)>]'
+   77 |         auto result = trace <S> (lambda);
+      |                       ~~~~~~~~~~^~~~~~~~
+tests/compile/shader_modules/traced_params.cpp:36:67:   required from here
+   36 |         auto bad = $shader(compute)(vec3 position, WorkGroup <1> group) {};
+      |                                                                          ^
+include/meta/inject_arguments.hpp:168:31: error: static assertion failed: argument type f32[3] is not supported in Stage X
+  168 |                 static_assert(false, "argument type "_ss + $ss_type(T)
+      |                               ^~~~~
+include/meta/inject_arguments.hpp:168:31: note: 'false' evaluates to false
+include/meta/inject_arguments.hpp: In instantiation of 'void rcgp::inject_one_argument(T&, InjectionCounters&) [with ShaderStage S = rcgp::ShaderStage::eMesh; T = vector<float, 3>]':
+include/meta/inject_arguments.hpp:178:2:   required from 'rcgp::inject_arguments<rcgp::ShaderStage::eMesh, vector<float, 3>, WorkGroup<1, 1, 1> >(std::tuple<vector<float, 3>, WorkGroup<1, 1, 1> >&)::<lambda(std::index_sequence<Is ...>)> [with long unsigned int ...Is = {0, 1}; std::index_sequence<Is ...> = std::integer_sequence<long unsigned int, 0, 1>]'
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^~~~~~~~~~~~~~~~~~~~~~~
+include/meta/inject_arguments.hpp:178:2:   required from 'void rcgp::inject_arguments(std::tuple<_Elements ...>&) [with ShaderStage S = rcgp::ShaderStage::eMesh; Args = {vector<float, 3>, WorkGroup<1, 1, 1>}]'
+    7 |         [&] <size_t ... name> (std::index_sequence <name...>) { \
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    8 |                 __VA_ARGS__;                                    \
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    9 |         } (std::make_index_sequence <N> ())
+      |         ~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/function_construction.hpp:53:24:   required from 'auto rcgp::trace(auto:101) [with ShaderStage S = rcgp::ShaderStage::eMesh; auto:101 = traced_param_in_mesh()::<lambda(vec3, WorkGroup<1>)>]'
+   53 |                 inject_arguments <S> (args);
+      |                 ~~~~~~~~~~~~~~~~~~~~~^~~~~~
+include/meta/function_construction.hpp:77:26:   required from 'auto rcgp::operator<<(_fn_tag<S>, auto:102) [with ShaderStage S = rcgp::ShaderStage::eMesh; auto:102 = traced_param_in_mesh()::<lambda(vec3, WorkGroup<1>)>]'
+   77 |         auto result = trace <S> (lambda);
+      |                       ~~~~~~~~~~^~~~~~~~
+tests/compile/shader_modules/traced_params.cpp:45:2:   required from here
+   45 |         };
+      |         ^
+include/meta/inject_arguments.hpp:168:31: error: static assertion failed: argument type f32[3] is not supported in Stage X
+  168 |                 static_assert(false, "argument type "_ss + $ss_type(T)
+      |                               ^~~~~
+include/meta/inject_arguments.hpp:168:31: note: 'false' evaluates to false

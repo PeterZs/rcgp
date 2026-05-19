@@ -1,0 +1,13 @@
+In file included from include/rcgp-meta.hpp:9,
+                 from include/rcgp.hpp:4,
+                 from tests/compile/command_modules/mesh_shading.cpp:1:
+include/meta/commands.hpp: In instantiation of 'auto rcgp::operator|(const Commands<false, Effects ...>&, const Commands<false, B ...>&) [with A = {ActivatePipeline<rcgp::PipelineKind::eMeshShading>, NormalEntry<norm_entry{norm_key{rcgp::KeyKind::eRef, ((void*)(& params)), rcgp::Topology::eTriangleList}, rcgp::NormOp::eDep, norm_bar{norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}, norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}}, ((const char*)(& ref_name_storage<params>.std::array<char, 7>::_M_elems))}>}; B = {TerminalSentinel<rcgp::PipelineKind::eMeshShading>}]':
+tests/compile/command_modules/mesh_shading.cpp:110:22:   required from here
+  110 |                 | draw_mesh_tasks(1);
+      |                                    ^
+include/meta/commands.hpp:89:31: error: static assertion failed: commands combinator detected dispatch before all dependencies
+were provided:
+	missing dependencies: params
+   89 |                 static_assert(false, norm.second);
+      |                               ^~~~~
+include/meta/commands.hpp:89:31: note: 'false' evaluates to false

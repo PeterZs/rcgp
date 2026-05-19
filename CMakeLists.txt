@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 4.0)
 project(rcgp CXX)
 
 set(CMAKE_CXX_STANDARD 26)
-set(CMAKE_LINKER_TYPE MOLD)
+set(CMAKE_LINKER_TYPE MOLD CACHE STRING "")
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 find_package(Vulkan REQUIRED)

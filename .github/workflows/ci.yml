@@ -12,14 +12,24 @@ concurrency:
 
 jobs:
   test:
-    name: Build and test (gcc-15, Debian Trixie)
+    name: ${{ matrix.name }}
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: gcc-15,   image: gcc:15,        cc: gcc,       cxx: g++,         is_clang: false, clang_pkg: '', strict_dsl: true }
+          - { name: gcc-16,   image: gcc:16,        cc: gcc,       cxx: g++,         is_clang: false, clang_pkg: '', strict_dsl: true }
+          - { name: clang-19, image: debian:trixie, cc: clang-19,  cxx: clang++-19,  is_clang: true,  clang_pkg: clang-19, strict_dsl: false }
+          - { name: clang-20, image: debian:trixie, cc: clang-20,  cxx: clang++-20,  is_clang: true,  clang_pkg: clang-20, strict_dsl: false }
+          - { name: clang-21, image: debian:trixie, cc: clang-21,  cxx: clang++-21,  is_clang: true,  clang_pkg: clang-21, strict_dsl: false }
+          - { name: clang-22, image: debian:trixie, cc: clang-22,  cxx: clang++-22,  is_clang: true,  clang_pkg: clang-22, strict_dsl: true }
     container:
-      image: gcc:15
+      image: ${{ matrix.image }}
     env:
       DEBIAN_FRONTEND: noninteractive
-      CC: gcc
-      CXX: g++
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
       VK_ICD_FILENAMES: /usr/share/vulkan/icd.d/lvp_icd.json
       VK_LOADER_DRIVERS_SELECT: lvp_icd.json
 
@@ -29,13 +39,28 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install system packages
+      - name: Bootstrap clang toolchain
+        if: matrix.is_clang
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates wget gnupg
+          echo "deb http://deb.debian.org/debian sid main" > /etc/apt/sources.list.d/sid.list
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key \
+            | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc > /dev/null
+          version="${{ matrix.clang_pkg }}"
+          version="${version#clang-}"
+          echo "deb http://apt.llvm.org/trixie/ llvm-toolchain-trixie-${version} main" \
+            > /etc/apt/sources.list.d/llvm.list
+          apt-get update
+          apt-get install -y --no-install-recommends g++-15 ${{ matrix.clang_pkg }}
+          ${{ matrix.cxx }} --version
+
+      - name: Install runtime deps
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            ca-certificates git python3 python3-pip python-is-python3 nodejs just \
-            ninja-build mold pkg-config \
-            clang \
+            git python3 python3-pip python-is-python3 nodejs just \
+            make ninja-build pkg-config \
             libvulkan-dev vulkan-tools vulkan-validationlayers \
             mesa-vulkan-drivers \
             glslang-dev glslang-tools spirv-headers spirv-tools \
@@ -55,7 +80,7 @@ jobs:
         run: |
           git clone --depth 1 --branch "$VULKAN_HEADERS_TAG" \
             https://github.com/KhronosGroup/Vulkan-Headers.git /tmp/vk-headers
-          cmake -S /tmp/vk-headers -B /tmp/vk-headers/build -DCMAKE_INSTALL_PREFIX=/usr
+          cmake -G Ninja -S /tmp/vk-headers -B /tmp/vk-headers/build -DCMAKE_INSTALL_PREFIX=/usr
           cmake --install /tmp/vk-headers/build
           grep "VK_HEADER_VERSION " /usr/include/vulkan/vulkan_core.h | head -1
 
@@ -66,17 +91,24 @@ jobs:
         uses: actions/cache@v4
         with:
           path: build
-          key: cmake-gcc15-${{ hashFiles('CMakeLists.txt', 'include/scripts/*.py') }}
+          key: cmake-${{ matrix.name }}-${{ hashFiles('CMakeLists.txt', 'include/scripts/*.py') }}
           restore-keys: |
-            cmake-gcc15-
+            cmake-${{ matrix.name }}-
 
       - name: Build library
-        run: just build_rcgp
+        run: |
+          cmake -B build \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_LINKER_TYPE=DEFAULT \
+            .
+          cmake --build build -j
 
       - name: Compile-time tests
-        run: just cxxflags="-std=c++26 -I include --gcc-toolchain=/usr/local" compile
+        run: just compile ${{ matrix.cxx }}
 
       - name: DSL runtime tests
+        continue-on-error: ${{ !matrix.strict_dsl }}
         env:
           XDG_RUNTIME_DIR: /tmp/xdg-runtime
         run: |
