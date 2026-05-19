@@ -1,0 +1,355 @@
+#ifdef __clang__
+In file included from workgroup.cpp:1:
+In file included from rcgp.hpp:4:
+In file included from rcgp-meta.hpp:13:
+In file included from function_construction.hpp:9:
+inject_arguments.hpp:37:3: error: static assertion failed due to requirement '(rcgp::ShaderStage)1 == rcgp::ShaderStage::eCompute || (rcgp::ShaderStage)1 == rcgp::ShaderStage::eMesh': WorkGroup is only valid for mesh shaders
+   37 |                 S == ShaderStage::eCompute
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+   38 |                 || S == ShaderStage::eMesh,
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eVertex, 8U, 1U, 1U>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eVertex, rcgp::WorkGroup<8>, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+In file included from workgroup.cpp:1:
+In file included from rcgp.hpp:4:
+In file included from rcgp-meta.hpp:13:
+In file included from function_construction.hpp:9:
+inject_arguments.hpp:37:3: error: static assertion failed due to requirement '(rcgp::ShaderStage)2 == rcgp::ShaderStage::eCompute || (rcgp::ShaderStage)2 == rcgp::ShaderStage::eMesh': WorkGroup is only valid for mesh shaders
+   37 |                 S == ShaderStage::eCompute
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+   38 |                 || S == ShaderStage::eMesh,
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eFragment, 8U, 1U, 1U>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eFragment, rcgp::WorkGroup<8>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+In file included from workgroup.cpp:1:
+In file included from rcgp.hpp:4:
+In file included from rcgp-meta.hpp:13:
+In file included from function_construction.hpp:9:
+inject_arguments.hpp:37:3: error: static assertion failed due to requirement '(rcgp::ShaderStage)4 == rcgp::ShaderStage::eCompute || (rcgp::ShaderStage)4 == rcgp::ShaderStage::eMesh': WorkGroup is only valid for mesh shaders
+   37 |                 S == ShaderStage::eCompute
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+   38 |                 || S == ShaderStage::eMesh,
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eTask, 1U, 1U, 1U>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eTask, rcgp::WorkGroup<1>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+In file included from workgroup.cpp:1:
+In file included from rcgp.hpp:4:
+In file included from rcgp-meta.hpp:13:
+In file included from function_construction.hpp:9:
+inject_arguments.hpp:48:3: error: static assertion failed due to requirement '(rcgp::ShaderStage)3 == rcgp::ShaderStage::eTask': TaskGroup is only valid for task shaders
+   48 |                 S == ShaderStage::eTask,
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eCompute, 8U, 1U, 1U>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eCompute, rcgp::TaskGroup<8>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+inject_arguments.hpp:48:5: note: expression evaluates to '3 == 4'
+   48 |                 S == ShaderStage::eTask,
+      |                 ~~^~~~~~~~~~~~~~~~~~~~~
+inject_arguments.hpp:48:3: error: static assertion failed due to requirement '(rcgp::ShaderStage)1 == rcgp::ShaderStage::eTask': TaskGroup is only valid for task shaders
+   48 |                 S == ShaderStage::eTask,
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~
+inject_arguments.hpp:179:4: note: in instantiation of function template specialization 'rcgp::inject_one_argument<rcgp::ShaderStage::eVertex, 1U, 1U, 1U>' requested here
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^
+cti.hpp:8:3: note: expanded from macro 'constexpr_for'
+    8 |                 __VA_ARGS__;                                    \
+      |                 ^
+function_construction.hpp:53:3: note: in instantiation of function template specialization 'rcgp::inject_arguments<rcgp::ShaderStage::eVertex, rcgp::TaskGroup<1>, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>>' requested here
+   53 |                 inject_arguments <S> (args);
+      |                 ^
+inject_arguments.hpp:48:5: note: expression evaluates to '1 == 4'
+   48 |                 S == ShaderStage::eTask,
+      |                 ~~^~~~~~~~~~~~~~~~~~~~~
+5 errors generated.
+#elif defined(__GNUC__)
+#if __GNUC__ == 16
+In file included from include/meta/function_construction.hpp:9,
+                 from include/rcgp-meta.hpp:13,
+                 from include/rcgp.hpp:4,
+                 from tests/compile/shader_modules/workgroup.cpp:1:
+include/meta/inject_arguments.hpp: In instantiation of 'void rcgp::inject_one_argument(WorkGroup<X, Y, Z>&, InjectionCounters&) [with ShaderStage S = rcgp::ShaderStage::eVertex; unsigned int X = 8; unsigned int Y = 1; unsigned int Z = 1]':
+include/meta/inject_arguments.hpp:178:2:   required from 'rcgp::inject_arguments<rcgp::ShaderStage::eVertex, WorkGroup<8, 1, 1>, write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, vector<float, 4> > >(std::tuple<WorkGroup<8, 1, 1>, write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, vector<float, 4> > >&)::<lambda(std::index_sequence<Is ...>)> [with long unsigned int ...Is = {0, 1}; std::index_sequence<Is ...> = std::integer_sequence<long unsigned int, 0, 1>]'
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^~~~~~~~~~~~~~~~~~~~~~~
+include/meta/inject_arguments.hpp:178:2:   required from 'void rcgp::inject_arguments(std::tuple<_Elements ...>&) [with ShaderStage S = rcgp::ShaderStage::eVertex; Args = {WorkGroup<8, 1, 1>, write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, vector<float, 4> >}]'
+    7 |         [&] <size_t ... name> (std::index_sequence <name...>) { \
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    8 |                 __VA_ARGS__;                                    \
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    9 |         } (std::make_index_sequence <N> ())
+      |         ~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/function_construction.hpp:53:24:   required from 'auto rcgp::trace(auto:97) [with ShaderStage S = rcgp::ShaderStage::eVertex; auto:97 = workgroup_in_vertex()::<lambda(WorkGroup<8>, ClipPosition)>]'
+   53 |                 inject_arguments <S> (args);
+      |                 ~~~~~~~~~~~~~~~~~~~~~^~~~~~
+include/meta/function_construction.hpp:77:26:   required from 'auto rcgp::operator<<(_fn_tag<S>, auto:98) [with ShaderStage S = rcgp::ShaderStage::eVertex; auto:98 = workgroup_in_vertex()::<lambda(WorkGroup<8>, ClipPosition)>]'
+   77 |         auto result = trace <S> (lambda);
+      |                       ~~~~~~~~~~^~~~~~~~
+tests/compile/shader_modules/workgroup.cpp:43:2:   required from here
+   43 |         };
+      |         ^
+include/meta/inject_arguments.hpp:38:17: error: static assertion failed: WorkGroup is only valid for compute/mesh shaders
+   37 |                 S == ShaderStage::eCompute
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+   38 |                 || S == ShaderStage::eMesh,
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+  • '((rcgp::ShaderStage::eVertex == rcgp::ShaderStage::eCompute) || (rcgp::ShaderStage::eVertex == rcgp::ShaderStage::eMesh))' evaluates to false
+include/meta/inject_arguments.hpp: In instantiation of 'void rcgp::inject_one_argument(WorkGroup<X, Y, Z>&, InjectionCounters&) [with ShaderStage S = rcgp::ShaderStage::eFragment; unsigned int X = 8; unsigned int Y = 1; unsigned int Z = 1]':
+include/meta/inject_arguments.hpp:178:2:   required from 'rcgp::inject_arguments<rcgp::ShaderStage::eFragment, WorkGroup<8, 1, 1> >(std::tuple<WorkGroup<8, 1, 1> >&)::<lambda(std::index_sequence<Is ...>)> [with long unsigned int ...Is = {0}; std::index_sequence<Is ...> = std::integer_sequence<long unsigned int, 0>]'
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^~~~~~~~~~~~~~~~~~~~~~~
+include/meta/inject_arguments.hpp:178:2:   required from 'void rcgp::inject_arguments(std::tuple<_Elements ...>&) [with ShaderStage S = rcgp::ShaderStage::eFragment; Args = {WorkGroup<8, 1, 1>}]'
+    7 |         [&] <size_t ... name> (std::index_sequence <name...>) { \
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    8 |                 __VA_ARGS__;                                    \
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    9 |         } (std::make_index_sequence <N> ())
+      |         ~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/function_construction.hpp:53:24:   required from 'auto rcgp::trace(auto:97) [with ShaderStage S = rcgp::ShaderStage::eFragment; auto:97 = workgroup_in_fragment()::<lambda(WorkGroup<8>)>]'
+   53 |                 inject_arguments <S> (args);
+      |                 ~~~~~~~~~~~~~~~~~~~~~^~~~~~
+include/meta/function_construction.hpp:77:26:   required from 'auto rcgp::operator<<(_fn_tag<S>, auto:98) [with ShaderStage S = rcgp::ShaderStage::eFragment; auto:98 = workgroup_in_fragment()::<lambda(WorkGroup<8>)>]'
+   77 |         auto result = trace <S> (lambda);
+      |                       ~~~~~~~~~~^~~~~~~~
+tests/compile/shader_modules/workgroup.cpp:51:2:   required from here
+   51 |         };
+      |         ^
+include/meta/inject_arguments.hpp:38:17: error: static assertion failed: WorkGroup is only valid for compute/mesh shaders
+   37 |                 S == ShaderStage::eCompute
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+   38 |                 || S == ShaderStage::eMesh,
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+  • '((rcgp::ShaderStage::eFragment == rcgp::ShaderStage::eCompute) || (rcgp::ShaderStage::eFragment == rcgp::ShaderStage::eMesh))' evaluates to false
+include/meta/inject_arguments.hpp: In instantiation of 'void rcgp::inject_one_argument(WorkGroup<X, Y, Z>&, InjectionCounters&) [with ShaderStage S = rcgp::ShaderStage::eTask; unsigned int X = 1; unsigned int Y = 1; unsigned int Z = 1]':
+include/meta/inject_arguments.hpp:178:2:   required from 'rcgp::inject_arguments<rcgp::ShaderStage::eTask, WorkGroup<1, 1, 1> >(std::tuple<WorkGroup<1, 1, 1> >&)::<lambda(std::index_sequence<Is ...>)> [with long unsigned int ...Is = {0}; std::index_sequence<Is ...> = std::integer_sequence<long unsigned int, 0>]'
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^~~~~~~~~~~~~~~~~~~~~~~
+include/meta/inject_arguments.hpp:178:2:   required from 'void rcgp::inject_arguments(std::tuple<_Elements ...>&) [with ShaderStage S = rcgp::ShaderStage::eTask; Args = {WorkGroup<1, 1, 1>}]'
+    7 |         [&] <size_t ... name> (std::index_sequence <name...>) { \
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    8 |                 __VA_ARGS__;                                    \
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    9 |         } (std::make_index_sequence <N> ())
+      |         ~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/function_construction.hpp:53:24:   required from 'auto rcgp::trace(auto:97) [with ShaderStage S = rcgp::ShaderStage::eTask; auto:97 = workgroup_in_task()::<lambda(WorkGroup<1>)>]'
+   53 |                 inject_arguments <S> (args);
+      |                 ~~~~~~~~~~~~~~~~~~~~~^~~~~~
+include/meta/function_construction.hpp:77:26:   required from 'auto rcgp::operator<<(_fn_tag<S>, auto:98) [with ShaderStage S = rcgp::ShaderStage::eTask; auto:98 = workgroup_in_task()::<lambda(WorkGroup<1>)>]'
+   77 |         auto result = trace <S> (lambda);
+      |                       ~~~~~~~~~~^~~~~~~~
+tests/compile/shader_modules/workgroup.cpp:59:2:   required from here
+   59 |         };
+      |         ^
+include/meta/inject_arguments.hpp:38:17: error: static assertion failed: WorkGroup is only valid for compute/mesh shaders
+   37 |                 S == ShaderStage::eCompute
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+   38 |                 || S == ShaderStage::eMesh,
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+  • '((rcgp::ShaderStage::eTask == rcgp::ShaderStage::eCompute) || (rcgp::ShaderStage::eTask == rcgp::ShaderStage::eMesh))' evaluates to false
+include/meta/inject_arguments.hpp: In instantiation of 'void rcgp::inject_one_argument(TaskGroup<X, Y, Z>&, InjectionCounters&) [with ShaderStage S = rcgp::ShaderStage::eCompute; unsigned int X = 8; unsigned int Y = 1; unsigned int Z = 1]':
+include/meta/inject_arguments.hpp:178:2:   required from 'rcgp::inject_arguments<rcgp::ShaderStage::eCompute, TaskGroup<8, 1, 1> >(std::tuple<TaskGroup<8, 1, 1> >&)::<lambda(std::index_sequence<Is ...>)> [with long unsigned int ...Is = {0}; std::index_sequence<Is ...> = std::integer_sequence<long unsigned int, 0>]'
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^~~~~~~~~~~~~~~~~~~~~~~
+include/meta/inject_arguments.hpp:178:2:   required from 'void rcgp::inject_arguments(std::tuple<_Elements ...>&) [with ShaderStage S = rcgp::ShaderStage::eCompute; Args = {TaskGroup<8, 1, 1>}]'
+    7 |         [&] <size_t ... name> (std::index_sequence <name...>) { \
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    8 |                 __VA_ARGS__;                                    \
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    9 |         } (std::make_index_sequence <N> ())
+      |         ~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/function_construction.hpp:53:24:   required from 'auto rcgp::trace(auto:97) [with ShaderStage S = rcgp::ShaderStage::eCompute; auto:97 = taskgroup_in_compute()::<lambda(TaskGroup<8>)>]'
+   53 |                 inject_arguments <S> (args);
+      |                 ~~~~~~~~~~~~~~~~~~~~~^~~~~~
+include/meta/function_construction.hpp:77:26:   required from 'auto rcgp::operator<<(_fn_tag<S>, auto:98) [with ShaderStage S = rcgp::ShaderStage::eCompute; auto:98 = taskgroup_in_compute()::<lambda(TaskGroup<8>)>]'
+   77 |         auto result = trace <S> (lambda);
+      |                       ~~~~~~~~~~^~~~~~~~
+tests/compile/shader_modules/workgroup.cpp:64:52:   required from here
+   64 |         auto bad = $shader(compute)(TaskGroup <8> group) {};
+      |                                                           ^
+include/meta/inject_arguments.hpp:48:19: error: static assertion failed: TaskGroup is only valid for task shaders
+   48 |                 S == ShaderStage::eTask,
+      |                 ~~^~~~~~~~~~~~~~~~~~~~~
+  • '(rcgp::ShaderStage::eCompute == rcgp::ShaderStage::eTask)' evaluates to false
+include/meta/inject_arguments.hpp: In instantiation of 'void rcgp::inject_one_argument(TaskGroup<X, Y, Z>&, InjectionCounters&) [with ShaderStage S = rcgp::ShaderStage::eVertex; unsigned int X = 1; unsigned int Y = 1; unsigned int Z = 1]':
+include/meta/inject_arguments.hpp:178:2:   required from 'rcgp::inject_arguments<rcgp::ShaderStage::eVertex, TaskGroup<1, 1, 1>, write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, vector<float, 4> > >(std::tuple<TaskGroup<1, 1, 1>, write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, vector<float, 4> > >&)::<lambda(std::index_sequence<Is ...>)> [with long unsigned int ...Is = {0, 1}; std::index_sequence<Is ...> = std::integer_sequence<long unsigned int, 0, 1>]'
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^~~~~~~~~~~~~~~~~~~~~~~
+include/meta/inject_arguments.hpp:178:2:   required from 'void rcgp::inject_arguments(std::tuple<_Elements ...>&) [with ShaderStage S = rcgp::ShaderStage::eVertex; Args = {TaskGroup<1, 1, 1>, write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, vector<float, 4> >}]'
+    7 |         [&] <size_t ... name> (std::index_sequence <name...>) { \
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    8 |                 __VA_ARGS__;                                    \
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    9 |         } (std::make_index_sequence <N> ())
+      |         ~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/function_construction.hpp:53:24:   required from 'auto rcgp::trace(auto:97) [with ShaderStage S = rcgp::ShaderStage::eVertex; auto:97 = taskgroup_in_vertex()::<lambda(TaskGroup<1>, ClipPosition)>]'
+   53 |                 inject_arguments <S> (args);
+      |                 ~~~~~~~~~~~~~~~~~~~~~^~~~~~
+include/meta/function_construction.hpp:77:26:   required from 'auto rcgp::operator<<(_fn_tag<S>, auto:98) [with ShaderStage S = rcgp::ShaderStage::eVertex; auto:98 = taskgroup_in_vertex()::<lambda(TaskGroup<1>, ClipPosition)>]'
+   77 |         auto result = trace <S> (lambda);
+      |                       ~~~~~~~~~~^~~~~~~~
+tests/compile/shader_modules/workgroup.cpp:72:2:   required from here
+   72 |         };
+      |         ^
+include/meta/inject_arguments.hpp:48:19: error: static assertion failed: TaskGroup is only valid for task shaders
+   48 |                 S == ShaderStage::eTask,
+      |                 ~~^~~~~~~~~~~~~~~~~~~~~
+  • '(rcgp::ShaderStage::eVertex == rcgp::ShaderStage::eTask)' evaluates to false
+#elif __GNUC__ == 15
+In file included from include/meta/function_construction.hpp:9,
+                 from include/rcgp-meta.hpp:13,
+                 from include/rcgp.hpp:4,
+                 from tests/compile/shader_modules/workgroup.cpp:1:
+include/meta/inject_arguments.hpp: In instantiation of 'void rcgp::inject_one_argument(WorkGroup<X, Y, Z>&, InjectionCounters&) [with ShaderStage S = rcgp::ShaderStage::eVertex; unsigned int X = 8; unsigned int Y = 1; unsigned int Z = 1]':
+include/meta/inject_arguments.hpp:178:2:   required from 'rcgp::inject_arguments<rcgp::ShaderStage::eVertex, WorkGroup<8, 1, 1>, write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, vector<float, 4> > >(std::tuple<WorkGroup<8, 1, 1>, write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, vector<float, 4> > >&)::<lambda(std::index_sequence<Is ...>)> [with long unsigned int ...Is = {0, 1}; std::index_sequence<Is ...> = std::integer_sequence<long unsigned int, 0, 1>]'
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^~~~~~~~~~~~~~~~~~~~~~~
+include/meta/inject_arguments.hpp:178:2:   required from 'void rcgp::inject_arguments(std::tuple<_Elements ...>&) [with ShaderStage S = rcgp::ShaderStage::eVertex; Args = {WorkGroup<8, 1, 1>, write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, vector<float, 4> >}]'
+    7 |         [&] <size_t ... name> (std::index_sequence <name...>) { \
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    8 |                 __VA_ARGS__;                                    \
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    9 |         } (std::make_index_sequence <N> ())
+      |         ~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/function_construction.hpp:53:24:   required from 'auto rcgp::trace(auto:101) [with ShaderStage S = rcgp::ShaderStage::eVertex; auto:101 = workgroup_in_vertex()::<lambda(WorkGroup<8>, ClipPosition)>]'
+   53 |                 inject_arguments <S> (args);
+      |                 ~~~~~~~~~~~~~~~~~~~~~^~~~~~
+include/meta/function_construction.hpp:77:26:   required from 'auto rcgp::operator<<(_fn_tag<S>, auto:102) [with ShaderStage S = rcgp::ShaderStage::eVertex; auto:102 = workgroup_in_vertex()::<lambda(WorkGroup<8>, ClipPosition)>]'
+   77 |         auto result = trace <S> (lambda);
+      |                       ~~~~~~~~~~^~~~~~~~
+tests/compile/shader_modules/workgroup.cpp:43:2:   required from here
+   43 |         };
+      |         ^
+include/meta/inject_arguments.hpp:38:17: error: static assertion failed: WorkGroup is only valid for compute/mesh shaders
+   37 |                 S == ShaderStage::eCompute
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+   38 |                 || S == ShaderStage::eMesh,
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/inject_arguments.hpp:38:17: note: '((rcgp::ShaderStage::eVertex == rcgp::ShaderStage::eCompute) || (rcgp::ShaderStage::eVertex == rcgp::ShaderStage::eMesh))' evaluates to false
+include/meta/inject_arguments.hpp: In instantiation of 'void rcgp::inject_one_argument(WorkGroup<X, Y, Z>&, InjectionCounters&) [with ShaderStage S = rcgp::ShaderStage::eFragment; unsigned int X = 8; unsigned int Y = 1; unsigned int Z = 1]':
+include/meta/inject_arguments.hpp:178:2:   required from 'rcgp::inject_arguments<rcgp::ShaderStage::eFragment, WorkGroup<8, 1, 1> >(std::tuple<WorkGroup<8, 1, 1> >&)::<lambda(std::index_sequence<Is ...>)> [with long unsigned int ...Is = {0}; std::index_sequence<Is ...> = std::integer_sequence<long unsigned int, 0>]'
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^~~~~~~~~~~~~~~~~~~~~~~
+include/meta/inject_arguments.hpp:178:2:   required from 'void rcgp::inject_arguments(std::tuple<_Elements ...>&) [with ShaderStage S = rcgp::ShaderStage::eFragment; Args = {WorkGroup<8, 1, 1>}]'
+    7 |         [&] <size_t ... name> (std::index_sequence <name...>) { \
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    8 |                 __VA_ARGS__;                                    \
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    9 |         } (std::make_index_sequence <N> ())
+      |         ~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/function_construction.hpp:53:24:   required from 'auto rcgp::trace(auto:101) [with ShaderStage S = rcgp::ShaderStage::eFragment; auto:101 = workgroup_in_fragment()::<lambda(WorkGroup<8>)>]'
+   53 |                 inject_arguments <S> (args);
+      |                 ~~~~~~~~~~~~~~~~~~~~~^~~~~~
+include/meta/function_construction.hpp:77:26:   required from 'auto rcgp::operator<<(_fn_tag<S>, auto:102) [with ShaderStage S = rcgp::ShaderStage::eFragment; auto:102 = workgroup_in_fragment()::<lambda(WorkGroup<8>)>]'
+   77 |         auto result = trace <S> (lambda);
+      |                       ~~~~~~~~~~^~~~~~~~
+tests/compile/shader_modules/workgroup.cpp:51:2:   required from here
+   51 |         };
+      |         ^
+include/meta/inject_arguments.hpp:38:17: error: static assertion failed: WorkGroup is only valid for compute/mesh shaders
+   37 |                 S == ShaderStage::eCompute
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+   38 |                 || S == ShaderStage::eMesh,
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/inject_arguments.hpp:38:17: note: '((rcgp::ShaderStage::eFragment == rcgp::ShaderStage::eCompute) || (rcgp::ShaderStage::eFragment == rcgp::ShaderStage::eMesh))' evaluates to false
+include/meta/inject_arguments.hpp: In instantiation of 'void rcgp::inject_one_argument(WorkGroup<X, Y, Z>&, InjectionCounters&) [with ShaderStage S = rcgp::ShaderStage::eTask; unsigned int X = 1; unsigned int Y = 1; unsigned int Z = 1]':
+include/meta/inject_arguments.hpp:178:2:   required from 'rcgp::inject_arguments<rcgp::ShaderStage::eTask, WorkGroup<1, 1, 1> >(std::tuple<WorkGroup<1, 1, 1> >&)::<lambda(std::index_sequence<Is ...>)> [with long unsigned int ...Is = {0}; std::index_sequence<Is ...> = std::integer_sequence<long unsigned int, 0>]'
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^~~~~~~~~~~~~~~~~~~~~~~
+include/meta/inject_arguments.hpp:178:2:   required from 'void rcgp::inject_arguments(std::tuple<_Elements ...>&) [with ShaderStage S = rcgp::ShaderStage::eTask; Args = {WorkGroup<1, 1, 1>}]'
+    7 |         [&] <size_t ... name> (std::index_sequence <name...>) { \
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    8 |                 __VA_ARGS__;                                    \
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    9 |         } (std::make_index_sequence <N> ())
+      |         ~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/function_construction.hpp:53:24:   required from 'auto rcgp::trace(auto:101) [with ShaderStage S = rcgp::ShaderStage::eTask; auto:101 = workgroup_in_task()::<lambda(WorkGroup<1>)>]'
+   53 |                 inject_arguments <S> (args);
+      |                 ~~~~~~~~~~~~~~~~~~~~~^~~~~~
+include/meta/function_construction.hpp:77:26:   required from 'auto rcgp::operator<<(_fn_tag<S>, auto:102) [with ShaderStage S = rcgp::ShaderStage::eTask; auto:102 = workgroup_in_task()::<lambda(WorkGroup<1>)>]'
+   77 |         auto result = trace <S> (lambda);
+      |                       ~~~~~~~~~~^~~~~~~~
+tests/compile/shader_modules/workgroup.cpp:59:2:   required from here
+   59 |         };
+      |         ^
+include/meta/inject_arguments.hpp:38:17: error: static assertion failed: WorkGroup is only valid for compute/mesh shaders
+   37 |                 S == ShaderStage::eCompute
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+   38 |                 || S == ShaderStage::eMesh,
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/inject_arguments.hpp:38:17: note: '((rcgp::ShaderStage::eTask == rcgp::ShaderStage::eCompute) || (rcgp::ShaderStage::eTask == rcgp::ShaderStage::eMesh))' evaluates to false
+include/meta/inject_arguments.hpp: In instantiation of 'void rcgp::inject_one_argument(TaskGroup<X, Y, Z>&, InjectionCounters&) [with ShaderStage S = rcgp::ShaderStage::eCompute; unsigned int X = 8; unsigned int Y = 1; unsigned int Z = 1]':
+include/meta/inject_arguments.hpp:178:2:   required from 'rcgp::inject_arguments<rcgp::ShaderStage::eCompute, TaskGroup<8, 1, 1> >(std::tuple<TaskGroup<8, 1, 1> >&)::<lambda(std::index_sequence<Is ...>)> [with long unsigned int ...Is = {0}; std::index_sequence<Is ...> = std::integer_sequence<long unsigned int, 0>]'
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^~~~~~~~~~~~~~~~~~~~~~~
+include/meta/inject_arguments.hpp:178:2:   required from 'void rcgp::inject_arguments(std::tuple<_Elements ...>&) [with ShaderStage S = rcgp::ShaderStage::eCompute; Args = {TaskGroup<8, 1, 1>}]'
+    7 |         [&] <size_t ... name> (std::index_sequence <name...>) { \
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    8 |                 __VA_ARGS__;                                    \
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    9 |         } (std::make_index_sequence <N> ())
+      |         ~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/function_construction.hpp:53:24:   required from 'auto rcgp::trace(auto:101) [with ShaderStage S = rcgp::ShaderStage::eCompute; auto:101 = taskgroup_in_compute()::<lambda(TaskGroup<8>)>]'
+   53 |                 inject_arguments <S> (args);
+      |                 ~~~~~~~~~~~~~~~~~~~~~^~~~~~
+include/meta/function_construction.hpp:77:26:   required from 'auto rcgp::operator<<(_fn_tag<S>, auto:102) [with ShaderStage S = rcgp::ShaderStage::eCompute; auto:102 = taskgroup_in_compute()::<lambda(TaskGroup<8>)>]'
+   77 |         auto result = trace <S> (lambda);
+      |                       ~~~~~~~~~~^~~~~~~~
+tests/compile/shader_modules/workgroup.cpp:64:52:   required from here
+   64 |         auto bad = $shader(compute)(TaskGroup <8> group) {};
+      |                                                           ^
+include/meta/inject_arguments.hpp:48:19: error: static assertion failed: TaskGroup is only valid for task shaders
+   48 |                 S == ShaderStage::eTask,
+      |                 ~~^~~~~~~~~~~~~~~~~~~~~
+include/meta/inject_arguments.hpp:48:19: note: '(rcgp::ShaderStage::eCompute == rcgp::ShaderStage::eTask)' evaluates to false
+include/meta/inject_arguments.hpp: In instantiation of 'void rcgp::inject_one_argument(TaskGroup<X, Y, Z>&, InjectionCounters&) [with ShaderStage S = rcgp::ShaderStage::eVertex; unsigned int X = 1; unsigned int Y = 1; unsigned int Z = 1]':
+include/meta/inject_arguments.hpp:178:2:   required from 'rcgp::inject_arguments<rcgp::ShaderStage::eVertex, TaskGroup<1, 1, 1>, write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, vector<float, 4> > >(std::tuple<TaskGroup<1, 1, 1>, write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, vector<float, 4> > >&)::<lambda(std::index_sequence<Is ...>)> [with long unsigned int ...Is = {0, 1}; std::index_sequence<Is ...> = std::integer_sequence<long unsigned int, 0, 1>]'
+  179 |                 (inject_one_argument <S> (std::get <Is> (args), counters), ...)
+      |                  ^~~~~~~~~~~~~~~~~~~~~~~
+include/meta/inject_arguments.hpp:178:2:   required from 'void rcgp::inject_arguments(std::tuple<_Elements ...>&) [with ShaderStage S = rcgp::ShaderStage::eVertex; Args = {TaskGroup<1, 1, 1>, write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, vector<float, 4> >}]'
+    7 |         [&] <size_t ... name> (std::index_sequence <name...>) { \
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    8 |                 __VA_ARGS__;                                    \
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    9 |         } (std::make_index_sequence <N> ())
+      |         ~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/function_construction.hpp:53:24:   required from 'auto rcgp::trace(auto:101) [with ShaderStage S = rcgp::ShaderStage::eVertex; auto:101 = taskgroup_in_vertex()::<lambda(TaskGroup<1>, ClipPosition)>]'
+   53 |                 inject_arguments <S> (args);
+      |                 ~~~~~~~~~~~~~~~~~~~~~^~~~~~
+include/meta/function_construction.hpp:77:26:   required from 'auto rcgp::operator<<(_fn_tag<S>, auto:102) [with ShaderStage S = rcgp::ShaderStage::eVertex; auto:102 = taskgroup_in_vertex()::<lambda(TaskGroup<1>, ClipPosition)>]'
+   77 |         auto result = trace <S> (lambda);
+      |                       ~~~~~~~~~~^~~~~~~~
+tests/compile/shader_modules/workgroup.cpp:72:2:   required from here
+   72 |         };
+      |         ^
+include/meta/inject_arguments.hpp:48:19: error: static assertion failed: TaskGroup is only valid for task shaders
+   48 |                 S == ShaderStage::eTask,
+      |                 ~~^~~~~~~~~~~~~~~~~~~~~
+include/meta/inject_arguments.hpp:48:19: note: '(rcgp::ShaderStage::eVertex == rcgp::ShaderStage::eTask)' evaluates to false
+#endif
+#endif

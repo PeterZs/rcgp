@@ -1,0 +1,75 @@
+#ifdef __clang__
+In file included from rasterization.cpp:1:
+In file included from rcgp.hpp:4:
+In file included from rcgp-meta.hpp:9:
+commands.hpp:89:17: error: static assertion failed: commands combinator detected dispatch before all dependencies
+were provided:
+	missing dependencies: material
+   89 |                 static_assert(false, norm.second);
+      |                               ^~~~~
+rasterization.cpp:168:3: note: in instantiation of function template specialization 'rcgp::operator|<rcgp::ActivatePipeline<rcgp::PipelineKind::eRasterization>, rcgp::NormalEntry<norm_entry{{4, nullptr, 0}, 3, {{0, 0}, {0, 0}}, nullptr}>, rcgp::NormalEntry<norm_entry{{1, &material, 0}, 1, {{0, 0}, {0, 0}}, &ref_name_storage._M_elems[0]}>, rcgp::TerminalSentinel<rcgp::PipelineKind::eRasterization>>' requested here
+  168 |                 | draw(3);
+      |                 ^
+In file included from rasterization.cpp:1:
+In file included from rcgp.hpp:4:
+In file included from rcgp-meta.hpp:9:
+commands.hpp:89:17: error: static assertion failed: commands combinator detected dispatch before all dependencies
+were provided:
+	missing dependencies: <index buffer>
+   89 |                 static_assert(false, norm.second);
+      |                               ^~~~~
+rasterization.cpp:202:3: note: in instantiation of function template specialization 'rcgp::operator|<rcgp::ActivatePipeline<rcgp::PipelineKind::eRasterization>, rcgp::NormalEntry<norm_entry{{4, nullptr, 0}, 3, {{0, 0}, {0, 0}}, nullptr}>, rcgp::DependencyEnforcerForIndexBuffer, rcgp::TerminalSentinel<rcgp::PipelineKind::eRasterization>>' requested here
+  202 |                 | draw_indexed(36);
+      |                 ^
+2 errors generated.
+#elif defined(__GNUC__)
+#if __GNUC__ == 16
+In file included from include/rcgp-meta.hpp:9,
+                 from include/rcgp.hpp:4,
+                 from tests/compile/command_modules/rasterization.cpp:1:
+include/meta/commands.hpp: In instantiation of 'auto rcgp::operator|(const Commands<false, Effects ...>&, const Commands<false, B ...>&) [with A = {ActivatePipeline<rcgp::PipelineKind::eRasterization>, NormalEntry<norm_entry{norm_key{rcgp::KeyKind::eIndex, 0, rcgp::Topology::eTriangleList}, rcgp::NormOp::ePendingDep, norm_bar{norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}, norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}}, 0}>, NormalEntry<norm_entry{norm_key{rcgp::KeyKind::eRef, ((void*)(& material)), rcgp::Topology::eTriangleList}, rcgp::NormOp::eDep, norm_bar{norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}, norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}}, ((const char*)(& ref_name_storage<material>.std::array<char, 9>::_M_elems))}>}; B = {TerminalSentinel<rcgp::PipelineKind::eRasterization>}]':
+tests/compile/command_modules/rasterization.cpp:168:11:   required from here
+  168 |                 | draw(3);
+      |                         ^
+include/meta/commands.hpp:89:31: error: static assertion failed: commands combinator detected dispatch before all dependencies
+were provided:
+	missing dependencies: material
+   89 |                 static_assert(false, norm.second);
+      |                               ^~~~~
+  • 'false' evaluates to false
+include/meta/commands.hpp: In instantiation of 'auto rcgp::operator|(const Commands<false, Effects ...>&, const Commands<false, B ...>&) [with A = {ActivatePipeline<rcgp::PipelineKind::eRasterization>, NormalEntry<norm_entry{norm_key{rcgp::KeyKind::eIndex, 0, rcgp::Topology::eTriangleList}, rcgp::NormOp::ePendingDep, norm_bar{norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}, norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}}, 0}>}; B = {DependencyEnforcerForIndexBuffer, TerminalSentinel<rcgp::PipelineKind::eRasterization>}]':
+tests/compile/command_modules/rasterization.cpp:202:20:   required from here
+  202 |                 | draw_indexed(36);
+      |                                  ^
+include/meta/commands.hpp:89:31: error: static assertion failed: commands combinator detected dispatch before all dependencies
+were provided:
+	missing dependencies: <index buffer>
+   89 |                 static_assert(false, norm.second);
+      |                               ^~~~~
+  • 'false' evaluates to false
+#elif __GNUC__ == 15
+In file included from include/rcgp-meta.hpp:9,
+                 from include/rcgp.hpp:4,
+                 from tests/compile/command_modules/rasterization.cpp:1:
+include/meta/commands.hpp: In instantiation of 'auto rcgp::operator|(const Commands<false, Effects ...>&, const Commands<false, B ...>&) [with A = {ActivatePipeline<rcgp::PipelineKind::eRasterization>, NormalEntry<norm_entry{norm_key{rcgp::KeyKind::eIndex, 0, rcgp::Topology::eTriangleList}, rcgp::NormOp::ePendingDep, norm_bar{norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}, norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}}, 0}>, NormalEntry<norm_entry{norm_key{rcgp::KeyKind::eRef, ((void*)(& material)), rcgp::Topology::eTriangleList}, rcgp::NormOp::eDep, norm_bar{norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}, norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}}, ((const char*)(& ref_name_storage<material>.std::array<char, 9>::_M_elems))}>}; B = {TerminalSentinel<rcgp::PipelineKind::eRasterization>}]':
+tests/compile/command_modules/rasterization.cpp:168:11:   required from here
+  168 |                 | draw(3);
+      |                         ^
+include/meta/commands.hpp:89:31: error: static assertion failed: commands combinator detected dispatch before all dependencies
+were provided:
+	missing dependencies: material
+   89 |                 static_assert(false, norm.second);
+      |                               ^~~~~
+include/meta/commands.hpp:89:31: note: 'false' evaluates to false
+include/meta/commands.hpp: In instantiation of 'auto rcgp::operator|(const Commands<false, Effects ...>&, const Commands<false, B ...>&) [with A = {ActivatePipeline<rcgp::PipelineKind::eRasterization>, NormalEntry<norm_entry{norm_key{rcgp::KeyKind::eIndex, 0, rcgp::Topology::eTriangleList}, rcgp::NormOp::ePendingDep, norm_bar{norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}, norm_phase{rcgp::PipelineStage::eNone, rcgp::ResourceAccess::eNone}}, 0}>}; B = {DependencyEnforcerForIndexBuffer, TerminalSentinel<rcgp::PipelineKind::eRasterization>}]':
+tests/compile/command_modules/rasterization.cpp:202:20:   required from here
+  202 |                 | draw_indexed(36);
+      |                                  ^
+include/meta/commands.hpp:89:31: error: static assertion failed: commands combinator detected dispatch before all dependencies
+were provided:
+	missing dependencies: <index buffer>
+   89 |                 static_assert(false, norm.second);
+      |                               ^~~~~
+include/meta/commands.hpp:89:31: note: 'false' evaluates to false
+#endif
+#endif

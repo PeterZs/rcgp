@@ -1,0 +1,104 @@
+#ifdef __clang__
+In file included from raytracing_combinator.cpp:1:
+In file included from rcgp.hpp:4:
+In file included from rcgp-meta.hpp:8:
+combinators.hpp:265:17: error: static assertion failed due to requirement 'is_raygen': ray tracing combinator: arg@0 is not a ray generation shader
+  265 |                 static_assert(is_raygen, "ray tracing combinator: arg@0 is not a ray generation shader");
+      |                               ^~~~~~~~~
+raytracing_combinator.cpp:34:4: note: in instantiation of function template specialization 'rcgp::RayTracingCombinator::operator()<rcgp::shader_stage<rcgp::ShaderStage::eVertex, void, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4>>>, rcgp::shader_stage<rcgp::ShaderStage::eMiss, void, rcgp::jems::null, rcgp::contract<rcgp::receiver>>, rcgp::shader_stage<rcgp::ShaderStage::eClosestHit, void, rcgp::jems::null, rcgp::contract<rcgp::receiver>, rcgp::vector<float, 2>>>' requested here
+   34 |         } (vs, std::tuple { miss }, std::tuple { chit });
+      |           ^
+In file included from raytracing_combinator.cpp:1:
+In file included from rcgp.hpp:4:
+In file included from rcgp-meta.hpp:8:
+combinators.hpp:273:18: error: static assertion failed: ray tracing combinator detected receivers without a matching dispatcher:
+	uncovered receivers: radiance
+  273 |                         static_assert(false, coverage);
+      |                                       ^~~~~
+combinators.hpp:273:18: error: static assertion failed: ray tracing combinator detected receivers without a matching dispatcher:
+	uncovered receivers: occlusion
+  273 |                         static_assert(false, coverage);
+      |                                       ^~~~~
+raytracing_combinator.cpp:53:4: note: in instantiation of function template specialization 'rcgp::RayTracingCombinator::operator()<rcgp::shader_stage<rcgp::ShaderStage::eRayGeneration, void, rcgp::jems::null, rcgp::contract<rcgp::dispatcher>, rcgp::read_only_intrinsic<rcgp::SystemValue::eLaunchID, rcgp::ShaderStage::eRayGeneration, rcgp::vector<unsigned int, 3>>>, rcgp::shader_stage<rcgp::ShaderStage::eMiss, void, rcgp::jems::null, rcgp::contract<rcgp::receiver>>, rcgp::shader_stage<rcgp::ShaderStage::eClosestHit, void, rcgp::jems::null, rcgp::contract<rcgp::receiver>, rcgp::contract<rcgp::receiver>, rcgp::vector<float, 2>>>' requested here
+   53 |         } (rgen, std::tuple { miss }, std::tuple { chit });
+      |           ^
+3 errors generated.
+#elif defined(__GNUC__)
+#if __GNUC__ == 16
+In file included from include/rcgp-meta.hpp:8,
+                 from include/rcgp.hpp:4,
+                 from tests/compile/shader_modules/raytracing_combinator.cpp:1:
+include/meta/combinators.hpp: In instantiation of 'auto rcgp::RayTracingCombinator::operator()(const RayGenerationShader&, const std::tuple<_Elements ...>&, const std::tuple<_T3s ...>&) const [with RayGenerationShader = rcgp::shader_stage<rcgp::ShaderStage::eVertex, void, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4> > >; MissShaders = {rcgp::shader_stage<rcgp::ShaderStage::eMiss, void, rcgp::jems::null, rcgp::contract<rcgp::receiver<radiance> > >}; ClosestHitShaders = {rcgp::shader_stage<rcgp::ShaderStage::eClosestHit, void, rcgp::jems::null, rcgp::contract<rcgp::receiver<radiance> >, rcgp::vector<float, 2> >}]':
+tests/compile/shader_modules/raytracing_combinator.cpp:34:4:   required from here
+   31 |         auto pipeline = RayTracingCombinator {
+      |                         ~~~~~~~~~~~~~~~~~~~~~~
+   32 |                 .device = device,
+      |                 ~~~~~~~~~~~~~~~~~
+   33 |                 .compiler = compiler,
+      |                 ~~~~~~~~~~~~~~~~~~~~~
+   34 |         } (vs, std::tuple { miss }, std::tuple { chit });
+      |         ~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/combinators.hpp:265:31: error: static assertion failed: ray tracing combinator: arg@0 is not a ray generation shader
+  265 |                 static_assert(is_raygen, "ray tracing combinator: arg@0 is not a ray generation shader");
+      |                               ^~~~~~~~~
+  • 'is_raygen' evaluates to false
+include/meta/combinators.hpp:273:39: error: static assertion failed: ray tracing combinator detected receivers without a matching dispatcher:
+	uncovered receivers: (& radiance)
+  273 |                         static_assert(false, coverage);
+      |                                       ^~~~~
+  • 'false' evaluates to false
+include/meta/combinators.hpp: In instantiation of 'auto rcgp::RayTracingCombinator::operator()(const RayGenerationShader&, const std::tuple<_Elements ...>&, const std::tuple<_T3s ...>&) const [with RayGenerationShader = rcgp::shader_stage<rcgp::ShaderStage::eRayGeneration, void, rcgp::jems::null, rcgp::contract<rcgp::dispatcher<radiance> >, rcgp::read_only_intrinsic<rcgp::SystemValue::eLaunchID, rcgp::ShaderStage::eRayGeneration, rcgp::vector<unsigned int, 3> > >; MissShaders = {rcgp::shader_stage<rcgp::ShaderStage::eMiss, void, rcgp::jems::null, rcgp::contract<rcgp::receiver<radiance> > >}; ClosestHitShaders = {rcgp::shader_stage<rcgp::ShaderStage::eClosestHit, void, rcgp::jems::null, rcgp::contract<rcgp::receiver<radiance> >, rcgp::contract<rcgp::receiver<occlusion> >, rcgp::vector<float, 2> >}]':
+tests/compile/shader_modules/raytracing_combinator.cpp:53:4:   required from here
+   50 |         auto pipeline = RayTracingCombinator {
+      |                         ~~~~~~~~~~~~~~~~~~~~~~
+   51 |                 .device = device,
+      |                 ~~~~~~~~~~~~~~~~~
+   52 |                 .compiler = compiler,
+      |                 ~~~~~~~~~~~~~~~~~~~~~
+   53 |         } (rgen, std::tuple { miss }, std::tuple { chit });
+      |         ~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/combinators.hpp:273:39: error: static assertion failed: ray tracing combinator detected receivers without a matching dispatcher:
+	uncovered receivers: (& occlusion)
+  273 |                         static_assert(false, coverage);
+      |                                       ^~~~~
+  • 'false' evaluates to false
+#elif __GNUC__ == 15
+In file included from include/rcgp-meta.hpp:8,
+                 from include/rcgp.hpp:4,
+                 from tests/compile/shader_modules/raytracing_combinator.cpp:1:
+include/meta/combinators.hpp: In instantiation of 'auto rcgp::RayTracingCombinator::operator()(const RayGenerationShader&, const std::tuple<_Elements ...>&, const std::tuple<_Tp ...>&) const [with RayGenerationShader = rcgp::shader_stage<rcgp::ShaderStage::eVertex, void, rcgp::write_only_intrinsic<rcgp::SystemValue::eClipPosition, rcgp::ShaderStage::eVertex, rcgp::vector<float, 4> > >; MissShaders = {rcgp::shader_stage<rcgp::ShaderStage::eMiss, void, rcgp::jems::null, rcgp::contract<rcgp::receiver<radiance> > >}; ClosestHitShaders = {rcgp::shader_stage<rcgp::ShaderStage::eClosestHit, void, rcgp::jems::null, rcgp::contract<rcgp::receiver<radiance> >, rcgp::vector<float, 2> >}]':
+tests/compile/shader_modules/raytracing_combinator.cpp:34:4:   required from here
+   31 |         auto pipeline = RayTracingCombinator {
+      |                         ~~~~~~~~~~~~~~~~~~~~~~
+   32 |                 .device = device,
+      |                 ~~~~~~~~~~~~~~~~~
+   33 |                 .compiler = compiler,
+      |                 ~~~~~~~~~~~~~~~~~~~~~
+   34 |         } (vs, std::tuple { miss }, std::tuple { chit });
+      |         ~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/combinators.hpp:265:31: error: static assertion failed: ray tracing combinator: arg@0 is not a ray generation shader
+  265 |                 static_assert(is_raygen, "ray tracing combinator: arg@0 is not a ray generation shader");
+      |                               ^~~~~~~~~
+include/meta/combinators.hpp:265:31: note: 'is_raygen' evaluates to false
+include/meta/combinators.hpp:273:39: error: static assertion failed: ray tracing combinator detected receivers without a matching dispatcher:
+	uncovered receivers: (& radiance)
+  273 |                         static_assert(false, coverage);
+      |                                       ^~~~~
+include/meta/combinators.hpp:273:39: note: 'false' evaluates to false
+include/meta/combinators.hpp: In instantiation of 'auto rcgp::RayTracingCombinator::operator()(const RayGenerationShader&, const std::tuple<_Elements ...>&, const std::tuple<_Tp ...>&) const [with RayGenerationShader = rcgp::shader_stage<rcgp::ShaderStage::eRayGeneration, void, rcgp::jems::null, rcgp::contract<rcgp::dispatcher<radiance> >, rcgp::read_only_intrinsic<rcgp::SystemValue::eLaunchID, rcgp::ShaderStage::eRayGeneration, rcgp::vector<unsigned int, 3> > >; MissShaders = {rcgp::shader_stage<rcgp::ShaderStage::eMiss, void, rcgp::jems::null, rcgp::contract<rcgp::receiver<radiance> > >}; ClosestHitShaders = {rcgp::shader_stage<rcgp::ShaderStage::eClosestHit, void, rcgp::jems::null, rcgp::contract<rcgp::receiver<radiance> >, rcgp::contract<rcgp::receiver<occlusion> >, rcgp::vector<float, 2> >}]':
+tests/compile/shader_modules/raytracing_combinator.cpp:53:4:   required from here
+   50 |         auto pipeline = RayTracingCombinator {
+      |                         ~~~~~~~~~~~~~~~~~~~~~~
+   51 |                 .device = device,
+      |                 ~~~~~~~~~~~~~~~~~
+   52 |                 .compiler = compiler,
+      |                 ~~~~~~~~~~~~~~~~~~~~~
+   53 |         } (rgen, std::tuple { miss }, std::tuple { chit });
+      |         ~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include/meta/combinators.hpp:273:39: error: static assertion failed: ray tracing combinator detected receivers without a matching dispatcher:
+	uncovered receivers: (& occlusion)
+  273 |                         static_assert(false, coverage);
+      |                                       ^~~~~
+include/meta/combinators.hpp:273:39: note: 'false' evaluates to false
+#endif
+#endif

@@ -45,22 +45,52 @@ def normalize_quotes(text):
 	return text.replace("‘", "'").replace("’", "'")
 
 
+def normalize_auto_numbering(text):
+	return re.sub(r'\bauto:\d+\b', 'auto:?', text)
+
+
+def drop_gcc_elaboration_notes(text):
+	patterns = ("evaluates to true", "evaluates to false", "the comparison reduces to")
+	return "\n".join(
+		line for line in text.splitlines()
+		if not any(p in line for p in patterns)
+	) + "\n"
+
+
 def normalize(text):
 	text = strip_paths(text)
 	text = strip_lowercase_ns(text)
 	text = drop_macro_expansion_notes(text)
 	text = drop_error_summary(text)
 	text = normalize_quotes(text)
+	text = normalize_auto_numbering(text)
+	text = drop_gcc_elaboration_notes(text)
 	return text
 
 
-def compiler_family(compiler):
+def compiler_defines(compiler):
 	name = Path(compiler).name.lower()
 	if "clang" in name:
-		return "clang"
+		return ["-D__clang__", "-U__GNUC__"]
 	if "g++" in name or "gcc" in name:
-		return "gcc"
-	return None
+		version = subprocess.run(
+			[compiler, "-dumpversion"], capture_output=True, text=True,
+		).stdout.strip().split(".")[0]
+		defines = ["-U__clang__", "-D__GNUC__"]
+		if version.isdigit():
+			defines.append(f"-D__GNUC__={version}")
+		return defines
+	return []
+
+
+def preprocess_golden(path, defines):
+	args = ["unifdef", "-t"] + defines + [str(path)]
+	result = subprocess.run(args, capture_output=True, text=True)
+	# unifdef returns 0 if unchanged, 1 if changed; both are success.
+	if result.returncode not in (0, 1):
+		sys.stderr.write(result.stderr)
+		sys.exit(2)
+	return result.stdout
 
 
 def main():
@@ -71,15 +101,10 @@ def main():
 	compiler = sys.argv[1]
 	cxxflags = sys.argv[2:-1]
 	source = Path(sys.argv[-1])
+	expected_path = source.with_suffix(".expected")
 
-	family = compiler_family(compiler)
-	if family is None:
-		print(f"{RED}failed:{RESET} {source}: cannot identify compiler family of {compiler!r}")
-		sys.exit(2)
-
-	expected_path = source.with_name(f"{source.stem}.{family}.stderr")
 	if not expected_path.exists():
-		print(f"{RED}failed:{RESET} {source}: missing expected output {expected_path}")
+		print(f"{RED}failed:{RESET} {source}: missing companion file {expected_path}")
 		sys.exit(1)
 
 	result = subprocess.run(
@@ -93,7 +118,7 @@ def main():
 		sys.exit(1)
 
 	actual_text = normalize(result.stderr)
-	expected_text = normalize(expected_path.read_text())
+	expected_text = normalize(preprocess_golden(expected_path, compiler_defines(compiler)))
 
 	actual_lines = set(line for line in actual_text.splitlines() if line.strip())
 	missing = [
