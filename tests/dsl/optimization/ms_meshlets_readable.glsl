@@ -31,16 +31,24 @@ layout (triangles) out;
 
 taskPayloadSharedEXT meshlets_TaskPayloadData task_payload;
 
+#ifdef __clang__
+layout (std430, set = 0, binding = 0) readonly buffer Buffer0x0 {
+    meshlets_MeshletData value[];
+} r0b0;
+
+#endif
 layout (std430, push_constant) uniform PC {
     layout (offset = 0) meshlets_ViewData pc;
 };
 
 layout (std430, set = 0, binding = 0) readonly buffer Buffer0x0 {
     vec4 value[];
+#ifdef __GNUC__
 } r0b0;
 
 layout (std430, set = 0, binding = 0) readonly buffer Buffer0x0 {
     meshlets_MeshletData value[];
+#endif
 } r0b0;
 
 layout (std430, set = 0, binding = 0) readonly buffer Buffer0x0 {

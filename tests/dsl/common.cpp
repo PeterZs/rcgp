@@ -1,8 +1,11 @@
 #include <algorithm>
+#include <array>
 #include <cstddef>
+#include <cstdio>
 #include <fstream>
 #include <string>
 #include <string_view>
+#include <sys/wait.h>
 
 #include <fmt/color.h>
 #include <fmt/printf.h>
@@ -130,60 +133,6 @@ void show_diff(const std::string &expected_str, const std::string &actual_str)
 	}
 }
 
-std::string clean(const std::string &input)
-{
-	auto lines = split_lines(input);
-
-	std::string result;
-	for (size_t i = 1; i < lines.size(); i++) {
-		size_t off = 0;
-		if (lines[i].size() && lines[i][0] == '\t')
-			off++;
-
-		result += lines[i].substr(off);
-		if (i + 1 <  lines.size())
-			result += '\n';
-	}
-
-	return result;
-}
-
-void assert_assembly_match(const SharedBlockReference &block, const std::string &str, bool verbose)
-{
-	if (tests.update_fixtures) return;
-
-	auto expected = clean(str);
-	auto act = generate_assembly(block, false, verbose);
-	if (act != expected) {
-		show_diff(expected, act);
-		if (tests.show_ground_truth) {
-			auto style = fmt::fg(fmt::color::gray)
-				| fmt::emphasis::italic;
-			fmt::print(style, "ground truth:\n{}\n", act);
-		}
-
-		mark_fail;
-	}
-}
-
-void assert_glsl_match(const SharedBlockReference &block, const std::string &str)
-{
-	if (tests.update_fixtures) return;
-
-	auto expected = clean(str);
-	auto act = generate_glsl(block);
-	if (act != expected) {
-		show_diff(expected, act);
-		if (tests.show_ground_truth) {
-			auto style = fmt::fg(fmt::color::gray)
-				| fmt::emphasis::italic;
-			fmt::print(style, "ground truth:\n{}\n", act);
-		}
-
-		mark_fail;
-	}
-}
-
 std::string read_file_contents(const std::filesystem::path &path)
 {
 	std::ifstream fin(path);
@@ -197,17 +146,61 @@ std::string read_file_contents(const std::filesystem::path &path)
         return s.str();
 }
 
-void assert_glsl_match_file(const SharedBlockReference &block, const std::filesystem::path &path)
+// Read fixture file through unifdef so per-compiler #ifdef blocks resolve to
+// the variant matching the compiler that built the test binary.
+static std::string read_expected(const std::filesystem::path &path)
+{
+#if defined(__clang__)
+	auto cmd = fmt::format("unifdef -t -D__clang__ -U__GNUC__ {}", path.c_str());
+#elif defined(__GNUC__)
+	auto cmd = fmt::format("unifdef -t -U__clang__ -D__GNUC__ -D__GNUC__={} {}", __GNUC__, path.c_str());
+#else
+	auto cmd = fmt::format("unifdef -t {}", path.c_str());
+#endif
+
+	auto *pipe = popen(cmd.c_str(), "r");
+	if (!pipe) {
+		std::println("failed to invoke unifdef on {}", path.c_str());
+		std::abort();
+	}
+
+	std::string out;
+	std::array <char, 4096> buf;
+	while (auto n = std::fread(buf.data(), 1, buf.size(), pipe))
+		out.append(buf.data(), n);
+
+	auto status = pclose(pipe);
+	auto code = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+	if (code != 0 && code != 1) {
+		std::println("unifdef failed ({}) on {}", code, path.c_str());
+		std::abort();
+	}
+
+	return out;
+}
+
+static void match_against_file(const std::filesystem::path &path, const std::string &act)
 {
 	auto full_path = "tests/dsl" / path;
-	auto expected = read_file_contents(full_path);
+	auto expected = read_expected(full_path);
 	if (expected.empty()) {
+		if (tests.update_fixtures) {
+			std::ofstream fout(full_path);
+			fout << act;
+			return;
+		}
 		mark_fail;
 		return;
 	}
 
-	auto act = generate_glsl(block);
 	if (act != expected) {
+		if (!tests.actual_suffix.empty()) {
+			auto sidecar = full_path;
+			sidecar += "." + tests.actual_suffix;
+			std::ofstream fout(sidecar);
+			fout << act;
+		}
+
 		if (tests.update_fixtures) {
 			std::ofstream fout(full_path);
 			fout << act;
@@ -223,4 +216,21 @@ void assert_glsl_match_file(const SharedBlockReference &block, const std::filesy
 
 		mark_fail;
 	}
+}
+
+void assert_glsl_eq(
+	const SharedBlockReference &block,
+	const std::filesystem::path &path
+)
+{
+	match_against_file(path, generate_glsl(block));
+}
+
+void assert_assembly_eq(
+	const SharedBlockReference &block,
+	const std::filesystem::path &path,
+	bool verbose
+)
+{
+	match_against_file(path, generate_assembly(block, false, verbose));
 }

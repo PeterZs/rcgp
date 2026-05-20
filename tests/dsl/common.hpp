@@ -21,6 +21,7 @@ struct test_collection {
 	bool pass;
 	bool show_ground_truth;
 	bool update_fixtures;
+	std::string actual_suffix;
 	std::vector <test> tests;
 } inline tests;
 
@@ -50,7 +51,5 @@ inline auto operator*(std::nullptr_t, std::function <void ()> &&fn)
 
 #define record nullptr * [&]
 
-void assert_assembly_match(const SharedBlockReference &block, const std::string &str, bool verbose = false);
-void assert_glsl_match(const SharedBlockReference &block, const std::string &str);
-
-void assert_glsl_match_file(const SharedBlockReference &block, const std::filesystem::path &path);
+void assert_assembly_eq(const SharedBlockReference &block, const std::filesystem::path &path, bool verbose = false);
+void assert_glsl_eq(const SharedBlockReference &block, const std::filesystem::path &path);

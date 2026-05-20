@@ -14,6 +14,10 @@ void main()
     float lvar2;
     lvar2 = 0.1;
     vec3 lvar3;
+#ifdef __clang__
+    lvar3 = vec3(lvar0, lvar1, lvar2);
+#elif defined(__GNUC__)
     lvar3 = vec3(lvar2, lvar1, lvar0);
+#endif
     payload2 = lvar3;
 }

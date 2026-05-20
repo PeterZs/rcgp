@@ -31,16 +31,24 @@ layout (triangles) out;
 
 taskPayloadSharedEXT meshlets_TaskPayloadData task_payload;
 
+#ifdef __clang__
+layout (std430, set = 0, binding = 0) readonly buffer Buffer0x0 {
+    meshlets_MeshletData value[];
+} r0b0;
+
+#endif
 layout (std430, push_constant) uniform PC {
     layout (offset = 0) meshlets_ViewData pc;
 };
 
 layout (std430, set = 0, binding = 0) readonly buffer Buffer0x0 {
     vec4 value[];
+#ifdef __GNUC__
 } r0b0;
 
 layout (std430, set = 0, binding = 0) readonly buffer Buffer0x0 {
     meshlets_MeshletData value[];
+#endif
 } r0b0;
 
 layout (std430, set = 0, binding = 0) readonly buffer Buffer0x0 {
@@ -58,29 +66,66 @@ layout (scalar, set = 0, binding = 0) readonly buffer Buffer0x0 {
 void main()
 {
     uint lvar0;
+#ifdef __clang__
+    lvar0 = pc.meshlet_count;
+#elif defined(__GNUC__)
     lvar0 = task_payload.meshlet;
+#endif
     uint lvar1;
+#ifdef __clang__
+    lvar1 = pc.task_group_width;
+#elif defined(__GNUC__)
     lvar1 = pc.meshlet_count;
+#endif
     uint lvar2;
+#ifdef __clang__
+    lvar2 = task_payload.meshlet;
+#elif defined(__GNUC__)
     lvar2 = pc.task_group_width;
+#endif
     uint lvar3;
+#ifdef __clang__
+    lvar3 = lvar2;
+#elif defined(__GNUC__)
     lvar3 = lvar0;
+#endif
     uint lvar4;
     lvar4 = lvar3;
     uint lvar5;
+#ifdef __clang__
+    lvar5 = r0b0.value[lvar4].vertex_count;
+#elif defined(__GNUC__)
     lvar5 = r0b0.value[lvar4].primitive_count;
+#endif
     uint lvar6;
+#ifdef __clang__
+    lvar6 = r0b0.value[lvar4].primitive_count;
+    SetMeshOutputsEXT(lvar5, lvar6);
+#elif defined(__GNUC__)
     lvar6 = r0b0.value[lvar4].vertex_count;
     SetMeshOutputsEXT(lvar6, lvar5);
+#endif
     uint lvar7;
     lvar7 = 0;
     while (true) {
         uint lvar8;
+#ifdef __clang__
+        lvar8 = lvar7;
+#elif defined(__GNUC__)
         lvar8 = r0b0.value[lvar4].vertex_count;
+#endif
         uint lvar9;
+#ifdef __clang__
+        lvar9 = r0b0.value[lvar4].vertex_count;
+#elif defined(__GNUC__)
         lvar9 = lvar7;
+#endif
         bool lvar10;
+#ifdef __clang__
+        lvar10 = (lvar8 < lvar9);
+#elif defined(__GNUC__)
         lvar10 = (lvar9 < lvar8);
+#endif
         bool lvar11;
         lvar11 = (!lvar10);
         bool lvar12;
@@ -118,11 +163,23 @@ void main()
     lvar24 = 0;
     while (true) {
         uint lvar25;
+#ifdef __clang__
+        lvar25 = lvar24;
+#elif defined(__GNUC__)
         lvar25 = r0b0.value[lvar4].primitive_count;
+#endif
         uint lvar26;
+#ifdef __clang__
+        lvar26 = r0b0.value[lvar4].primitive_count;
+#elif defined(__GNUC__)
         lvar26 = lvar24;
+#endif
         bool lvar27;
+#ifdef __clang__
+        lvar27 = (lvar25 < lvar26);
+#elif defined(__GNUC__)
         lvar27 = (lvar26 < lvar25);
+#endif
         bool lvar28;
         lvar28 = (!lvar27);
         bool lvar29;

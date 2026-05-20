@@ -17,15 +17,7 @@ add_test(vs_empty)
 
 	optimize(vs, OptimizationPhases::eDeadCodeElimination);
 
-	assert_glsl_match(vs, R"(
-	#version 460
-
-#extension GL_EXT_scalar_block_layout : require
-
-	void main()
-	{
-	}
-	)");
+	assert_glsl_eq(vs, "optimization/vs_empty.glsl");
 };
 
 add_test(vs_clip)
@@ -37,16 +29,7 @@ add_test(vs_clip)
 
 	optimize(vs, flags);
 
-	assert_glsl_match(vs, R"(
-	#version 460
-
-#extension GL_EXT_scalar_block_layout : require
-
-	void main()
-	{
-	    gl_Position = vec4(1, 1, 1, 1);
-	}
-	)");
+	assert_glsl_eq(vs, "optimization/vs_clip.glsl");
 };
 
 add_test(vs_louts)
@@ -61,20 +44,7 @@ add_test(vs_louts)
 	
 	optimize(vs, flags);
 
-	assert_glsl_match(vs, R"(
-	#version 460
-
-#extension GL_EXT_scalar_block_layout : require
-
-	layout (location = 0) smooth out vec3 lout0;
-	layout (location = 1) flat out uvec2 lout1;
-
-	void main()
-	{
-	    lout0 = vec3(vec3(1, 1, 1));
-	    lout1 = uvec2(uvec2(1, 4));
-	}
-	)");
+	assert_glsl_eq(vs, "optimization/vs_louts.glsl");
 };
 
 add_test(vs_stream)
@@ -90,22 +60,7 @@ add_test(vs_stream)
 	
 	optimize(vs, flags);
 
-	assert_glsl_match(vs, R"(
-	#version 460
-
-#extension GL_EXT_scalar_block_layout : require
-
-	layout (location = 0) in vec3 lin0;
-
-	layout (location = 0) smooth out vec3 lout0;
-
-	void main()
-	{
-	    vec3 lvar0 = vec3(lin0);
-	    gl_Position = vec4(lvar0, 1);
-	    lout0 = vec3(lvar0);
-	}
-	)");
+	assert_glsl_eq(vs, "optimization/vs_stream.glsl");
 };
 
 add_test(vs_multiple_io)
@@ -126,26 +81,7 @@ add_test(vs_multiple_io)
 	
 	optimize(vs, flags);
 	
-	assert_glsl_match(vs, R"(
-	#version 460
-
-#extension GL_EXT_scalar_block_layout : require
-
-	layout (location = 0) in vec3 lin0;
-	layout (location = 1) in vec3 lin1;
-	layout (location = 2) in vec2 lin2;
-
-	layout (location = 0) smooth out vec3 lout0;
-	layout (location = 1) smooth out vec3 lout1;
-	layout (location = 2) smooth out vec2 lout2;
-
-	void main()
-	{
-	    lout0 = vec3(vec3(lin0));
-	    lout1 = vec3(vec3(lin1));
-	    lout2 = vec2(vec2(lin2));
-	}
-	)");
+	assert_glsl_eq(vs, "optimization/vs_multiple_io.glsl");
 };
 
 add_test(vs_push_constant)
@@ -165,7 +101,7 @@ add_test(vs_push_constant)
 	
 	optimize(vs, flags);
 
-	assert_glsl_match_file(vs, "optimization/vs_push_constant.glsl");
+	assert_glsl_eq(vs, "optimization/vs_push_constant.glsl");
 };
 
 add_test(fr_diffuse_lighting)
@@ -202,7 +138,7 @@ add_test(fr_diffuse_lighting)
 
 	// TODO: get rid of side-effect (i.e. value based)
 	// free intrinsics that are by themselves...
-	assert_glsl_match_file(fs, "optimization/fr_diffuse_lighting.glsl");
+	assert_glsl_eq(fs, "optimization/fr_diffuse_lighting.glsl");
 };
 
 add_test(fr_diffuse_lighting_readable)
@@ -239,7 +175,7 @@ add_test(fr_diffuse_lighting_readable)
 
 	// TODO: get rid of side-effect (i.e. value based)
 	// free intrinsics that are by themselves...
-	assert_glsl_match_file(fs, "optimization/fr_diffuse_lighting_readable.glsl");
+	assert_glsl_eq(fs, "optimization/fr_diffuse_lighting_readable.glsl");
 };
 
 add_test(ts_meshlets)
@@ -282,7 +218,7 @@ add_test(ts_meshlets)
 
 	optimize(ts, flags);
 	
-	assert_glsl_match_file(ts, "optimization/ts_meshlets.glsl");
+	assert_glsl_eq(ts, "optimization/ts_meshlets.glsl");
 };
 
 add_test(ts_meshlets_readable)
@@ -325,7 +261,7 @@ add_test(ts_meshlets_readable)
 
 	optimize(ts, readable_flags);
 	
-	assert_glsl_match_file(ts, "optimization/ts_meshlets_readable.glsl");
+	assert_glsl_eq(ts, "optimization/ts_meshlets_readable.glsl");
 };
 
 add_test(ms_meshlets)
@@ -372,7 +308,7 @@ add_test(ms_meshlets)
 
 	optimize(ms, flags);
 
-	assert_glsl_match_file(ms, "optimization/ms_meshlets.glsl");
+	assert_glsl_eq(ms, "optimization/ms_meshlets.glsl");
 };
 
 add_test(ms_meshlets_readable)
@@ -419,7 +355,7 @@ add_test(ms_meshlets_readable)
 
 	optimize(ms, readable_flags);
 
-	assert_glsl_match_file(ms, "optimization/ms_meshlets_readable.glsl");
+	assert_glsl_eq(ms, "optimization/ms_meshlets_readable.glsl");
 };
 
 add_test(sr_return_primitives)
@@ -430,13 +366,7 @@ add_test(sr_return_primitives)
 
 	optimize(sr, flags);
 	
-	assert_glsl_match(sr, R"(
-	void sr(float arg0, uint arg1, out vec3 ret0, out uvec2 ret1)
-	{
-	    ret0 = vec3(vec3(arg0, arg0, arg0));
-	    ret1 = uvec2(uvec2(arg1, 13));
-	}
-	)");
+	assert_glsl_eq(sr, "optimization/sr_return_primitives.glsl");
 };
 
 add_test(sr_return_aggregate)
@@ -450,12 +380,7 @@ add_test(sr_return_aggregate)
 
 	optimize(sr, flags);
 	
-	assert_glsl_match(sr, R"(
-	void sr(float arg0, out Ray ret0)
-	{
-	    ret0 = Ray(vec3(vec3(vec3(vec3(0, 0, 0)))), vec3(vec3(vec3(normalize(vec3(1, arg0, 1))))));
-	}
-	)");
+	assert_glsl_eq(sr, "optimization/sr_return_aggregate.glsl");
 };
 
 add_test(sr_invocation)
@@ -487,7 +412,7 @@ add_test(sr_invocation)
 	optimize(sr3, flags);
 	optimize(vs, flags);
 
-	assert_glsl_match_file(vs, "optimization/sr_invocation.glsl");
+	assert_glsl_eq(vs, "optimization/sr_invocation.glsl");
 };
 
 add_test(sr_dependencies)
@@ -522,7 +447,7 @@ add_test(sr_dependencies)
 	optimize(saxpy3, flags);
 	optimize(cs, flags);
 
-	assert_glsl_match_file(cs, "optimization/sr_dependencies.glsl");
+	assert_glsl_eq(cs, "optimization/sr_dependencies.glsl");
 };
 
 add_test(for_loop)
@@ -538,23 +463,7 @@ add_test(for_loop)
 
 	optimize(sr, flags);
 
-	assert_glsl_match(sr, R"(
-	void sr(int arg0, int arg1, out float ret0)
-	{
-	    float lvar0;
-	    lvar0 = 0;
-	    int lvar1;
-	    lvar1 = 0;
-	    while (true) {
-	        if ((!(lvar1 < arg0))) {
-	            break;
-	        }
-	        lvar0 = (lvar0 + lvar1);
-	        lvar1 = (lvar1 + arg1);
-	    }
-	    ret0 = lvar0;
-	}
-	)");
+	assert_glsl_eq(sr, "optimization/for_loop.glsl");
 };
 
 add_test(branching)
@@ -572,7 +481,7 @@ add_test(branching)
 	
 	optimize(sr, flags);
 
-	assert_glsl_match_file(sr, "optimization/sr_branching.glsl");
+	assert_glsl_eq(sr, "optimization/sr_branching.glsl");
 };
 
 add_test(rt_single_trace_group)
@@ -607,9 +516,9 @@ add_test(rt_single_trace_group)
 	optimize(chit, flags);
 	optimize(miss, flags);
 
-	assert_glsl_match_file(rgen, "optimization/rt_single_rgen.glsl");
-	assert_glsl_match_file(chit, "optimization/rt_single_chit.glsl");
-	assert_glsl_match_file(miss, "optimization/rt_single_miss.glsl");
+	assert_glsl_eq(rgen, "optimization/rt_single_rgen.glsl");
+	assert_glsl_eq(chit, "optimization/rt_single_chit.glsl");
+	assert_glsl_eq(miss, "optimization/rt_single_miss.glsl");
 };
 
 add_test(rt_multi_trace_group)
@@ -682,12 +591,12 @@ add_test(rt_multi_trace_group)
 	optimize(miss_occlusion, flags);
 	optimize(miss_reflection, flags);
 
-	assert_glsl_match_file(rgen, "optimization/rt_multi_rgen.glsl");
-	assert_glsl_match_file(chit_radiance, "optimization/rt_multi_chit_radiance.glsl");
-	assert_glsl_match_file(chit_reflection, "optimization/rt_multi_chit_reflection.glsl");
-	assert_glsl_match_file(miss_radiance, "optimization/rt_multi_miss_radiance.glsl");
-	assert_glsl_match_file(miss_occlusion, "optimization/rt_multi_miss_occlusion.glsl");
-	assert_glsl_match_file(miss_reflection, "optimization/rt_multi_miss_reflection.glsl");
+	assert_glsl_eq(rgen, "optimization/rt_multi_rgen.glsl");
+	assert_glsl_eq(chit_radiance, "optimization/rt_multi_chit_radiance.glsl");
+	assert_glsl_eq(chit_reflection, "optimization/rt_multi_chit_reflection.glsl");
+	assert_glsl_eq(miss_radiance, "optimization/rt_multi_miss_radiance.glsl");
+	assert_glsl_eq(miss_occlusion, "optimization/rt_multi_miss_occlusion.glsl");
+	assert_glsl_eq(miss_reflection, "optimization/rt_multi_miss_reflection.glsl");
 };
 
 add_test(bufref_array)
@@ -708,7 +617,7 @@ add_test(bufref_array)
 
 	optimize(fs, flags);
 
-	assert_glsl_match_file(fs, "optimization/bufref_array.glsl");
+	assert_glsl_eq(fs, "optimization/bufref_array.glsl");
 };
 
 add_test(bufref_single)
@@ -726,5 +635,5 @@ add_test(bufref_single)
 
 	optimize(vs, flags);
 
-	assert_glsl_match_file(vs, "optimization/bufref_single.glsl");
+	assert_glsl_eq(vs, "optimization/bufref_single.glsl");
 };

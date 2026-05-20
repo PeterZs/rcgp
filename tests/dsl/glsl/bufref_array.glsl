@@ -46,13 +46,28 @@ void main()
     lvar7 = 2;
     uint lvar8;
     lvar8 = lvar7;
+#ifdef __clang__
+    vec3 lvar9;
+    lvar9 = (r0b0.value[lvar2].positions.value[lvar4] + r0b0.value[lvar2].normals.value[lvar6]);
+    float lvar10;
+    lvar10 = 0;
+#elif defined(__GNUC__)
     float lvar9;
     lvar9 = 0;
     vec3 lvar10;
     lvar10 = vec3(r0b0.value[lvar2].uvs.value[lvar8], lvar9);
+#endif
     vec3 lvar11;
+#ifdef __clang__
+    lvar11 = vec3(r0b0.value[lvar2].uvs.value[lvar8], lvar10);
+#elif defined(__GNUC__)
     lvar11 = (r0b0.value[lvar2].positions.value[lvar4] + r0b0.value[lvar2].normals.value[lvar6]);
+#endif
     vec3 lvar12;
+#ifdef __clang__
+    lvar12 = (lvar9 + lvar11);
+#elif defined(__GNUC__)
     lvar12 = (lvar11 + lvar10);
+#endif
     lout0 = lvar12;
 }

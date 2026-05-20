@@ -12,65 +12,53 @@ concurrency:
 
 jobs:
   test:
-    name: ${{ matrix.name }}
+    name: ${{ matrix.cxx }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { name: gcc-15,   image: gcc:15,        cc: gcc,       cxx: g++,         is_clang: false, clang_pkg: '', strict_dsl: true }
-          - { name: gcc-16,   image: gcc:16,        cc: gcc,       cxx: g++,         is_clang: false, clang_pkg: '', strict_dsl: true }
-          - { name: clang-19, image: debian:trixie, cc: clang-19,  cxx: clang++-19,  is_clang: true,  clang_pkg: clang-19, strict_dsl: false }
-          - { name: clang-20, image: debian:trixie, cc: clang-20,  cxx: clang++-20,  is_clang: true,  clang_pkg: clang-20, strict_dsl: false }
-          - { name: clang-21, image: debian:trixie, cc: clang-21,  cxx: clang++-21,  is_clang: true,  clang_pkg: clang-21, strict_dsl: false }
-          - { name: clang-22, image: debian:trixie, cc: clang-22,  cxx: clang++-22,  is_clang: true,  clang_pkg: clang-22, strict_dsl: true }
+        cxx: [g++-15, g++-16, clang++-19, clang++-20, clang++-21, clang++-22]
     container:
-      image: ${{ matrix.image }}
+      image: debian:trixie
     env:
       DEBIAN_FRONTEND: noninteractive
-      CC: ${{ matrix.cc }}
       CXX: ${{ matrix.cxx }}
-      VK_ICD_FILENAMES: /usr/share/vulkan/icd.d/lvp_icd.json
       VK_LOADER_DRIVERS_SELECT: lvp_icd.json
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Bootstrap clang toolchain
-        if: matrix.is_clang
+      - name: Install toolchain and deps
         run: |
           apt-get update
           apt-get install -y --no-install-recommends ca-certificates wget gnupg
-          echo "deb http://deb.debian.org/debian sid main" > /etc/apt/sources.list.d/sid.list
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key \
-            | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc > /dev/null
-          version="${{ matrix.clang_pkg }}"
-          version="${version#clang-}"
-          echo "deb http://apt.llvm.org/trixie/ llvm-toolchain-trixie-${version} main" \
-            > /etc/apt/sources.list.d/llvm.list
-          apt-get update
-          apt-get install -y --no-install-recommends g++-15 ${{ matrix.clang_pkg }}
-          ${{ matrix.cxx }} --version
 
-      - name: Install runtime deps
-        run: |
+          # Newer gcc lives in sid; newer clang in apt.llvm.org.
+          echo "deb http://deb.debian.org/debian sid main" \
+            > /etc/apt/sources.list.d/sid.list
+          case "$CXX" in clang*)
+            wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key \
+              | tee /etc/apt/trusted.gpg.d/llvm.asc > /dev/null
+            version=$(echo "$CXX" | sed 's/.*-//')
+            echo "deb http://apt.llvm.org/trixie/ llvm-toolchain-trixie-$version main" \
+              > /etc/apt/sources.list.d/llvm.list
+            ;;
+          esac
           apt-get update
-          apt-get install -y --no-install-recommends \
+
+          pkg=$(echo "$CXX" | sed 's/clang++/clang/')
+          apt-get install -y --no-install-recommends g++-15 $pkg \
             git python3 python3-pip python-is-python3 nodejs just \
-            make ninja-build pkg-config unifdef \
-            libvulkan-dev vulkan-tools vulkan-validationlayers \
-            mesa-vulkan-drivers \
+            ninja-build pkg-config unifdef \
+            libvulkan-dev mesa-vulkan-drivers \
             glslang-dev glslang-tools spirv-headers spirv-tools \
             libfmt-dev libglfw3-dev \
             libxkbcommon-dev libwayland-dev xorg-dev \
             xvfb xauth
-
-      - name: Install CMake 4
-        run: |
           pip install --break-system-packages 'cmake>=4.0,<5'
-          cmake --version
-          just --version
+
+          cc=$(echo "$CXX" | sed 's/^g++/gcc/; s/^clang++/clang/')
+          echo "CC=$cc" >> "$GITHUB_ENV"
 
       - name: Install up-to-date Vulkan headers
         env:
@@ -78,35 +66,26 @@ jobs:
         run: |
           git clone --depth 1 --branch "$VULKAN_HEADERS_TAG" \
             https://github.com/KhronosGroup/Vulkan-Headers.git /tmp/vk-headers
-          cmake -G Ninja -S /tmp/vk-headers -B /tmp/vk-headers/build -DCMAKE_INSTALL_PREFIX=/usr
+          cmake -G Ninja -S /tmp/vk-headers -B /tmp/vk-headers/build \
+            -DCMAKE_INSTALL_PREFIX=/usr
           cmake --install /tmp/vk-headers/build
-          grep "VK_HEADER_VERSION " /usr/include/vulkan/vulkan_core.h | head -1
-
-      - name: Sanity-check the Vulkan loader
-        run: vulkaninfo --summary || true
-
-      - name: Cache CMake build
-        uses: actions/cache@v4
-        with:
-          path: build
-          key: cmake-${{ matrix.name }}-${{ hashFiles('CMakeLists.txt', 'include/scripts/*.py') }}
-          restore-keys: |
-            cmake-${{ matrix.name }}-
 
       - name: Build library
         run: |
-          cmake -B build \
-            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+          # Bypass the libc-has-pthread probe (always true on glibc >= 2.34);
+          # works around clang-20's apt.llvm.org snapshot tripping the check.
+          cmake -G Ninja -B build \
             -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_LINKER_TYPE=DEFAULT \
+            -DCMAKE_CXX_SCAN_FOR_MODULES=OFF \
+            -DCMAKE_HAVE_LIBC_PTHREAD=ON \
             .
           cmake --build build -j
 
       - name: Compile-time tests
-        run: just compile ${{ matrix.cxx }}
+        run: just compile $CXX
 
       - name: DSL runtime tests
-        continue-on-error: ${{ !matrix.strict_dsl }}
         env:
           XDG_RUNTIME_DIR: /tmp/xdg-runtime
         run: |

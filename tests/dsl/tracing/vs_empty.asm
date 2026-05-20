@@ -1,0 +1,5 @@
+Block {
+  Context {
+    stage: Vertex,
+  }
+}

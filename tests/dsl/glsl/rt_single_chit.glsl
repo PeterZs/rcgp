@@ -12,12 +12,24 @@ void main()
     vec2 lvar0;
     lvar0 = vec2(hit_attribute);
     float lvar1;
+#ifdef __clang__
+    lvar1 = lvar0.x;
+#elif defined(__GNUC__)
     lvar1 = 0;
+#endif
     float lvar2;
     lvar2 = lvar0.y;
     float lvar3;
+#ifdef __clang__
+    lvar3 = 0;
+#elif defined(__GNUC__)
     lvar3 = lvar0.x;
+#endif
     vec3 lvar4;
+#ifdef __clang__
+    lvar4 = vec3(lvar1, lvar2, lvar3);
+#elif defined(__GNUC__)
     lvar4 = vec3(lvar3, lvar2, lvar1);
+#endif
     payload0 = lvar4;
 }

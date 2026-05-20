@@ -19,6 +19,8 @@ int main(int argc, char *argv[])
 			suite = arg.substr(8);
 		else if (arg.starts_with("--filter="))
 			filter = arg.substr(9);
+		else if (arg.starts_with("--actual-suffix="))
+			tests.actual_suffix = arg.substr(16);
 
 		argi++;
 	}

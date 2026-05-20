@@ -35,5 +35,11 @@ void main()
     lvar3 = vec2(lvar2);
     vec4 lvar4;
     get_albedo(lvar3, lvar4);
+#ifdef __clang__
+    vec4 lvar5;
+    lvar5 = vec4(lvar4);
+    lout0 = lvar5;
+#elif defined(__GNUC__)
     lout0 = lvar4;
+#endif
 }
